@@ -1,8 +1,22 @@
+'use client';
+
 import Link from 'next/link';
 import { Logo } from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Briefcase, Building2 } from 'lucide-react';
+import { Menu, LogOut, User } from 'lucide-react';
+import { useFirebase } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/job-seeker', label: 'Find Jobs' },
@@ -12,6 +26,24 @@ const navLinks = [
 ];
 
 export function Header() {
+  const { user, auth, isUserLoading } = useFirebase();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/');
+  };
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`;
+    }
+    return name[0];
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-7xl items-center">
@@ -33,12 +65,49 @@ export function Header() {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <div className="hidden items-center space-x-2 md:flex">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Log In</Link>
-            </Button>
-            <Button className="gradient-saffron shadow-lg hover:shadow-primary/50" asChild>
-              <Link href="/signup">Sign Up</Link>
-            </Button>
+            {isUserLoading ? (
+              <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                      <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/job-seeker')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/login">Log In</Link>
+                </Button>
+                <Button className="gradient-saffron shadow-lg hover:shadow-primary/50" asChild>
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
+              </>
+            )}
           </div>
           <Sheet>
             <SheetTrigger asChild>
@@ -48,8 +117,8 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-              <div className="flex flex-col h-full">
-                <div className="p-4 border-b">
+              <div className="flex h-full flex-col">
+                <div className="border-b p-4">
                   <Logo />
                 </div>
                 <nav className="flex flex-col gap-4 p-4">
@@ -64,12 +133,25 @@ export function Header() {
                   ))}
                 </nav>
                 <div className="mt-auto flex flex-col gap-2 border-t p-4">
-                  <Button variant="outline" asChild>
-                    <Link href="/login">Log In</Link>
-                  </Button>
-                  <Button className="gradient-saffron" asChild>
-                    <Link href="/signup">Sign Up</Link>
-                  </Button>
+                  {user ? (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href="/job-seeker">My Profile</Link>
+                      </Button>
+                      <Button className="gradient-saffron" onClick={handleLogout}>
+                        Log Out
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href="/login">Log In</Link>
+                      </Button>
+                      <Button className="gradient-saffron" asChild>
+                        <Link href="/signup">Sign Up</Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

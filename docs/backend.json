@@ -261,116 +261,45 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/jobSeekers/{jobSeekerId}",
-        "definition": {
-          "entityName": "JobSeeker",
-          "schema": {
-            "$ref": "#/backend/entities/JobSeeker"
-          },
-          "description": "Stores job seeker profiles. Uses path-based ownership for private data.",
-          "params": [
-            {
-              "name": "jobSeekerId",
-              "description": "The unique identifier for the job seeker."
-            }
-          ]
-        }
+    "/jobSeekers/{jobSeekerId}": {
+      "schema": {
+        "$ref": "#/entities/JobSeeker"
       },
-      {
-        "path": "/employers/{employerId}",
-        "definition": {
-          "entityName": "Employer",
-          "schema": {
-            "$ref": "#/backend/entities/Employer"
-          },
-          "description": "Stores employer profiles. Uses path-based ownership for private data.",
-          "params": [
-            {
-              "name": "employerId",
-              "description": "The unique identifier for the employer."
-            }
-          ]
-        }
+      "description": "Stores job seeker profiles."
+    },
+    "/employers/{employerId}": {
+      "schema": {
+        "$ref": "#/entities/Employer"
       },
-      {
-        "path": "/employers/{employerId}/jobPosts/{jobPostId}",
-        "definition": {
-          "entityName": "JobPost",
-          "schema": {
-            "$ref": "#/backend/entities/JobPost"
-          },
-          "description": "Stores job postings associated with an employer. Uses hierarchical paths for user-owned data.",
-          "params": [
-            {
-              "name": "employerId",
-              "description": "The unique identifier for the employer."
-            },
-            {
-              "name": "jobPostId",
-              "description": "The unique identifier for the job post."
-            }
-          ]
-        }
+      "description": "Stores employer profiles."
+    },
+    "/employers/{employerId}/jobPosts/{jobPostId}": {
+      "schema": {
+        "$ref": "#/entities/JobPost"
       },
-      {
-        "path": "/jobSeekers/{jobSeekerId}/jobApplications/{jobApplicationId}",
-        "definition": {
-          "entityName": "JobApplication",
-          "schema": {
-            "$ref": "#/backend/entities/JobApplication"
-          },
-          "description": "Stores job applications submitted by a job seeker. Uses hierarchical paths for user-owned data.",
-          "params": [
-            {
-              "name": "jobSeekerId",
-              "description": "The unique identifier for the job seeker."
-            },
-            {
-              "name": "jobApplicationId",
-              "description": "The unique identifier for the job application."
-            }
-          ]
-        }
+      "description": "Stores job postings associated with an employer."
+    },
+    "/jobSeekers/{jobSeekerId}/jobApplications/{jobApplicationId}": {
+      "schema": {
+        "$ref": "#/entities/JobApplication"
       },
-      {
-        "path": "/blogs/{blogId}",
-        "definition": {
-          "entityName": "Blog",
-          "schema": {
-            "$ref": "#/backend/entities/Blog"
-          },
-          "description": "Stores blog posts.",
-          "params": [
-            {
-              "name": "blogId",
-              "description": "The unique identifier for the blog post."
-            }
-          ]
-        }
+      "description": "Stores job applications submitted by a job seeker."
+    },
+    "/blogs/{blogId}": {
+      "schema": {
+        "$ref": "#/entities/Blog"
       },
-      {
-        "path": "/companyReviews/{companyReviewId}",
-        "definition": {
-          "entityName": "CompanyReview",
-          "schema": {
-            "$ref": "#/backend/entities/CompanyReview"
-          },
-          "description": "Stores company reviews.",
-          "params": [
-            {
-              "name": "companyReviewId",
-              "description": "The unique identifier for the company review."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to support the Hiring Dekho platform, focusing on job seekers, employers, job posts, applications, blogs, and company reviews. The design prioritizes authorization independence, clarity, and scalability. Path-based ownership is used for private user data, while membership maps handle collaborative access. The structure includes denormalization of authorization data to eliminate the need for `get()` calls in security rules, enhancing atomicity. Structural segregation ensures that each collection has a homogeneous security posture. The design supports QAPs by using separate collections for data with different access needs and by applying membership models for collaborative data. Invariants are maintained through consistent naming conventions and explicit state modeling. All user-owned content (e.g., job applications) are nested under the user's document. Job posts are nested under the respective employer's document."
+      "description": "Stores blog posts."
+    },
+    "/companyReviews/{companyReviewId}": {
+      "schema": {
+        "$ref": "#/entities/CompanyReview"
+      },
+      "description": "Stores company reviews."
+    }
   }
 }
