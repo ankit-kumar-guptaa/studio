@@ -1,0 +1,376 @@
+{
+  "entities": {
+    "JobSeeker": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobSeeker",
+      "type": "object",
+      "description": "Represents a job seeker user on the Hiring Dekho platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the job seeker."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the job seeker."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the job seeker."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the job seeker.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the job seeker."
+        },
+        "resumeUrl": {
+          "type": "string",
+          "description": "URL of the job seeker's resume."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the job seeker."
+        },
+        "categoryPreferences": {
+          "type": "array",
+          "description": "Job category preferences of the job seeker.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    },
+    "Employer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Employer",
+      "type": "object",
+      "description": "Represents an employer user on the Hiring Dekho platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the employer."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Name of the company."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the employer.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the employer."
+        },
+        "companyDescription": {
+          "type": "string",
+          "description": "Description of the company."
+        },
+        "companyLogoUrl": {
+          "type": "string",
+          "description": "URL of the company logo."
+        }
+      },
+      "required": [
+        "id",
+        "companyName",
+        "email"
+      ]
+    },
+    "JobPost": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobPost",
+      "type": "object",
+      "description": "Represents a job posting on the Hiring Dekho platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the job post."
+        },
+        "employerId": {
+          "type": "string",
+          "description": "Reference to Employer. (Relationship: Employer 1:N JobPost)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the job post."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the job."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the job."
+        },
+        "salary": {
+          "type": "number",
+          "description": "Salary for the job."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the job."
+        },
+        "requirements": {
+          "type": "string",
+          "description": "Requirements for the job."
+        },
+        "postDate": {
+          "type": "string",
+          "description": "Date the job was posted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "employerId",
+        "title",
+        "location",
+        "category",
+        "description"
+      ]
+    },
+    "JobApplication": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobApplication",
+      "type": "object",
+      "description": "Represents a job application on the Hiring Dekho platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the job application."
+        },
+        "jobSeekerId": {
+          "type": "string",
+          "description": "Reference to JobSeeker. (Relationship: JobSeeker 1:N JobApplication)"
+        },
+        "jobPostId": {
+          "type": "string",
+          "description": "Reference to JobPost. (Relationship: JobPost 1:N JobApplication)"
+        },
+        "applicationDate": {
+          "type": "string",
+          "description": "Date the application was submitted.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the application (e.g., 'Applied', 'Reviewed', 'Interviewing', 'Offered', 'Rejected')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any notes related to the application."
+        }
+      },
+      "required": [
+        "id",
+        "jobSeekerId",
+        "jobPostId",
+        "applicationDate",
+        "status"
+      ]
+    },
+    "Blog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Blog",
+      "type": "object",
+      "description": "Represents a blog post on the Hiring Dekho platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the blog post."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the blog post."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the blog post."
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the blog post."
+        },
+        "publicationDate": {
+          "type": "string",
+          "description": "Date the blog post was published.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "author",
+        "publicationDate"
+      ]
+    },
+    "CompanyReview": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CompanyReview",
+      "type": "object",
+      "description": "Represents a review of a company on the Hiring Dekho platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the company review."
+        },
+        "employerId": {
+          "type": "string",
+          "description": "Reference to Employer. (Relationship: Employer 1:N CompanyReview)"
+        },
+        "jobSeekerId": {
+          "type": "string",
+          "description": "Reference to JobSeeker. (Relationship: JobSeeker 1:N CompanyReview)"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating given by the job seeker to the company."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Comment provided by the job seeker about the company."
+        },
+        "reviewDate": {
+          "type": "string",
+          "description": "Date the review was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "employerId",
+        "jobSeekerId",
+        "rating",
+        "reviewDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/jobSeekers/{jobSeekerId}",
+        "definition": {
+          "entityName": "JobSeeker",
+          "schema": {
+            "$ref": "#/backend/entities/JobSeeker"
+          },
+          "description": "Stores job seeker profiles. Uses path-based ownership for private data.",
+          "params": [
+            {
+              "name": "jobSeekerId",
+              "description": "The unique identifier for the job seeker."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/employers/{employerId}",
+        "definition": {
+          "entityName": "Employer",
+          "schema": {
+            "$ref": "#/backend/entities/Employer"
+          },
+          "description": "Stores employer profiles. Uses path-based ownership for private data.",
+          "params": [
+            {
+              "name": "employerId",
+              "description": "The unique identifier for the employer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/employers/{employerId}/jobPosts/{jobPostId}",
+        "definition": {
+          "entityName": "JobPost",
+          "schema": {
+            "$ref": "#/backend/entities/JobPost"
+          },
+          "description": "Stores job postings associated with an employer. Uses hierarchical paths for user-owned data.",
+          "params": [
+            {
+              "name": "employerId",
+              "description": "The unique identifier for the employer."
+            },
+            {
+              "name": "jobPostId",
+              "description": "The unique identifier for the job post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/jobSeekers/{jobSeekerId}/jobApplications/{jobApplicationId}",
+        "definition": {
+          "entityName": "JobApplication",
+          "schema": {
+            "$ref": "#/backend/entities/JobApplication"
+          },
+          "description": "Stores job applications submitted by a job seeker. Uses hierarchical paths for user-owned data.",
+          "params": [
+            {
+              "name": "jobSeekerId",
+              "description": "The unique identifier for the job seeker."
+            },
+            {
+              "name": "jobApplicationId",
+              "description": "The unique identifier for the job application."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/blogs/{blogId}",
+        "definition": {
+          "entityName": "Blog",
+          "schema": {
+            "$ref": "#/backend/entities/Blog"
+          },
+          "description": "Stores blog posts.",
+          "params": [
+            {
+              "name": "blogId",
+              "description": "The unique identifier for the blog post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/companyReviews/{companyReviewId}",
+        "definition": {
+          "entityName": "CompanyReview",
+          "schema": {
+            "$ref": "#/backend/entities/CompanyReview"
+          },
+          "description": "Stores company reviews.",
+          "params": [
+            {
+              "name": "companyReviewId",
+              "description": "The unique identifier for the company review."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the Hiring Dekho platform, focusing on job seekers, employers, job posts, applications, blogs, and company reviews. The design prioritizes authorization independence, clarity, and scalability. Path-based ownership is used for private user data, while membership maps handle collaborative access. The structure includes denormalization of authorization data to eliminate the need for `get()` calls in security rules, enhancing atomicity. Structural segregation ensures that each collection has a homogeneous security posture. The design supports QAPs by using separate collections for data with different access needs and by applying membership models for collaborative data. Invariants are maintained through consistent naming conventions and explicit state modeling. All user-owned content (e.g., job applications) are nested under the user's document. Job posts are nested under the respective employer's document."
+  }
+}
