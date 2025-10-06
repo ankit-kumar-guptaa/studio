@@ -1,12 +1,12 @@
-"use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -14,33 +14,76 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Upload } from "lucide-react";
+} from '@/components/ui/form';
+import { Upload, Loader2 } from 'lucide-react';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const profileSchema = z.object({
-  fullName: z.string().min(1, "Full name is required"),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email(),
-  phone: z.string().min(10, "Phone number is invalid"),
-  headline: z.string().min(1, "Headline is required"),
-  bio: z.string().optional(),
-  resume: z.any().optional(),
+  phone: z.string().min(10, 'Phone number is invalid').optional(),
+  location: z.string().optional(),
+  resumeUrl: z.string().url().optional(),
+  categoryPreferences: z.array(z.string()).optional(),
 });
 
+type ProfileFormData = z.infer<typeof profileSchema>;
+
 export function ProfileForm() {
-  const form = useForm<z.infer<typeof profileSchema>>({
+  const { user, firestore } = useFirebase();
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const jobSeekerRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'jobSeekers', user.uid);
+  }, [firestore, user]);
+
+  const { data: jobSeekerData, isLoading } = useDoc<ProfileFormData>(jobSeekerRef);
+
+  const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      fullName: "Priya Sharma",
-      email: "priya.sharma@example.com",
-      phone: "9876543210",
-      headline: "Experienced Frontend Developer",
-      bio: "5+ years of experience building scalable web applications with React and TypeScript.",
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      location: '',
     },
   });
 
-  function onSubmit(values: z.infer<typeof profileSchema>) {
-    console.log(values);
-    // Handle form submission
+  useEffect(() => {
+    if (jobSeekerData) {
+      form.reset(jobSeekerData);
+    }
+  }, [jobSeekerData, form]);
+
+  async function onSubmit(values: ProfileFormData) {
+    if (!jobSeekerRef) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(jobSeekerRef, values);
+      toast({
+        title: 'Profile Updated',
+        description: 'Your information has been saved successfully.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message || 'Could not update your profile.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (
@@ -49,12 +92,12 @@ export function ProfileForm() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="fullName"
+            name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full Name</FormLabel>
+                <FormLabel>First Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your full name" {...field} />
+                  <Input placeholder="Your first name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -62,12 +105,12 @@ export function ProfileForm() {
           />
           <FormField
             control={form.control}
-            name="headline"
+            name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Professional Headline</FormLabel>
+                <FormLabel>Last Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Software Engineer at Google" {...field} />
+                  <Input placeholder="Your last name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -80,7 +123,13 @@ export function ProfileForm() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="your.email@example.com" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="your.email@example.com"
+                    {...field}
+                    readOnly
+                    className="bg-muted"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -101,29 +150,37 @@ export function ProfileForm() {
           />
         </div>
         <FormField
-          control={form.control}
-          name="bio"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bio</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Tell us a little bit about yourself" className="resize-none" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Bangalore, India" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         <FormItem>
-            <FormLabel>Resume (PDF/DOC)</FormLabel>
-            <FormControl>
-                <div className="relative">
-                    <Input type="file" className="pl-10" />
-                    <Upload className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                </div>
-            </FormControl>
-            <FormMessage />
+          <FormLabel>Resume (PDF URL)</FormLabel>
+          <FormControl>
+            <div className="relative">
+              <FormField
+                control={form.control}
+                name="resumeUrl"
+                render={({ field }) => (
+                    <Input type="text" placeholder="https://example.com/resume.pdf" {...field} />
+                )}
+              />
+            </div>
+          </FormControl>
+          <FormMessage />
         </FormItem>
-        <Button type="submit" className="gradient-saffron">Save Changes</Button>
+        <Button type="submit" className="gradient-saffron" disabled={isSaving}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
       </form>
     </Form>
   );

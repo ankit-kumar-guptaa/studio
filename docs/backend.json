@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "JobSeeker": {
@@ -98,10 +99,6 @@
           "type": "string",
           "description": "Unique identifier for the job post."
         },
-        "employerId": {
-          "type": "string",
-          "description": "Reference to Employer. (Relationship: Employer 1:N JobPost)"
-        },
         "title": {
           "type": "string",
           "description": "Title of the job post."
@@ -134,7 +131,6 @@
       },
       "required": [
         "id",
-        "employerId",
         "title",
         "location",
         "category",
