@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { MyApplications } from './MyApplications';
 import { Button } from '../ui/button';
 import Link from 'next/link';
+import { ProfileCompleteness } from './ProfileCompleteness';
 
 
 function JobSeekerDashboardContent() {
@@ -23,6 +24,9 @@ function JobSeekerDashboardContent() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Job Seeker Dashboard</h1>
         <p className="text-muted-foreground">Manage your profile, job applications, and career path.</p>
+      </div>
+      <div className="mb-8">
+        <ProfileCompleteness />
       </div>
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
