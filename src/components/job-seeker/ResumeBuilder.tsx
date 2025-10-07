@@ -14,12 +14,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Sparkles, Trash2 } from 'lucide-react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
+import { summarizeResume } from '@/ai/flows/summarize-resume-flow';
 
 const workExperienceSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -48,6 +49,7 @@ export function ResumeBuilder() {
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const jobSeekerRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -87,6 +89,39 @@ export function ResumeBuilder() {
     }
   }, [jobSeekerData, form]);
 
+  async function handleGenerateSummary() {
+    const { workExperience, education } = form.getValues();
+    if (!workExperience?.length && !education?.length) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot generate summary',
+        description: 'Please add at least one work experience or education entry.',
+      });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const result = await summarizeResume({
+        workExperience: JSON.stringify(workExperience),
+        education: JSON.stringify(education),
+      });
+      form.setValue('summary', result.summary);
+      toast({
+        title: 'Summary Generated!',
+        description: 'AI has created a professional summary for you.',
+      });
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to generate summary. Please try again.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   async function onSubmit(values: ResumeFormData) {
     if (!jobSeekerRef) return;
     setIsSaving(true);
@@ -120,9 +155,15 @@ export function ResumeBuilder() {
           name="summary"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg font-semibold">Professional Summary</FormLabel>
+              <div className="flex justify-between items-center mb-2">
+                <FormLabel className="text-lg font-semibold">Professional Summary</FormLabel>
+                <Button type="button" variant="outline" size="sm" onClick={handleGenerateSummary} disabled={isGenerating}>
+                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Generate with AI
+                </Button>
+              </div>
               <FormControl>
-                <Textarea placeholder="Write a brief summary about your professional background..." {...field} rows={4}/>
+                <Textarea placeholder="Write a brief summary about your professional background or generate one with AI." {...field} rows={4}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -191,7 +232,7 @@ export function ResumeBuilder() {
         />
 
         <div className="flex justify-end">
-          <Button type="submit" className="gradient-saffron" disabled={isSaving}>
+          <Button type="submit" className="gradient-saffron" disabled={isSaving || isGenerating}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Resume
           </Button>
