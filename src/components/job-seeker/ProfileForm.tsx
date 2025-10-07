@@ -126,23 +126,23 @@ export function ProfileForm() {
             control={form.control}
             name="experienceLevel"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Experience Level</FormLabel>
-                 <FormControl>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select your experience level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="fresher">Fresher</SelectItem>
-                            <SelectItem value="experienced">Experienced</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                <FormItem>
+                    <FormLabel>Experience Level</FormLabel>
+                    <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select your experience level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="fresher">Fresher</SelectItem>
+                                <SelectItem value="experienced">Experienced</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
             )}
-          />
+            />
         </div>
 
         {experienceLevel === 'experienced' && (
