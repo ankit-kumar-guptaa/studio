@@ -126,20 +126,16 @@ export function ProfileForm() {
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     className="flex items-center space-x-4"
                   >
                     <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="fresher" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Fresher</FormLabel>
+                      <RadioGroupItem value="fresher" id="fresher" />
+                      <FormLabel className="font-normal" htmlFor="fresher">Fresher</FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="experienced" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Experienced</FormLabel>
+                      <RadioGroupItem value="experienced" id="experienced" />
+                      <FormLabel className="font-normal" htmlFor="experienced">Experienced</FormLabel>
                     </FormItem>
                   </RadioGroup>
                 </FormControl>
