@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkles } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -22,6 +22,13 @@ import { addDoc, collection, serverTimestamp, doc, setDoc } from 'firebase/fires
 import type { Employer } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { generateJobDescription } from '@/ai/flows/generate-job-description-flow';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { indianStatesAndCities } from '@/lib/locations';
+
+const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
+    value: location,
+    label: location,
+}));
 
 const jobPostSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -158,7 +165,14 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
             <FormItem>
               <FormLabel>Location</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Bangalore, India" {...field} />
+                 <Combobox
+                    options={locationOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select location..."
+                    searchPlaceholder="Search location..."
+                    emptyPlaceholder="Location not found."
+                />
               </FormControl>
                 <FormMessage />
             </FormItem>
@@ -254,5 +268,3 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
     </Form>
   );
 }
-
-    

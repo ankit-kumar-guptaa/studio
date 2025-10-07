@@ -1,27 +1,24 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState }from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
-import { Label } from '../ui/label';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { indianStatesAndCities } from '@/lib/locations';
+
+const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
+    value: location,
+    label: location,
+}));
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -49,7 +46,7 @@ export function ProfileForm() {
 
   const { data: jobSeekerData, isLoading } = useDoc<JobSeeker>(jobSeekerRef);
 
-  const form = useForm<ProfileFormData>({
+  const { register, handleSubmit, control, watch, reset, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       firstName: '',
@@ -64,13 +61,13 @@ export function ProfileForm() {
     },
   });
   
-  const experienceLevel = form.watch('experienceLevel');
+  const experienceLevel = watch('experienceLevel');
 
   useEffect(() => {
     if (jobSeekerData) {
-      form.reset(jobSeekerData);
+      reset(jobSeekerData);
     }
-  }, [jobSeekerData, form]);
+  }, [jobSeekerData, reset]);
 
   async function onSubmit(values: ProfileFormData) {
     if (!jobSeekerRef) return;
@@ -97,151 +94,94 @@ export function ProfileForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input {...field} readOnly className="bg-muted" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-            <FormField
-              control={form.control}
-              name="experienceLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Experience Level</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your experience level" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="fresher">Fresher</SelectItem>
-                      <SelectItem value="experienced">Experienced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input id="firstName" {...register('firstName')} />
+            {errors.firstName && <p className="text-sm font-medium text-destructive">{errors.firstName.message}</p>}
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input id="lastName" {...register('lastName')} />
+            {errors.lastName && <p className="text-sm font-medium text-destructive">{errors.lastName.message}</p>}
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" {...register('email')} readOnly className="bg-muted" />
+            {errors.email && <p className="text-sm font-medium text-destructive">{errors.email.message}</p>}
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" {...register('phone')} />
+            {errors.phone && <p className="text-sm font-medium text-destructive">{errors.phone.message}</p>}
+        </div>
+        <div className="space-y-2">
+           <Label htmlFor="location">Location</Label>
+           <Controller
+                name="location"
+                control={control}
+                render={({ field }) => (
+                    <Combobox
+                        options={locationOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select location..."
+                        searchPlaceholder="Search location..."
+                        emptyPlaceholder="Location not found."
+                    />
+                )}
             />
-
-          {experienceLevel === 'experienced' && (
-            <>
-              <FormField
-                control={form.control}
-                name="currentCompany"
+            {errors.location && <p className="text-sm font-medium text-destructive">{errors.location.message}</p>}
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="experienceLevel">Experience Level</Label>
+             <Controller
+                name="experienceLevel"
+                control={control}
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Company</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your current company" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    <select
+                        id="experienceLevel"
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                    >
+                        <option value="" disabled>Select your experience level</option>
+                        <option value="fresher">Fresher</option>
+                        <option value="experienced">Experienced</option>
+                    </select>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="currentSalary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Salary (LPA)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., 10 LPA" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </>
-          )}
+            />
+            {errors.experienceLevel && <p className="text-sm font-medium text-destructive">{errors.experienceLevel.message}</p>}
+        </div>
 
-           <div className="md:col-span-2">
-            <FormField
-                control={form.control}
-                name="resumeUrl"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Resume URL</FormLabel>
-                    <FormControl>
-                    <Input placeholder="https://example.com/my-resume.pdf" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )} />
+        {experienceLevel === 'experienced' && (
+        <>
+            <div className="space-y-2">
+                <Label htmlFor="currentCompany">Current Company</Label>
+                <Input id="currentCompany" {...register('currentCompany')} placeholder="Your current company" />
+                {errors.currentCompany && <p className="text-sm font-medium text-destructive">{errors.currentCompany.message}</p>}
             </div>
-        </div>
+            <div className="space-y-2">
+                <Label htmlFor="currentSalary">Current Salary (LPA)</Label>
+                <Input id="currentSalary" {...register('currentSalary')} placeholder="e.g., 10 LPA" />
+                {errors.currentSalary && <p className="text-sm font-medium text-destructive">{errors.currentSalary.message}</p>}
+            </div>
+        </>
+        )}
 
-        <div className="flex justify-end">
-          <Button type="submit" className="gradient-saffron" disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
-          </Button>
+        <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="resumeUrl">Resume URL</Label>
+            <Input id="resumeUrl" {...register('resumeUrl')} placeholder="https://example.com/my-resume.pdf" />
+            {errors.resumeUrl && <p className="text-sm font-medium text-destructive">{errors.resumeUrl.message}</p>}
         </div>
-      </form>
-    </Form>
+      </div>
+
+      <div className="flex justify-end">
+        <Button type="submit" className="gradient-saffron" disabled={isSaving}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
+      </div>
+    </form>
   );
 }
