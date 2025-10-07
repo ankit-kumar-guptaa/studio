@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, BellPlus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { JobCard } from "../shared/JobCard";
 import { Card } from "../ui/card";
@@ -10,10 +10,11 @@ import { Combobox, ComboboxOption } from "../ui/combobox";
 import { indianStatesAndCities } from "@/lib/locations";
 import { useState, useEffect } from "react";
 import { useFirebase } from "@/firebase";
-import type { JobPost } from "@/lib/types";
-import { collectionGroup, getDocs, query } from "firebase/firestore";
+import type { JobSeeker, JobPost } from "@/lib/types";
+import { collectionGroup, getDocs, query, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location.toLowerCase(),
@@ -21,11 +22,14 @@ const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => 
 }));
 
 export function JobSearch() {
-  const { firestore } = useFirebase();
+  const { firestore, user, isUserLoading } = useFirebase();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
+
   const [allJobs, setAllJobs] = useState<(JobPost & { employerId: string })[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<(JobPost & { employerId: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingAlert, setIsCreatingAlert] = useState(false);
 
   const [keywords, setKeywords] = useState(searchParams.get('q') || "");
   const [location, setLocation] = useState(searchParams.get('loc') || "");
@@ -100,11 +104,51 @@ export function JobSearch() {
     e.preventDefault();
     handleSearch(allJobs);
   }
+
+  const handleCreateAlert = async () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Please log in",
+        description: "You need to be logged in to create a job alert.",
+      });
+      return;
+    }
+
+    if (!keywords && !location) {
+      toast({
+        variant: "destructive",
+        title: "Set Filters First",
+        description: "Please enter keywords or select a location to create an alert.",
+      });
+      return;
+    }
+
+    setIsCreatingAlert(true);
+    const userDocRef = doc(firestore!, 'jobSeekers', user.uid);
+    try {
+      await updateDoc(userDocRef, {
+        jobAlerts: arrayUnion({ keywords, location }),
+      });
+      toast({
+        title: "Job Alert Created!",
+        description: "We'll notify you when new jobs match your criteria.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Could not create job alert.",
+      });
+    } finally {
+      setIsCreatingAlert(false);
+    }
+  };
   
   return (
     <div className="space-y-8">
       <Card className="p-4 md:p-6 sticky top-20 z-40 bg-background/80 backdrop-blur-sm">
-        <form onSubmit={onSearchSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <form onSubmit={onSearchSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <Input 
             placeholder="Keywords..." 
             className="lg:col-span-2"
@@ -133,9 +177,13 @@ export function JobSearch() {
               <SelectItem value="Finance">Finance</SelectItem>
             </SelectContent>
           </Select>
-          <Button type="submit" className="w-full gradient-saffron">
+          <Button type="submit" className="w-full gradient-saffron lg:col-span-1">
             <Search className="mr-2 h-4 w-4" />
             Search
+          </Button>
+          <Button type="button" onClick={handleCreateAlert} variant="outline" className="w-full lg:col-span-1" disabled={isCreatingAlert || isUserLoading}>
+            {isCreatingAlert ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BellPlus className="mr-2 h-4 w-4" />}
+            Create Alert
           </Button>
         </form>
       </Card>

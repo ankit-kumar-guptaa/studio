@@ -81,6 +81,10 @@ export interface JobSeeker {
   location?: string;
   resumeUrl?: string;
   categoryPreferences?: string[];
+  jobAlerts?: {
+    keywords: string;
+    location: string;
+  }[];
   summary?: string;
   skills?: { value: string }[];
   workExperience?: {
@@ -113,5 +117,3 @@ export interface CompanyReview {
     companyLogo?: string;
     jobSeekerName: string;
 }
-
-    

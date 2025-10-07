@@ -43,6 +43,17 @@
             "type": "string"
           }
         },
+        "jobAlerts": {
+          "type": "array",
+          "description": "Saved job alert criteria for the job seeker.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "keywords": { "type": "string" },
+              "location": { "type": "string" }
+            }
+          }
+        },
         "summary": {
           "type": "string",
           "description": "Professional summary of the job seeker."
@@ -380,5 +391,3 @@
     }
   }
 }
-
-    
