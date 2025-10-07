@@ -128,17 +128,17 @@ export function ProfileForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Experience Level</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
+                <FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your experience level" />
                     </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="fresher">Fresher</SelectItem>
-                    <SelectItem value="experienced">Experienced</SelectItem>
-                  </SelectContent>
-                </Select>
+                    <SelectContent>
+                      <SelectItem value="fresher">Fresher</SelectItem>
+                      <SelectItem value="experienced">Experienced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
