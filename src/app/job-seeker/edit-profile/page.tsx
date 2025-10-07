@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { ProfileForm } from "@/components/job-seeker/ProfileForm";
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +36,9 @@ function EditProfilePageContent() {
                     <CardDescription>Keep your information up-to-date to attract the best opportunities.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ProfileForm />
+                    <div className="text-center py-16 text-muted-foreground">
+                        <p>The profile form is temporarily unavailable. We are working on fixing it.</p>
+                    </div>
                 </CardContent>
             </Card>
         </div>
