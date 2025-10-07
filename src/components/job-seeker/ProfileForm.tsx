@@ -20,9 +20,9 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -67,6 +67,8 @@ export function ProfileForm() {
     },
   });
 
+  const experienceLevel = form.watch('experienceLevel');
+
   useEffect(() => {
     if (jobSeekerData) {
       form.reset({
@@ -80,13 +82,14 @@ export function ProfileForm() {
     if (!jobSeekerRef) return;
     setIsSaving(true);
     try {
+      const dataToUpdate: Partial<ProfileFormData> = { ...values };
       // Make sure to remove experienceYears if level is fresher
       if (values.experienceLevel === 'fresher') {
-        values.experienceYears = 0;
-        values.currentCompany = '';
-        values.currentSalary = '';
+        dataToUpdate.experienceYears = 0;
+        dataToUpdate.currentCompany = '';
+        dataToUpdate.currentSalary = '';
       }
-      await updateDoc(jobSeekerRef, values);
+      await updateDoc(jobSeekerRef, dataToUpdate);
       toast({
         title: 'Profile Updated',
         description: 'Your information has been saved successfully.',
@@ -106,8 +109,6 @@ export function ProfileForm() {
     return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  const experienceLevel = form.watch('experienceLevel');
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -117,38 +118,30 @@ export function ProfileForm() {
           <FormField control={form.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Email</FormLabel> <FormControl> <Input type="email" placeholder="your.email@example.com" {...field} readOnly className="bg-muted" /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Phone Number</FormLabel> <FormControl> <Input type="tel" placeholder="+91 98765 43210" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-           <FormField
-              control={form.control}
-              name="experienceLevel"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Experience Level</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="fresher" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Fresher</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="experienced" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Experienced
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          
+          {/* New Button-based selector for Experience Level */}
+          <div className="space-y-2">
+            <FormLabel>Experience Level</FormLabel>
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant={experienceLevel === 'fresher' ? 'default' : 'outline'}
+                onClick={() => form.setValue('experienceLevel', 'fresher', { shouldValidate: true })}
+                className={cn(experienceLevel === 'fresher' && 'gradient-saffron')}
+              >
+                Fresher
+              </Button>
+              <Button
+                type="button"
+                variant={experienceLevel === 'experienced' ? 'default' : 'outline'}
+                onClick={() => form.setValue('experienceLevel', 'experienced', { shouldValidate: true })}
+                className={cn(experienceLevel === 'experienced' && 'gradient-saffron')}
+              >
+                Experienced
+              </Button>
+            </div>
+            <FormMessage>{form.formState.errors.experienceLevel?.message}</FormMessage>
+          </div>
         </div>
 
         {experienceLevel === 'experienced' && (
