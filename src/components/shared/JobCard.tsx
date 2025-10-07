@@ -5,7 +5,7 @@ import Image from 'next/image';
 import type { JobPost } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle, Bookmark, Star } from 'lucide-react';
+import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle, Bookmark, Star, Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -23,9 +23,10 @@ interface SerializableJobPost extends Omit<JobPost, 'postDate'> {
 
 interface JobCardProps {
   job: SerializableJobPost;
+  employerId?: string;
 }
 
-export function JobCard({ job }: JobCardProps) {
+export function JobCard({ job, employerId: propEmployerId }: JobCardProps) {
   const { user, firestore, isUserLoading } = useFirebase();
   const { toast } = useToast();
   const [isApplying, setIsApplying] = useState(false);
@@ -40,7 +41,7 @@ export function JobCard({ job }: JobCardProps) {
     const checkStatus = async () => {
       if (!user || !firestore || !job.id) return;
 
-      const effectiveEmployerId = job.employerId;
+      const effectiveEmployerId = propEmployerId || job.employerId;
       if (!effectiveEmployerId) return;
 
       // Check application status in jobSeeker's subcollection for efficiency
@@ -82,7 +83,7 @@ export function JobCard({ job }: JobCardProps) {
       return;
     }
     if (await checkIsEmployer()) return;
-    const effectiveEmployerId = job.employerId;
+    const effectiveEmployerId = propEmployerId || job.employerId;
     if (!firestore || !effectiveEmployerId) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not process application. Employer information is missing.' });
       return;
@@ -103,8 +104,8 @@ export function JobCard({ job }: JobCardProps) {
     addDoc(applicationsRef, applicationData)
       .then((docRef) => {
         // Also add a record to the jobseeker's own application collection for easy querying
-        const seekerApplicationData = { ...applicationData, id: docRef.id };
-        const seekerApplicationRef = doc(firestore, `jobSeekers/${user.uid}/applications/${docRef.id}`);
+        const seekerApplicationData = { ...applicationData, id: job.id };
+        const seekerApplicationRef = doc(firestore, `jobSeekers/${user.uid}/applications/${job.id}`);
         setDoc(seekerApplicationRef, seekerApplicationData)
           .then(() => {
             toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
@@ -158,7 +159,7 @@ export function JobCard({ job }: JobCardProps) {
         .finally(() => setIsSaving(false));
     } else {
       // Save the job
-      const effectiveEmployerId = job.employerId;
+      const effectiveEmployerId = propEmployerId || job.employerId;
       const jobDataToSave = { ...job, postDate: Timestamp.fromDate(new Date(job.postDate)), employerId: effectiveEmployerId, savedDate: serverTimestamp() };
       
       setDoc(savedJobRef, jobDataToSave)
