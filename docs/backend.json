@@ -170,6 +170,10 @@
           "type": "string",
           "description": "Salary for the job."
         },
+        "experience": {
+          "type": "string",
+          "description": "Required experience for the job."
+        },
         "description": {
           "type": "string",
           "description": "Description of the job."
@@ -402,3 +406,5 @@
     }
   }
 }
+
+    

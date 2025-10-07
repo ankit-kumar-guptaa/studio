@@ -4,7 +4,7 @@ import Image from 'next/image';
 import type { JobPost } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle, Bookmark } from 'lucide-react';
+import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle, Bookmark, Star } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -201,6 +201,10 @@ export function JobCard({ job, employerId }: JobCardProps) {
           <IndianRupee className="h-4 w-4 text-primary" />
           <span>{job.salary}</span>
         </div>
+         <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-primary" />
+          <span>{job.experience}</span>
+        </div>
         <div className="flex items-center gap-2">
           <Briefcase className="h-4 w-4 text-primary" />
           <span>{job.category}</span>
@@ -231,3 +235,5 @@ export function JobCard({ job, employerId }: JobCardProps) {
     </Card>
   );
 }
+
+    

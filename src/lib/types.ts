@@ -19,6 +19,7 @@ export interface JobPost {
   location: string;
   category: string;
   salary: string;
+  experience: string;
   description: string;
   requirements: string;
   postDate: Timestamp | Date | string; // Allow serializable string
@@ -118,3 +119,5 @@ export interface CompanyReview {
     companyLogo?: string;
     jobSeekerName: string;
 }
+
+    
