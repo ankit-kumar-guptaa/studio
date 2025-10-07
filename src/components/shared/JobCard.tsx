@@ -92,6 +92,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
       status: 'Applied',
       jobTitle: job.title,
       jobSeekerName: user.displayName,
+      companyName: job.companyName,
     };
     const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
 

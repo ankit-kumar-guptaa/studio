@@ -3,13 +3,14 @@
 import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { User, Search, Bookmark, Sparkles, FileText, Loader2 } from 'lucide-react';
+import { User, Search, Bookmark, Sparkles, FileText, Loader2, List } from 'lucide-react';
 import { RecommendedJobs } from "./RecommendedJobs";
 import { ProfileForm } from "./ProfileForm";
 import { JobSearch } from "./JobSearch";
 import { ResumeBuilder } from "./ResumeBuilder";
 import { SavedJobs } from "./SavedJobs";
 import { useSearchParams } from "next/navigation";
+import { MyApplications } from './MyApplications';
 
 
 function JobSeekerDashboardContent() {
@@ -24,9 +25,10 @@ function JobSeekerDashboardContent() {
         <p className="text-muted-foreground">Manage your profile, job applications, and career path.</p>
       </div>
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
           <TabsTrigger value="profile" className="py-2"><User className="mr-2 h-4 w-4"/>Profile</TabsTrigger>
           <TabsTrigger value="search" className="py-2"><Search className="mr-2 h-4 w-4"/>Search Jobs</TabsTrigger>
+          <TabsTrigger value="applications" className="py-2"><List className="mr-2 h-4 w-4" />My Applications</TabsTrigger>
           <TabsTrigger value="resume" className="py-2"><FileText className="mr-2 h-4 w-4"/>Resume Builder</TabsTrigger>
           <TabsTrigger value="saved" className="py-2"><Bookmark className="mr-2 h-4 w-4"/>Saved Jobs</TabsTrigger>
           <TabsTrigger value="recommendations" className="py-2"><Sparkles className="mr-2 h-4 w-4"/>AI Recommendations</TabsTrigger>
@@ -50,6 +52,17 @@ function JobSeekerDashboardContent() {
             </CardHeader>
             <CardContent>
               <JobSearch />
+            </CardContent>
+          </Card>
+        </TabsContent>
+         <TabsContent value="applications">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Applications</CardTitle>
+              <CardDescription>Track the status of your job applications.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MyApplications />
             </CardContent>
           </Card>
         </TabsContent>

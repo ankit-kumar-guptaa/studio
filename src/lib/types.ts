@@ -32,6 +32,7 @@ export interface JobApplication {
     status: 'Applied' | 'Reviewed' | 'Interviewing' | 'Offered' | 'Rejected';
     jobTitle: string;
     jobSeekerName: string;
+    companyName?: string;
 }
 
 export interface Company {
