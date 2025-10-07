@@ -22,8 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -60,7 +59,7 @@ export function ProfileForm() {
       email: '',
       phone: '',
       location: '',
-      experienceLevel: undefined,
+      experienceLevel: 'fresher',
       experienceYears: 0,
       currentCompany: '',
       currentSalary: '',
@@ -74,7 +73,7 @@ export function ProfileForm() {
     if (jobSeekerData) {
       form.reset({
         ...jobSeekerData,
-        experienceLevel: jobSeekerData.experienceLevel || undefined,
+        experienceLevel: jobSeekerData.experienceLevel || 'fresher',
       });
     }
   }, [jobSeekerData, form]);
@@ -84,7 +83,6 @@ export function ProfileForm() {
     setIsSaving(true);
     try {
       const dataToUpdate: Partial<ProfileFormData> = { ...values };
-      // Make sure to remove experienceYears if level is fresher
       if (values.experienceLevel === 'fresher') {
         dataToUpdate.experienceYears = 0;
         dataToUpdate.currentCompany = '';
@@ -121,35 +119,43 @@ export function ProfileForm() {
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
           
            <FormField
-            control={form.control}
-            name="experienceLevel"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel>Experience Level</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="flex flex-row space-x-4"
-                  >
-                    <FormItem className="flex items-center space-x-2">
-                      <FormControl>
-                        <RadioGroupItem value="fresher" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Fresher</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-2">
-                      <FormControl>
-                        <RadioGroupItem value="experienced" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Experienced</FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              control={form.control}
+              name="experienceLevel"
+              render={({ field }) => (
+                <FormItem className="flex flex-col rounded-lg border p-4">
+                  <FormLabel className="mb-2">Experience Level</FormLabel>
+                  <div className="flex items-center space-x-4">
+                    <FormLabel
+                      className={
+                        field.value === 'fresher'
+                          ? 'font-bold text-primary'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      Fresher
+                    </FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value === 'experienced'}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked ? 'experienced' : 'fresher');
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel
+                      className={
+                        field.value === 'experienced'
+                          ? 'font-bold text-primary'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      Experienced
+                    </FormLabel>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         </div>
 
         {experienceLevel === 'experienced' && (
