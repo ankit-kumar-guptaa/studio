@@ -29,11 +29,12 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  User,
 } from 'firebase/auth';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase/provider';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -56,18 +57,38 @@ export default function LoginPage() {
     },
   });
 
-  const handleSuccessfulLogin = async (userId: string) => {
+  const handleSuccessfulLogin = async (user: User) => {
     if (!firestore) return;
 
     // Check if the user is an employer
-    const employerRef = doc(firestore, 'employers', userId);
+    const employerRef = doc(firestore, 'employers', user.uid);
     const employerSnap = await getDoc(employerRef);
 
     if (employerSnap.exists()) {
       router.push('/employer');
-    } else {
-      router.push('/job-seeker');
+      return;
     }
+    
+    // Check if the user is a job seeker
+    const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
+    const jobSeekerSnap = await getDoc(jobSeekerRef);
+
+    if (jobSeekerSnap.exists()) {
+      router.push('/job-seeker');
+      return;
+    }
+
+    // This case handles Google sign-in for a new user
+    // Let's assume a new user is a job seeker by default.
+    // In a real-world scenario, you might have a role selection step.
+    const [firstName, lastName] = user.displayName?.split(' ') || ['New', 'User'];
+    await setDoc(jobSeekerRef, {
+      id: user.uid,
+      email: user.email,
+      firstName: firstName,
+      lastName: lastName,
+    });
+    router.push('/job-seeker');
   };
 
 
@@ -93,7 +114,7 @@ export default function LoginPage() {
         title: 'Login Successful',
         description: "Welcome back!",
       });
-      await handleSuccessfulLogin(userCredential.user.uid);
+      await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -117,11 +138,7 @@ export default function LoginPage() {
         title: 'Login Successful',
         description: 'Welcome!',
       });
-      // For Google sign-in, we might need a different logic to determine user type
-      // For now, let's assume they might be a job seeker by default if no record exists
-      // or we can prompt them to choose a role on first login.
-      // Let's redirect to a generic dashboard or home for now.
-      router.push('/');
+      await handleSuccessfulLogin(result.user);
     } catch (error: any) {
       toast({
         variant: 'destructive',

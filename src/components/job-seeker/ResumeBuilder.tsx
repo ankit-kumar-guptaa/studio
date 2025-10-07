@@ -22,6 +22,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { summarizeResume } from '@/ai/flows/summarize-resume-flow';
 import type { JobSeeker } from '@/lib/types';
+import { Badge } from '../ui/badge';
+import { X } from 'lucide-react';
 
 const workExperienceSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -51,6 +53,7 @@ export function ResumeBuilder() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [skillInput, setSkillInput] = useState('');
 
   const jobSeekerRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -77,6 +80,11 @@ export function ResumeBuilder() {
   const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({
     control: form.control,
     name: "education",
+  });
+
+  const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({
+    control: form.control,
+    name: "skills",
   });
 
   useEffect(() => {
@@ -122,6 +130,14 @@ export function ResumeBuilder() {
       setIsGenerating(false);
     }
   }
+
+  const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && skillInput.trim() !== '') {
+      e.preventDefault();
+      appendSkill({ value: skillInput.trim() });
+      setSkillInput('');
+    }
+  };
 
   async function onSubmit(values: ResumeFormData) {
     if (!jobSeekerRef) return;
@@ -173,6 +189,29 @@ export function ResumeBuilder() {
 
         <Separator />
 
+         {/* Skills */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Skills</h3>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {skillFields.map((field, index) => (
+              <Badge key={field.id} variant="secondary" className="flex items-center gap-1">
+                {field.value}
+                <button type="button" onClick={() => removeSkill(index)}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+          <Input 
+            placeholder="Add a skill and press Enter"
+            value={skillInput}
+            onChange={(e) => setSkillInput(e.target.value)}
+            onKeyDown={handleAddSkill}
+          />
+        </div>
+
+        <Separator />
+
         {/* Work Experience */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Work Experience</h3>
@@ -214,23 +253,6 @@ export function ResumeBuilder() {
                  <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', institution: '', graduationYear: ''})}><PlusCircle className="mr-2 h-4 w-4" /> Add Education</Button>
             </div>
         </div>
-        
-        <Separator />
-
-        {/* Skills - for simplicity, a textarea for comma-separated skills */}
-        <FormField
-          control={form.control}
-          name="summary" // This should be skills, but let's keep it simple for now and add it to summary
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-lg font-semibold">Skills</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter your skills, separated by commas (e.g., React, Node.js, Figma)" {...field} rows={3}/>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="flex justify-end">
           <Button type="submit" className="gradient-saffron" disabled={isSaving || isGenerating}>
