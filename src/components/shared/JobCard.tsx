@@ -40,10 +40,14 @@ export function JobCard({ job, employerId }: JobCardProps) {
 
   useEffect(() => {
     const checkStatus = async () => {
-      if (!user || !firestore || !employerId) return;
+      if (!user || !firestore || !job.id) return;
+
+      // Determine the employerId if it's not directly passed
+      const effectiveEmployerId = employerId || (job as any).employerId;
+      if (!effectiveEmployerId) return;
 
       // Check application status
-      const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
+      const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
       const appQuery = query(applicationsRef, where("jobSeekerId", "==", user.uid));
       const appSnapshot = await getDocs(appQuery);
       setHasApplied(!appSnapshot.empty);
@@ -57,6 +61,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
     if(user && !isUserLoading) {
       checkStatus();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, firestore, job.id, employerId, isUserLoading]);
   
   const checkIsEmployer = async () => {
@@ -80,7 +85,8 @@ export function JobCard({ job, employerId }: JobCardProps) {
       return;
     }
     if (await checkIsEmployer()) return;
-    if (!firestore || !employerId) {
+    const effectiveEmployerId = employerId || (job as any).employerId;
+    if (!firestore || !effectiveEmployerId) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not process application. Employer information is missing.' });
       return;
     }
@@ -94,7 +100,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
       jobSeekerName: user.displayName,
       companyName: job.companyName,
     };
-    const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
+    const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
 
     addDoc(applicationsRef, applicationData)
       .then(() => {
@@ -133,8 +139,9 @@ export function JobCard({ job, employerId }: JobCardProps) {
         .finally(() => setIsSaving(false));
     } else {
       // Save the job
+      const effectiveEmployerId = employerId || (job as any).employerId;
       // We store the full job object for easy retrieval, along with employerId
-      const jobDataToSave = { ...job, postDate: Timestamp.fromDate(new Date(job.postDate)), employerId, savedDate: serverTimestamp() };
+      const jobDataToSave = { ...job, postDate: Timestamp.fromDate(new Date(job.postDate)), employerId: effectiveEmployerId, savedDate: serverTimestamp() };
       setDoc(savedJobRef, jobDataToSave)
         .then(() => {
           toast({ title: 'Job Saved!', description: `${job.title} has been added to your saved jobs.` });

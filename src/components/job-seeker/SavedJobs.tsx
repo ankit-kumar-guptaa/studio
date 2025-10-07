@@ -3,15 +3,11 @@
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import { collection } from 'firebase/firestore';
-import type { JobPost } from '@/lib/types';
 import { JobCard } from '../shared/JobCard';
-
-interface SavedJob extends JobPost {
-    employerId: string;
-}
+import type { SavedJob } from '@/lib/types';
 
 export function SavedJobs() {
-    const { user, firestore } = useFirebase();
+    const { user, firestore, isUserLoading } = useFirebase();
 
     const savedJobsCollectionRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -20,17 +16,26 @@ export function SavedJobs() {
 
     const { data: savedJobs, isLoading } = useCollection<SavedJob>(savedJobsCollectionRef);
 
-    if (isLoading) {
+    if (isLoading || isUserLoading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
+    
+    // Sort by saved date, most recent first
+    const sortedJobs = savedJobs?.sort((a, b) => b.savedDate.toMillis() - a.savedDate.toMillis());
 
     return (
         <div>
-            {savedJobs && savedJobs.length > 0 ? (
+            {sortedJobs && sortedJobs.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {savedJobs.map((job) => (
-                        <JobCard key={job.id} job={job} employerId={job.employerId} />
-                    ))}
+                    {sortedJobs.map((job) => {
+                         const plainJob = {
+                            ...job,
+                            postDate: job.postDate instanceof Date ? job.postDate.toISOString() : job.postDate.toDate().toISOString(),
+                         };
+                        return (
+                            <JobCard key={job.id} job={plainJob} employerId={job.employerId} />
+                        )
+                    })}
                 </div>
             ) : (
                 <div className="text-center py-16 text-muted-foreground">
