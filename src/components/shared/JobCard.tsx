@@ -11,6 +11,8 @@ import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface JobCardProps {
   job: Job | JobPost;
@@ -58,45 +60,49 @@ export function JobCard({ job, employerId }: JobCardProps) {
       return;
     }
 
-    setIsApplying(true);
-    try {
-      const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
-      
-      // Check if user is an employer
-      const employerDocRef = (await import('firebase/firestore')).doc(firestore, 'employers', user.uid);
-      const employerDoc = await (await import('firebase/firestore')).getDoc(employerDocRef);
-      if (employerDoc.exists()) {
-        toast({
-            variant: "destructive",
-            title: "Action Not Allowed",
-            description: "Employers cannot apply for jobs.",
-        });
-        setIsApplying(false);
-        return;
-      }
-      
-      await addDoc(applicationsRef, {
-        jobSeekerId: user.uid,
-        applicationDate: serverTimestamp(),
-        status: 'Applied',
-        jobTitle: job.title,
-        jobSeekerName: user.displayName,
-      });
-
+    // Check if user is an employer
+    const employerDocRef = (await import('firebase/firestore')).doc(firestore, 'employers', user.uid);
+    const employerDoc = await (await import('firebase/firestore')).getDoc(employerDocRef);
+    if (employerDoc.exists()) {
       toast({
-        title: 'Applied Successfully!',
-        description: `Your application for ${job.title} has been submitted.`,
+          variant: "destructive",
+          title: "Action Not Allowed",
+          description: "Employers cannot apply for jobs.",
       });
-      setHasApplied(true);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Application Failed',
-        description: error.message || 'Could not submit your application.',
-      });
-    } finally {
-      setIsApplying(false);
+      return;
     }
+
+    setIsApplying(true);
+
+    const applicationData = {
+      jobSeekerId: user.uid,
+      applicationDate: serverTimestamp(),
+      status: 'Applied',
+      jobTitle: job.title,
+      jobSeekerName: user.displayName,
+    };
+    
+    const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
+
+    addDoc(applicationsRef, applicationData)
+      .then(() => {
+        toast({
+          title: 'Applied Successfully!',
+          description: `Your application for ${job.title} has been submitted.`,
+        });
+        setHasApplied(true);
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: applicationsRef.path,
+          operation: 'create',
+          requestResourceData: applicationData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsApplying(false);
+      });
   };
 
 
