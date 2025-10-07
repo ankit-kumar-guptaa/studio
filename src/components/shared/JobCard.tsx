@@ -93,16 +93,15 @@ export function JobCard({ job, employerId }: JobCardProps) {
     const applicationData = {
       jobSeekerId: user.uid,
       applicationDate: serverTimestamp(),
-      status: 'Applied',
+      status: 'Applied' as const,
       jobTitle: job.title,
       jobSeekerName: user.displayName,
-      companyName: job.companyName, // Bug fix: Ensure companyName is saved
+      companyName: job.companyName,
     };
     const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
 
     addDoc(applicationsRef, applicationData)
       .then((docRef) => {
-        // Also add to job seeker's own applications collection for easy querying
         const seekerApplicationRef = doc(firestore, `jobSeekers/${user.uid}/applications/${docRef.id}`);
         setDoc(seekerApplicationRef, applicationData)
           .then(() => {
@@ -110,17 +109,23 @@ export function JobCard({ job, employerId }: JobCardProps) {
             setHasApplied(true);
           })
           .catch((seekerError) => {
-            console.error("Error creating seeker application record:", seekerError);
-            // Even if this fails, the main application went through.
-            toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
-            setHasApplied(true);
+             // Even if this fails, the main application went through.
+             console.error("Error creating seeker application record:", seekerError);
+             toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
+             setHasApplied(true);
           });
       })
       .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({ path: applicationsRef.path, operation: 'create', requestResourceData: applicationData });
+        const permissionError = new FirestorePermissionError({ 
+            path: applicationsRef.path, 
+            operation: 'create', 
+            requestResourceData: applicationData 
+        });
         errorEmitter.emit('permission-error', permissionError);
       })
-      .finally(() => { setIsApplying(false); });
+      .finally(() => { 
+          setIsApplying(false); 
+      });
   };
 
   const handleSave = async () => {
@@ -226,5 +231,3 @@ export function JobCard({ job, employerId }: JobCardProps) {
     </Card>
   );
 }
-
-    
