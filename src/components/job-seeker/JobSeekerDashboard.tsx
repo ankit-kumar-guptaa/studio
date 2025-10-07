@@ -3,9 +3,8 @@
 import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { User, Search, Bookmark, Sparkles, FileText, Loader2, List, ExternalLink } from 'lucide-react';
+import { User, Search, Bookmark, Sparkles, FileText, Loader2, List, ExternalLink, Edit } from 'lucide-react';
 import { RecommendedJobs } from "./RecommendedJobs";
-import { ProfileForm } from "./ProfileForm";
 import { ResumeBuilder } from "./ResumeBuilder";
 import { SavedJobs } from "./SavedJobs";
 import { useSearchParams } from "next/navigation";
@@ -13,6 +12,7 @@ import { MyApplications } from './MyApplications';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ProfileCompleteness } from './ProfileCompleteness';
+import { ViewProfile } from './ViewProfile';
 
 
 function JobSeekerDashboardContent() {
@@ -39,12 +39,19 @@ function JobSeekerDashboardContent() {
         </TabsList>
         <TabsContent value="profile">
           <Card>
-            <CardHeader>
-              <CardTitle>My Profile</CardTitle>
-              <CardDescription>Keep your profile updated to attract the best opportunities.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>My Profile</CardTitle>
+                <CardDescription>This is how employers see your profile. Keep it updated!</CardDescription>
+              </div>
+              <Button asChild variant="outline">
+                <Link href="/job-seeker/edit-profile">
+                  <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent>
-              <ProfileForm />
+              <ViewProfile />
             </CardContent>
           </Card>
         </TabsContent>

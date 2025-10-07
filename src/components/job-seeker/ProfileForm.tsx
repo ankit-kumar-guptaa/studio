@@ -123,25 +123,25 @@ export function ProfileForm() {
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
            <FormField
-            control={form.control}
-            name="experienceLevel"
-            render={({ field }) => (
+              control={form.control}
+              name="experienceLevel"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Experience Level</FormLabel>
-                    <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select your experience level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="fresher">Fresher</SelectItem>
-                                <SelectItem value="experienced">Experienced</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>Experience Level</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your experience level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="fresher">Fresher</SelectItem>
+                        <SelectItem value="experienced">Experienced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  <FormMessage />
                 </FormItem>
-            )}
+              )}
             />
         </div>
 
