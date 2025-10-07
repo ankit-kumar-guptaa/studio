@@ -12,15 +12,17 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { indianStatesAndCities } from '@/lib/locations';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { indianStatesAndCities } from '@/lib/locations';
+
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location,
     label: location,
 }));
+
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -71,7 +73,10 @@ export function ProfileForm() {
 
   useEffect(() => {
     if (jobSeekerData) {
-      form.reset(jobSeekerData);
+      form.reset({
+        ...jobSeekerData,
+        experienceLevel: jobSeekerData.experienceLevel || undefined
+      });
     }
   }, [jobSeekerData, form]);
 
@@ -98,6 +103,14 @@ export function ProfileForm() {
   async function onSubmit(values: ProfileFormData) {
     if (!jobSeekerRef) return;
     setIsSaving(true);
+    
+    // Firestore does not support `undefined`.
+    // If experienceLevel is not selected, its value will be undefined.
+    // We should remove it from the object before sending it to Firestore.
+    if (values.experienceLevel === undefined) {
+      delete values.experienceLevel;
+    }
+
     try {
       await updateDoc(jobSeekerRef, values);
       toast({
@@ -156,14 +169,16 @@ export function ProfileForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
-                 <Combobox
-                    options={locationOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select location..."
-                    searchPlaceholder="Search location..."
-                    emptyPlaceholder="Location not found."
-                />
+                <FormControl>
+                    <Combobox
+                        options={locationOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select location..."
+                        searchPlaceholder="Search location..."
+                        emptyPlaceholder="Location not found."
+                    />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -178,6 +193,7 @@ export function ProfileForm() {
                 <FormControl>
                   <select
                     {...field}
+                    value={field.value || ""}
                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="" disabled>Select your experience level</option>
