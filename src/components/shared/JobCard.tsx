@@ -146,24 +146,31 @@ export function JobCard({ job, employerId }: JobCardProps) {
           toast({ title: 'Job Unsaved', description: `${job.title} has been removed from your saved jobs.` });
           setIsSaved(false);
         })
-        .catch((err) => {
-          console.error(err);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not unsave job.' });
+        .catch((serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: savedJobRef.path,
+            operation: 'delete',
+          });
+          errorEmitter.emit('permission-error', permissionError);
         })
         .finally(() => setIsSaving(false));
     } else {
       // Save the job
       const effectiveEmployerId = employerId || (job as any).employerId;
-      // We store the full job object for easy retrieval, along with employerId
       const jobDataToSave = { ...job, postDate: Timestamp.fromDate(new Date(job.postDate)), employerId: effectiveEmployerId, savedDate: serverTimestamp() };
+      
       setDoc(savedJobRef, jobDataToSave)
         .then(() => {
           toast({ title: 'Job Saved!', description: `${job.title} has been added to your saved jobs.` });
           setIsSaved(true);
         })
-        .catch((err) => {
-          console.error(err);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not save job.' });
+        .catch((serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: savedJobRef.path,
+            operation: 'create',
+            requestResourceData: jobDataToSave,
+          });
+          errorEmitter.emit('permission-error', permissionError);
         })
         .finally(() => setIsSaving(false));
     }
@@ -235,5 +242,3 @@ export function JobCard({ job, employerId }: JobCardProps) {
     </Card>
   );
 }
-
-    
