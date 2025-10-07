@@ -5,18 +5,19 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { JobPost } from '@/lib/types';
 import { adminDb } from '@/lib/firebase-admin';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
-
+// This function now correctly uses the Firebase Admin SDK methods
 async function getFeaturedJobs(): Promise<(JobPost & { id: string })[]> {
   if (!adminDb) {
     console.log("Firebase Admin is not initialized. Cannot fetch jobs.");
     return [];
   }
-  const jobsRef = collection(adminDb, 'jobPosts');
-  const q = query(jobsRef, orderBy('postDate', 'desc'), limit(6));
   
-  const querySnapshot = await getDocs(q);
+  // Use adminDb methods: .collection(), .orderBy(), .limit(), .get()
+  const jobsRef = adminDb.collection('jobPosts');
+  const q = jobsRef.orderBy('postDate', 'desc').limit(6);
+  
+  const querySnapshot = await q.get();
   const jobs: (JobPost & { id: string })[] = [];
   querySnapshot.forEach((doc) => {
     jobs.push({ id: doc.id, ...(doc.data() as JobPost) });
@@ -42,13 +43,12 @@ export async function FeaturedJobs() {
         {jobs && jobs.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => {
+              // The data from admin SDK is already serializable.
+              // We just need to handle the Timestamp object.
               const plainJob = {
                 ...job,
-                // Convert Timestamp/Date to a serializable string
-                postDate: job.postDate instanceof Date 
-                  ? job.postDate.toISOString() 
-                  // @ts-ignore
-                  : new Date(job.postDate.seconds * 1000).toISOString(),
+                // @ts-ignore
+                postDate: job.postDate.toDate().toISOString(),
               };
               return (
                  <JobCard key={job.id} job={plainJob} />
