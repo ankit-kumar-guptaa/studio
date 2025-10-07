@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -8,8 +10,25 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Phone, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ContactPage() {
+  const { toast } = useToast();
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real application, you would handle the form submission here,
+    // e.g., send the data to a server or an API endpoint.
+    toast({
+      title: 'Message Sent!',
+      description: 'Thank you for contacting us. We will get back to you shortly.',
+    });
+    
+    // Reset the form
+    const form = e.target as HTMLFormElement;
+    form.reset();
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -23,24 +42,24 @@ export default function ContactPage() {
             <Card>
               <CardContent className="p-8">
                 <h3 className="text-2xl font-bold">Send us a message</h3>
-                <form className="mt-6 space-y-4">
+                <form onSubmit={handleSendMessage} className="mt-6 space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
-                      <Input id="name" placeholder="Your Name" />
+                      <Input id="name" placeholder="Your Name" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" placeholder="Your Email" />
+                      <Input id="email" type="email" placeholder="Your Email" required />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
-                    <Input id="subject" placeholder="Subject" />
+                    <Input id="subject" placeholder="Subject" required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
-                    <Textarea id="message" placeholder="Your message..." rows={5} />
+                    <Textarea id="message" placeholder="Your message..." rows={5} required />
                   </div>
                   <Button type="submit" className="w-full gradient-saffron">Send Message</Button>
                 </form>
@@ -82,3 +101,5 @@ export default function ContactPage() {
     </div>
   );
 }
+
+    
