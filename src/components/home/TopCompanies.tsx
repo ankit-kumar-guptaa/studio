@@ -3,7 +3,7 @@ import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import type { Employer } from '@/lib/types';
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, getDocs, limit, query } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase-admin';
 
 async function getTopCompanies() {
