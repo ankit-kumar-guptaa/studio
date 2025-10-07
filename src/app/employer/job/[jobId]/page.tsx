@@ -13,6 +13,7 @@ import { collection } from 'firebase/firestore';
 import type { JobApplication } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default function JobApplicantsPage() {
   const { user, isUserLoading, firestore } = useFirebase();
@@ -75,7 +76,11 @@ export default function JobApplicantsPage() {
                             ) : applications && applications.length > 0 ? (
                                 applications.map(app => (
                                     <TableRow key={app.id}>
-                                        <TableCell className="font-medium">{app.jobSeekerName || 'N/A'}</TableCell>
+                                        <TableCell className="font-medium">
+                                          <Link href={`/employer/applicant/${app.jobSeekerId}`} className="hover:underline text-primary">
+                                            {app.jobSeekerName || 'N/A'}
+                                          </Link>
+                                        </TableCell>
                                         <TableCell>{app.applicationDate ? format(app.applicationDate.toDate(), 'PPP') : 'N/A'}</TableCell>
                                         <TableCell><Badge variant="secondary">{app.status}</Badge></TableCell>
                                         <TableCell>
