@@ -14,6 +14,7 @@ export interface Job {
 
 export interface JobPost {
   id: string;
+  employerId: string;
   title: string;
   location: string;
   category: string;

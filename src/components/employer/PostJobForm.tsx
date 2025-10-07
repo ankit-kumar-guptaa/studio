@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import type { Employer } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
@@ -71,16 +71,24 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
         return;
     };
 
-    const jobPostsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
-    
-    setIsPosting(true);
-    try {
-      await addDoc(jobPostsCollectionRef, {
+    const jobData = {
         ...values,
+        employerId: user.uid,
         postDate: serverTimestamp(),
         companyName: employerData?.companyName || user.displayName,
         companyLogoUrl: employerData?.companyLogoUrl || '',
-      });
+      };
+    
+    setIsPosting(true);
+    try {
+      // 1. Add to the employer's subcollection
+      const jobPostsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
+      const docRef = await addDoc(jobPostsCollectionRef, jobData);
+      
+      // 2. Add a copy to the top-level jobPosts collection for global querying
+      const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
+      await setDoc(globalJobPostRef, jobData);
+      
       toast({
         title: 'Job Posted!',
         description: 'Your job opening is now live.',
@@ -179,5 +187,3 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
     </Form>
   );
 }
-
-    

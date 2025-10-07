@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useFirebase, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
-import { collectionGroup, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import type { JobApplication, JobPost } from '@/lib/types';
 import {
   ResponsiveContainer,
@@ -37,40 +37,39 @@ export function AnalyticsDashboard() {
   const [topJobs, setTopJobs] = useState<TopJobData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const allApplicationsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // This is a collection group query, it needs an index in Firestore.
-    // We will query all applications and filter by employer on the client.
-    return query(collectionGroup(firestore, 'applications'));
-  }, [firestore]);
+  // Securely query only the job posts belonging to the current employer
+  const employerJobPostsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'jobPosts'), where("employerId", "==", user.uid));
+  }, [firestore, user]);
 
 
   useEffect(() => {
     async function fetchAnalytics() {
-      if (!allApplicationsQuery || !user) return;
+      if (!employerJobPostsQuery || !user || !firestore) return;
 
       setIsLoading(true);
       try {
-        const querySnapshot = await getDocs(allApplicationsQuery);
+        // 1. Get all job posts for the current employer
+        const jobPostsSnapshot = await getDocs(employerJobPostsQuery);
+        const employerJobPosts = jobPostsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as JobPost }));
+        
         const applications: JobApplication[] = [];
-        
-        const jobPostsRef = collection(firestore!, `employers/${user.uid}/jobPosts`);
-        const jobPostsSnapshot = await getDocs(jobPostsRef);
-        const employerJobIds = new Set(jobPostsSnapshot.docs.map(doc => doc.id));
-
         const applicationsByJob: Record<string, number> = {};
-        
-        querySnapshot.forEach((doc) => {
-            const application = doc.data() as JobApplication;
-            const jobPostId = doc.ref.parent.parent?.id;
 
-            if (jobPostId && employerJobIds.has(jobPostId)) {
-                applications.push(application);
-                applicationsByJob[jobPostId] = (applicationsByJob[jobPostId] || 0) + 1;
-            }
-        });
+        // 2. For each job, fetch its applications
+        for (const job of employerJobPosts) {
+          const appsRef = collection(firestore, `employers/${user.uid}/jobPosts/${job.id}/applications`);
+          const appsSnapshot = await getDocs(appsRef);
+          
+          applicationsByJob[job.id] = appsSnapshot.size;
 
-        // 1. Process data for the line chart (last 7 days)
+          appsSnapshot.forEach(doc => {
+            applications.push(doc.data() as JobApplication);
+          });
+        }
+
+        // 3. Process data for the line chart (last 7 days)
         const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), i)).reverse();
         const dailyCounts = last7Days.map(day => ({
           date: format(day, 'MMM d'),
@@ -86,13 +85,13 @@ export function AnalyticsDashboard() {
         });
         setApplicationData(dailyCounts);
 
-        // 2. Process data for top jobs
+        // 4. Process data for top jobs
         const topJobsData: TopJobData[] = Object.entries(applicationsByJob)
           .map(([jobId, count]) => {
-              const jobDoc = jobPostsSnapshot.docs.find(doc => doc.id === jobId);
+              const job = employerJobPosts.find(j => j.id === jobId);
               return {
                   id: jobId,
-                  title: (jobDoc?.data() as JobPost)?.title || 'Unknown Job',
+                  title: job?.title || 'Unknown Job',
                   applicantCount: count,
               };
           })
@@ -109,7 +108,8 @@ export function AnalyticsDashboard() {
     }
 
     fetchAnalytics();
-  }, [allApplicationsQuery, user, firestore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employerJobPostsQuery, user, firestore]);
 
   if (isLoading) {
     return (

@@ -150,6 +150,10 @@
           "type": "string",
           "description": "Unique identifier for the job post."
         },
+        "employerId": {
+          "type": "string",
+          "description": "Reference to the Employer who created the job post."
+        },
         "title": {
           "type": "string",
           "description": "Title of the job post."
@@ -190,6 +194,7 @@
       },
       "required": [
         "id",
+        "employerId",
         "title",
         "location",
         "category",
@@ -376,6 +381,12 @@
         "$ref": "#/entities/JobApplication"
       },
       "description": "Stores job applications for a specific job post."
+    },
+    "/jobPosts/{jobPostId}": {
+      "schema": {
+        "$ref": "#/entities/JobPost"
+      },
+      "description": "Centralized, read-only collection of all job posts for efficient global queries."
     },
     "/blogs/{blogId}": {
       "schema": {
