@@ -15,18 +15,17 @@ export function Footer() {
       title: 'Job Seekers',
       links: [
         { label: 'Search Jobs', href: '/job-seeker' },
-        { label: 'Resume Builder', href: '#' },
+        { label: 'My Applications', href: '/job-seeker?tab=applications' },
+        { label: 'Saved Jobs', href: '/job-seeker?tab=saved' },
         { label: 'Career Blog', href: '/blog' },
-        { label: 'Job Alerts', href: '#' },
       ],
     },
     {
       title: 'Employers',
       links: [
         { label: 'Post a Job', href: '/employer' },
-        { label: 'Manage Applicants', href: '#' },
-        { label: 'Company Profile', href: '#' },
-        { label: 'Analytics', href: '#' },
+        { label: 'Manage Jobs', href: '/employer?tab=manage-jobs' },
+        { label: 'Company Profile', href: '/employer?tab=profile' },
       ],
     },
     {
@@ -34,8 +33,8 @@ export function Footer() {
       links: [
         { label: 'About Us', href: '/about' },
         { label: 'Contact Us', href: '/contact' },
+        { label: 'Company Reviews', href: '/reviews' },
         { label: 'Testimonials', href: '#testimonials' },
-        { label: 'Sitemap', href: '#' },
       ],
     },
     {

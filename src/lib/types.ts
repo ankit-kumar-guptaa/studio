@@ -101,3 +101,15 @@ export interface SavedJob extends JobPost {
   employerId: string;
   savedDate: Timestamp;
 }
+
+export interface CompanyReview {
+    id: string;
+    employerId: string;
+    jobSeekerId: string;
+    rating: number;
+    comment: string;
+    reviewDate: Timestamp;
+    companyName: string;
+    companyLogo?: string;
+    jobSeekerName: string;
+}

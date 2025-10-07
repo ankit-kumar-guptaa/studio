@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, LogOut, User, Briefcase } from 'lucide-react';
+import { Menu, LogOut, User, Briefcase, Star } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
@@ -23,6 +23,7 @@ import { useEffect, useState } from 'react';
 const navLinks = [
   { href: '/job-seeker', label: 'Find Jobs' },
   { href: '/employer', label: 'For Employers' },
+  { href: '/reviews', label: 'Company Reviews' },
   { href: '/blog', label: 'Career Blog' },
   { href: '/about', label: 'About Us' },
 ];
