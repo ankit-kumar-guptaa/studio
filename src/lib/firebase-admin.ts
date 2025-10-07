@@ -1,39 +1,28 @@
 // src/lib/firebase-admin.ts
-import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { config } from 'dotenv';
-
-config(); // Load environment variables from .env file
 
 let app: App | undefined;
 let db: Firestore | undefined;
 
 try {
-  const serviceAccount = {
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  };
-
-  if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
-    throw new Error('Firebase Admin SDK service account environment variables are not set.');
-  }
-
   if (getApps().length === 0) {
-    app = initializeApp({
-      credential: cert(serviceAccount),
-    });
+    // When deployed to App Hosting, initializeApp() will automatically
+    // detect the service account credentials.
+    app = initializeApp();
   } else {
     app = getApps()[0];
   }
 
   if (app) {
     db = getFirestore(app);
+  } else {
+    throw new Error('Firebase Admin App could not be initialized.');
   }
 
 } catch (error: any) {
   console.error(`Firebase Admin SDK initialization failed: ${error.message}`);
-  // db remains undefined, components should handle this.
+  // db remains undefined, components using it should handle this gracefully.
 }
 
 export { db as adminDb };
