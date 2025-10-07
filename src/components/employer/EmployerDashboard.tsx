@@ -94,7 +94,9 @@ export function EmployerDashboard() {
 
 
   useEffect(() => {
-    fetchJobsAndCounts();
+    if (jobPostsCollectionRef) {
+      fetchJobsAndCounts();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobPostsCollectionRef]);
 
