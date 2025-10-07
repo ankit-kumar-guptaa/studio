@@ -292,6 +292,27 @@
         "rating",
         "reviewDate"
       ]
+    },
+    "SavedJob": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SavedJob",
+      "type": "object",
+      "description": "Represents a job saved by a job seeker.",
+      "properties": {
+        "jobPostId": {
+          "type": "string",
+          "description": "Reference to the JobPost."
+        },
+        "savedDate": {
+          "type": "string",
+          "description": "Date the job was saved.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "jobPostId",
+        "savedDate"
+      ]
     }
   },
   "auth": {
@@ -306,6 +327,12 @@
         "$ref": "#/entities/JobSeeker"
       },
       "description": "Stores job seeker profiles."
+    },
+    "/jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}": {
+      "schema": {
+        "$ref": "#/entities/JobPost"
+      },
+      "description": "Stores jobs saved by a job seeker. The document is a copy of the original job post."
     },
     "/employers/{employerId}": {
       "schema": {

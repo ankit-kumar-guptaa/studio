@@ -4,16 +4,16 @@ import Image from 'next/image';
 import type { JobPost } from '@/lib/types';
 import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle } from 'lucide-react';
+import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle, Bookmark } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface JobCardProps {
   job: JobPost;
@@ -26,56 +26,57 @@ export function JobCard({ job, employerId }: JobCardProps) {
   const { toast } = useToast();
   const [isApplying, setIsApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    const checkApplicationStatus = async () => {
+    const checkStatus = async () => {
       if (!user || !firestore || !employerId) return;
 
+      // Check application status
       const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
-      const q = query(applicationsRef, where("jobSeekerId", "==", user.uid));
-      const querySnapshot = await getDocs(q);
-      setHasApplied(!querySnapshot.empty);
+      const appQuery = query(applicationsRef, where("jobSeekerId", "==", user.uid));
+      const appSnapshot = await getDocs(appQuery);
+      setHasApplied(!appSnapshot.empty);
+
+      // Check saved status
+      const savedJobRef = doc(firestore, `jobSeekers/${user.uid}/savedJobs/${job.id}`);
+      const savedJobSnap = await getDoc(savedJobRef);
+      setIsSaved(savedJobSnap.exists());
     };
 
-    if(user) {
-      checkApplicationStatus();
+    if(user && !isUserLoading) {
+      checkStatus();
     }
-  }, [user, firestore, job.id, employerId]);
-
-  const handleApply = async () => {
-    if (isUserLoading) return;
-    
-    if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Not Logged In',
-        description: 'Please log in as a job seeker to apply.',
-      });
-      return;
-    }
-
-    if (!firestore || !employerId) {
-       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not process application. Employer information is missing.',
-      });
-      return;
-    }
-
+  }, [user, firestore, job.id, employerId, isUserLoading]);
+  
+  const checkIsEmployer = async () => {
+    if (!user || !firestore) return false;
     const employerDocRef = doc(firestore, 'employers', user.uid);
     const employerDoc = await getDoc(employerDocRef);
     if (employerDoc.exists()) {
       toast({
           variant: "destructive",
           title: "Action Not Allowed",
-          description: "Employers cannot apply for jobs.",
+          description: "Employers cannot apply for or save jobs.",
       });
+      return true;
+    }
+    return false;
+  }
+
+  const handleApply = async () => {
+    if (isUserLoading || !user) {
+      toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in as a job seeker to apply.' });
+      return;
+    }
+    if (await checkIsEmployer()) return;
+    if (!firestore || !employerId) {
+       toast({ variant: 'destructive', title: 'Error', description: 'Could not process application. Employer information is missing.' });
       return;
     }
 
     setIsApplying(true);
-
     const applicationData = {
       jobSeekerId: user.uid,
       applicationDate: serverTimestamp(),
@@ -83,29 +84,59 @@ export function JobCard({ job, employerId }: JobCardProps) {
       jobTitle: job.title,
       jobSeekerName: user.displayName,
     };
-    
     const applicationsRef = collection(firestore, `employers/${employerId}/jobPosts/${job.id}/applications`);
 
     addDoc(applicationsRef, applicationData)
       .then(() => {
-        toast({
-          title: 'Applied Successfully!',
-          description: `Your application for ${job.title} has been submitted.`,
-        });
+        toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
         setHasApplied(true);
       })
       .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: applicationsRef.path,
-          operation: 'create',
-          requestResourceData: applicationData,
-        });
+        const permissionError = new FirestorePermissionError({ path: applicationsRef.path, operation: 'create', requestResourceData: applicationData });
         errorEmitter.emit('permission-error', permissionError);
       })
-      .finally(() => {
-        setIsApplying(false);
-      });
+      .finally(() => { setIsApplying(false); });
   };
+
+  const handleSave = async () => {
+    if (isUserLoading || !user) {
+      toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to save jobs.' });
+      return;
+    }
+    if (await checkIsEmployer()) return;
+    if (!firestore) return;
+
+    setIsSaving(true);
+    const savedJobRef = doc(firestore, `jobSeekers/${user.uid}/savedJobs/${job.id}`);
+    
+    if (isSaved) {
+      // Unsave the job
+      deleteDoc(savedJobRef)
+        .then(() => {
+          toast({ title: 'Job Unsaved', description: `${job.title} has been removed from your saved jobs.` });
+          setIsSaved(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not unsave job.' });
+        })
+        .finally(() => setIsSaving(false));
+    } else {
+      // Save the job
+      // We store the full job object for easy retrieval, along with employerId
+      const jobDataToSave = { ...job, employerId, savedDate: serverTimestamp() };
+      setDoc(savedJobRef, jobDataToSave)
+        .then(() => {
+          toast({ title: 'Job Saved!', description: `${job.title} has been added to your saved jobs.` });
+          setIsSaved(true);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not save job.' });
+        })
+        .finally(() => setIsSaving(false));
+    }
+  }
 
 
   return (
@@ -126,6 +157,9 @@ export function JobCard({ job, employerId }: JobCardProps) {
           <CardTitle className="text-lg font-bold">{job.title}</CardTitle>
           <CardDescription className="font-medium text-primary">{job.companyName || 'Reputable Company'}</CardDescription>
         </div>
+        <Button variant="ghost" size="icon" onClick={handleSave} disabled={isSaving || isUserLoading}>
+            <Bookmark className={cn("h-6 w-6", isSaved ? "fill-primary text-primary" : "text-muted-foreground")} />
+        </Button>
       </CardHeader>
       <CardContent className="flex-grow space-y-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
@@ -150,8 +184,9 @@ export function JobCard({ job, employerId }: JobCardProps) {
           size="sm" 
           className="gradient-saffron shadow-md hover:shadow-primary/40 disabled:opacity-70"
           onClick={handleApply}
-          disabled={isApplying || hasApplied}
+          disabled={isApplying || hasApplied || isUserLoading}
         >
+          {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {hasApplied ? (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />

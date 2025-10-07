@@ -5,6 +5,7 @@ import { RecommendedJobs } from "./RecommendedJobs";
 import { ProfileForm } from "./ProfileForm";
 import { JobSearch } from "./JobSearch";
 import { ResumeBuilder } from "./ResumeBuilder";
+import { SavedJobs } from "./SavedJobs";
 
 export function JobSeekerDashboard() {
   return (
@@ -61,7 +62,7 @@ export function JobSeekerDashboard() {
               <CardDescription>Review the jobs you've saved for later.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">You have no saved jobs yet.</p>
+              <SavedJobs />
             </CardContent>
           </Card>
         </TabsContent>

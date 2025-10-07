@@ -84,3 +84,8 @@ export interface JobSeeker {
     graduationYear: string;
   }[];
 }
+
+export interface SavedJob extends JobPost {
+  employerId: string;
+  savedDate: Timestamp;
+}
