@@ -8,16 +8,8 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import type { JobSeeker } from '@/lib/types';
 
-// Define a type for the job seeker's profile data
-interface JobSeekerProfile {
-  firstName?: string;
-  lastName?: string;
-  location?: string;
-  categoryPreferences?: string[];
-  resumeUrl?: string;
-  // Add other relevant fields from the JobSeeker entity
-}
 
 export function RecommendedJobs() {
   const [recommendations, setRecommendations] = useState<RecommendRelevantJobsOutput | null>(null);
@@ -31,7 +23,7 @@ export function RecommendedJobs() {
     return doc(firestore, 'jobSeekers', user.uid);
   }, [firestore, user]);
 
-  const { data: jobSeekerData, isLoading: isProfileLoading } = useDoc<JobSeekerProfile>(jobSeekerRef);
+  const { data: jobSeekerData, isLoading: isProfileLoading } = useDoc<JobSeeker>(jobSeekerRef);
 
   const generateRecommendations = async () => {
     if (!jobSeekerData) {
@@ -51,8 +43,8 @@ export function RecommendedJobs() {
       Name: ${jobSeekerData.firstName || ''} ${jobSeekerData.lastName || ''}.
       Location: ${jobSeekerData.location || 'Not specified'}.
       Preferred Categories: ${jobSeekerData.categoryPreferences?.join(', ') || 'Not specified'}.
-      Resume: ${jobSeekerData.resumeUrl ? 'Available' : 'Not available'}.
-      Skills and Experience: Software engineer with 3 years of experience in frontend development, specializing in React, Next.js, and TypeScript. Prefers remote work or roles in Bangalore.
+      Resume Summary: ${jobSeekerData.summary || 'Not provided'}.
+      Skills: ${jobSeekerData.skills?.map(s => s.value).join(', ') || 'Not provided'}.
     `.trim();
     
     // For now, we'll keep search history as a static example.

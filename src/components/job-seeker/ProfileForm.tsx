@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -20,6 +19,7 @@ import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import type { JobSeeker } from '@/lib/types';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -43,7 +43,7 @@ export function ProfileForm() {
     return doc(firestore, 'jobSeekers', user.uid);
   }, [firestore, user]);
 
-  const { data: jobSeekerData, isLoading } = useDoc<ProfileFormData>(jobSeekerRef);
+  const { data: jobSeekerData, isLoading } = useDoc<JobSeeker>(jobSeekerRef);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),

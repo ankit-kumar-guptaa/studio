@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { summarizeResume } from '@/ai/flows/summarize-resume-flow';
+import type { JobSeeker } from '@/lib/types';
 
 const workExperienceSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -56,7 +57,7 @@ export function ResumeBuilder() {
     return doc(firestore, 'jobSeekers', user.uid);
   }, [firestore, user]);
 
-  const { data: jobSeekerData, isLoading } = useDoc<ResumeFormData>(jobSeekerRef);
+  const { data: jobSeekerData, isLoading } = useDoc<JobSeeker>(jobSeekerRef);
 
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeSchema),

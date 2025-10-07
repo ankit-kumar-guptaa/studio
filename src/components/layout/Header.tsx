@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, LogOut, User } from 'lucide-react';
+import { Menu, LogOut, User, Briefcase } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useRouter } from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 
 const navLinks = [
   { href: '/job-seeker', label: 'Find Jobs' },
@@ -26,8 +28,26 @@ const navLinks = [
 ];
 
 export function Header() {
-  const { user, auth, isUserLoading } = useFirebase();
+  const { user, auth, firestore, isUserLoading } = useFirebase();
   const router = useRouter();
+  const [userRole, setUserRole] = useState<'job-seeker' | 'employer' | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user && firestore) {
+        const employerRef = doc(firestore, 'employers', user.uid);
+        const employerSnap = await getDoc(employerRef);
+        if (employerSnap.exists()) {
+          setUserRole('employer');
+        } else {
+          setUserRole('job-seeker');
+        }
+      } else {
+        setUserRole(null);
+      }
+    };
+    fetchUserRole();
+  }, [user, firestore]);
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -87,9 +107,9 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/job-seeker')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                  <DropdownMenuItem onClick={() => router.push(userRole === 'employer' ? '/employer' : '/job-seeker')}>
+                    {userRole === 'employer' ? <Briefcase className="mr-2 h-4 w-4" /> : <User className="mr-2 h-4 w-4" />}
+                    <span>Dashboard</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
@@ -136,7 +156,7 @@ export function Header() {
                   {user ? (
                     <>
                       <Button variant="outline" asChild>
-                        <Link href="/job-seeker">My Profile</Link>
+                        <Link href={userRole === 'employer' ? '/employer' : '/job-seeker'}>My Dashboard</Link>
                       </Button>
                       <Button className="gradient-saffron" onClick={handleLogout}>
                         Log Out

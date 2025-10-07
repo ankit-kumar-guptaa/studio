@@ -21,6 +21,8 @@ export interface JobPost {
   description: string;
   requirements: string;
   postDate: Timestamp;
+  companyName?: string;
+  companyLogo?: string;
 }
 
 export interface JobApplication {
@@ -45,4 +47,40 @@ export interface Testimonial {
   role: string;
   avatar: string;
   quote: string;
+}
+
+export interface Employer {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    companyName: string;
+    phone?: string;
+    companyDescription?: string;
+    companyLogoUrl?: string;
+}
+
+export interface JobSeeker {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  resumeUrl?: string;
+  categoryPreferences?: string[];
+  summary?: string;
+  skills?: { value: string }[];
+  workExperience?: {
+    title: string;
+    company: string;
+    startDate: string;
+    endDate?: string;
+    description?: string;
+  }[];
+  education?: {
+    degree: string;
+    institution: string;
+    graduationYear: string;
+  }[];
 }

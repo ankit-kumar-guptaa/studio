@@ -1,10 +1,28 @@
+'use client';
+
 import { featuredJobs } from '@/lib/data';
 import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import type { JobPost } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
 
 export function FeaturedJobs() {
+  const jobs: JobPost[] = featuredJobs.map(job => ({
+    id: job.id,
+    title: job.title,
+    companyName: job.company,
+    companyLogo: job.companyLogo,
+    location: job.location,
+    category: job.tags[0] || 'General',
+    salary: job.salary,
+    description: '',
+    requirements: '',
+    postDate: Timestamp.now(),
+  }));
+
+
   return (
     <section id="featured-jobs" className="py-16 sm:py-24 bg-background">
       <div className="container mx-auto max-w-7xl px-4">
@@ -17,7 +35,7 @@ export function FeaturedJobs() {
           </p>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {featuredJobs.slice(0, 3).map((job) => (
+          {jobs.slice(0, 3).map((job) => (
             <JobCard key={job.id} job={job} employerId="placeholder-employer-id" />
           ))}
         </div>

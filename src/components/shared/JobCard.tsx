@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import type { Job, JobPost } from '@/lib/types';
+import type { JobPost } from '@/lib/types';
 import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,18 +9,19 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { formatDistanceToNow } from 'date-fns';
 
 interface JobCardProps {
-  job: Job | JobPost;
+  job: JobPost;
   employerId?: string; // Needed for creating the correct application path
 }
 
 export function JobCard({ job, employerId }: JobCardProps) {
-  const companyLogo = findImage((job as Job).companyLogo || 'company-logo-1');
+  const companyLogo = job.companyLogo ? findImage(job.companyLogo) : null;
   const { user, firestore, isUserLoading } = useFirebase();
   const { toast } = useToast();
   const [isApplying, setIsApplying] = useState(false);
@@ -36,7 +37,9 @@ export function JobCard({ job, employerId }: JobCardProps) {
       setHasApplied(!querySnapshot.empty);
     };
 
-    checkApplicationStatus();
+    if(user) {
+      checkApplicationStatus();
+    }
   }, [user, firestore, job.id, employerId]);
 
   const handleApply = async () => {
@@ -60,9 +63,8 @@ export function JobCard({ job, employerId }: JobCardProps) {
       return;
     }
 
-    // Check if user is an employer
-    const employerDocRef = (await import('firebase/firestore')).doc(firestore, 'employers', user.uid);
-    const employerDoc = await (await import('firebase/firestore')).getDoc(employerDocRef);
+    const employerDocRef = doc(firestore, 'employers', user.uid);
+    const employerDoc = await getDoc(employerDocRef);
     if (employerDoc.exists()) {
       toast({
           variant: "destructive",
@@ -113,17 +115,16 @@ export function JobCard({ job, employerId }: JobCardProps) {
           <div className="relative h-14 w-14 flex-shrink-0">
             <Image
               src={companyLogo.imageUrl}
-              alt={`${(job as Job).company} logo`}
+              alt={`${job.companyName} logo`}
               width={56}
               height={56}
-              className="rounded-lg object-contain"
-              data-ai-hint={companyLogo.imageHint}
+              className="rounded-lg object-contain border"
             />
           </div>
         )}
         <div className="flex-grow">
           <CardTitle className="text-lg font-bold">{job.title}</CardTitle>
-          <CardDescription className="font-medium text-primary">{(job as Job).company || 'N/A'}</CardDescription>
+          <CardDescription className="font-medium text-primary">{job.companyName || 'Reputable Company'}</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-3 text-sm text-muted-foreground">
@@ -133,26 +134,17 @@ export function JobCard({ job, employerId }: JobCardProps) {
         </div>
          <div className="flex items-center gap-2">
           <IndianRupee className="h-4 w-4 text-primary" />
-          <span>{(job as any).salary}</span>
+          <span>{job.salary}</span>
         </div>
-        {(job as Job).type && (
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-primary" />
-            <span>{(job as Job).type}</span>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-2 pt-2">
-          {(job as Job).tags?.map((tag) => (
-            <Badge key={tag} variant="secondary" className="font-normal">
-              {tag}
-            </Badge>
-          ))}
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-4 w-4 text-primary" />
+          <span>{job.category}</span>
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          <span>{(job as Job).postedDate || 'N/A'}</span>
+          <span>{job.postDate ? `${formatDistanceToNow(job.postDate.toDate())} ago` : 'N/A'}</span>
         </div>
         <Button 
           size="sm" 
