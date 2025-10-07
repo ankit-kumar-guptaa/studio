@@ -22,7 +22,7 @@ export interface JobPost {
   requirements: string;
   postDate: Timestamp | Date | string; // Allow serializable string
   companyName?: string;
-  companyLogo?: string;
+  companyLogoUrl?: string;
 }
 
 export interface JobApplication {
@@ -113,3 +113,5 @@ export interface CompanyReview {
     companyLogo?: string;
     jobSeekerName: string;
 }
+
+    

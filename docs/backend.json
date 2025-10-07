@@ -167,6 +167,14 @@
           "type": "string",
           "description": "Date the job was posted.",
           "format": "date-time"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Name of the company that posted the job."
+        },
+        "companyLogoUrl": {
+          "type": "string",
+          "description": "URL of the company logo that posted the job."
         }
       },
       "required": [
@@ -372,3 +380,5 @@
     }
   }
 }
+
+    

@@ -79,7 +79,7 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
         ...values,
         postDate: serverTimestamp(),
         companyName: employerData?.companyName || user.displayName,
-        companyLogo: employerData?.companyLogoUrl || '',
+        companyLogoUrl: employerData?.companyLogoUrl || '',
       });
       toast({
         title: 'Job Posted!',
@@ -179,3 +179,5 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
     </Form>
   );
 }
+
+    

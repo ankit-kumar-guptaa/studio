@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import type { JobPost } from '@/lib/types';
-import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Briefcase, IndianRupee, Clock, CheckCircle, Bookmark } from 'lucide-react';
@@ -27,7 +26,6 @@ interface JobCardProps {
 }
 
 export function JobCard({ job, employerId }: JobCardProps) {
-  const companyLogo = job.companyLogo ? findImage(job.companyLogo) : null;
   const { user, firestore, isUserLoading } = useFirebase();
   const { toast } = useToast();
   const [isApplying, setIsApplying] = useState(false);
@@ -170,10 +168,10 @@ export function JobCard({ job, employerId }: JobCardProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="flex flex-row items-start gap-4">
-        {companyLogo && (
+        {job.companyLogoUrl && (
           <div className="relative h-14 w-14 flex-shrink-0">
             <Image
-              src={companyLogo.imageUrl}
+              src={job.companyLogoUrl}
               alt={`${job.companyName} logo`}
               width={56}
               height={56}
@@ -228,3 +226,5 @@ export function JobCard({ job, employerId }: JobCardProps) {
     </Card>
   );
 }
+
+    
