@@ -30,7 +30,6 @@ const profileSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(10, 'Phone number is invalid').optional().or(z.literal('')),
   location: z.string().optional(),
-  experienceLevel: z.enum(['fresher', 'experienced']).optional(),
   experienceYears: z.coerce.number().min(0).optional(),
   currentCompany: z.string().optional(),
   currentSalary: z.string().optional(),
@@ -43,6 +42,7 @@ export function ProfileForm() {
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [showExperiencedFields, setShowExperiencedFields] = useState(false);
 
   const jobSeekerRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -59,7 +59,6 @@ export function ProfileForm() {
       email: '',
       phone: '',
       location: '',
-      experienceLevel: 'fresher',
       experienceYears: 0,
       currentCompany: '',
       currentSalary: '',
@@ -67,14 +66,10 @@ export function ProfileForm() {
     },
   });
 
-  const experienceLevel = form.watch('experienceLevel');
-
   useEffect(() => {
     if (jobSeekerData) {
-      form.reset({
-        ...jobSeekerData,
-        experienceLevel: jobSeekerData.experienceLevel || 'fresher',
-      });
+      form.reset(jobSeekerData);
+      setShowExperiencedFields(!!jobSeekerData.experienceYears && jobSeekerData.experienceYears > 0);
     }
   }, [jobSeekerData, form]);
 
@@ -83,12 +78,15 @@ export function ProfileForm() {
     setIsSaving(true);
     try {
       const dataToUpdate: Partial<ProfileFormData> = { ...values };
-      if (values.experienceLevel === 'fresher') {
+      if (!showExperiencedFields) {
         dataToUpdate.experienceYears = 0;
         dataToUpdate.currentCompany = '';
         dataToUpdate.currentSalary = '';
       }
-      await updateDoc(jobSeekerRef, dataToUpdate);
+      await updateDoc(jobSeekerRef, {
+        ...dataToUpdate,
+        experienceLevel: showExperiencedFields ? 'experienced' : 'fresher'
+      });
       toast({
         title: 'Profile Updated',
         description: 'Your information has been saved successfully.',
@@ -117,40 +115,9 @@ export function ProfileForm() {
           <FormField control={form.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Email</FormLabel> <FormControl> <Input type="email" placeholder="your.email@example.com" {...field} readOnly className="bg-muted" /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Phone Number</FormLabel> <FormControl> <Input type="tel" placeholder="+91 98765 43210" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-          
-           <FormField
-              control={form.control}
-              name="experienceLevel"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Experience Level</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex items-center gap-4 rounded-lg border p-4"
-                    >
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="fresher" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Fresher</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="experienced" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Experienced</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
         </div>
 
-        {experienceLevel === 'experienced' && (
+        {showExperiencedFields && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
              <FormField control={form.control} name="experienceYears" render={({ field }) => ( <FormItem> <FormLabel>Years of Experience</FormLabel> <FormControl> <Input type="number" placeholder="e.g., 5" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
              <FormField control={form.control} name="currentCompany" render={({ field }) => ( <FormItem> <FormLabel>Current Company</FormLabel> <FormControl> <Input placeholder="Your current company" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
