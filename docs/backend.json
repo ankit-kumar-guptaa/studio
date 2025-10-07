@@ -178,7 +178,7 @@
       ]
     },
     "JobApplication": {
-      "$schema": "http://json-schema.org/draft-07/schema#",,
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "JobApplication",
       "type": "object",
       "description": "Represents a job application on the Hiring Dekho platform.",
@@ -189,11 +189,11 @@
         },
         "jobSeekerId": {
           "type": "string",
-          "description": "Reference to JobSeeker. (Relationship: JobSeeker 1:N JobApplication)"
+          "description": "Reference to JobSeeker."
         },
         "jobPostId": {
           "type": "string",
-          "description": "Reference to JobPost. (Relationship: JobPost 1:N JobApplication)"
+          "description": "Reference to JobPost."
         },
         "applicationDate": {
           "type": "string",
@@ -319,11 +319,11 @@
       },
       "description": "Stores job postings associated with an employer."
     },
-    "/jobSeekers/{jobSeekerId}/jobApplications/{jobApplicationId}": {
+    "/employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}": {
       "schema": {
         "$ref": "#/entities/JobApplication"
       },
-      "description": "Stores job applications submitted by a job seeker."
+      "description": "Stores job applications for a specific job post."
     },
     "/blogs/{blogId}": {
       "schema": {

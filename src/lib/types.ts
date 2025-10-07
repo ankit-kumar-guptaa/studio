@@ -23,6 +23,15 @@ export interface JobPost {
   postDate: Timestamp;
 }
 
+export interface JobApplication {
+    id: string;
+    jobSeekerId: string;
+    applicationDate: Timestamp;
+    status: 'Applied' | 'Reviewed' | 'Interviewing' | 'Offered' | 'Rejected';
+    jobTitle: string;
+    jobSeekerName: string;
+}
+
 export interface Company {
   id: string;
   name: string;

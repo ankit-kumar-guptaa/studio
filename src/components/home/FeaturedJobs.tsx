@@ -18,7 +18,7 @@ export function FeaturedJobs() {
         </div>
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {featuredJobs.slice(0, 3).map((job) => (
-            <JobCard key={job.id} job={job} />
+            <JobCard key={job.id} job={job} employerId="placeholder-employer-id" />
           ))}
         </div>
         <div className="mt-12 text-center">

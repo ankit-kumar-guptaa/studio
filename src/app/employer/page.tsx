@@ -23,10 +23,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, getDocs } from 'firebase/firestore';
 import type { JobPost } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 const jobPostSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -39,11 +40,17 @@ const jobPostSchema = z.object({
 
 type JobPostFormData = z.infer<typeof jobPostSchema>;
 
+interface JobPostWithApplicantCount extends JobPost {
+  applicantCount: number;
+}
+
 export default function EmployerPage() {
   const { user, isUserLoading, firestore } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
   const [isPosting, setIsPosting] = useState(false);
+  const [jobPostsWithCounts, setJobPostsWithCounts] = useState<JobPostWithApplicantCount[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 
   const form = useForm<JobPostFormData>({
     resolver: zodResolver(jobPostSchema),
@@ -57,12 +64,10 @@ export default function EmployerPage() {
     },
   });
   
-  const jobPostsCollection = useMemoFirebase(() => {
+  const jobPostsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, `employers/${user.uid}/jobPosts`);
   }, [firestore, user]);
-
-  const { data: jobPosts, isLoading: isLoadingJobs } = useCollection<JobPost>(jobPostsCollection);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -70,8 +75,39 @@ export default function EmployerPage() {
     }
   }, [user, isUserLoading, router]);
 
+  useEffect(() => {
+    const fetchJobsAndCounts = async () => {
+      if (!jobPostsCollectionRef) return;
+      setIsLoadingJobs(true);
+      try {
+        const jobPostsSnapshot = await getDocs(jobPostsCollectionRef);
+        const jobsData = jobPostsSnapshot.docs.map(doc => ({ ...doc.data() as JobPost, id: doc.id }));
+
+        const jobsWithCounts = await Promise.all(jobsData.map(async (job) => {
+          const applicationsRef = collection(jobPostsCollectionRef, job.id, 'applications');
+          const applicationsSnapshot = await getDocs(applicationsRef);
+          return { ...job, applicantCount: applicationsSnapshot.size };
+        }));
+
+        setJobPostsWithCounts(jobsWithCounts);
+      } catch (error) {
+        console.error("Error fetching jobs and counts: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch job postings.',
+        });
+      } finally {
+        setIsLoadingJobs(false);
+      }
+    };
+
+    fetchJobsAndCounts();
+  }, [jobPostsCollectionRef, toast]);
+
+
   async function onSubmit(values: JobPostFormData) {
-    if (!jobPostsCollection) {
+    if (!jobPostsCollectionRef) {
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -81,7 +117,7 @@ export default function EmployerPage() {
     };
     setIsPosting(true);
     try {
-      await addDoc(jobPostsCollection, {
+      await addDoc(jobPostsCollectionRef, {
         ...values,
         postDate: serverTimestamp(),
       });
@@ -90,6 +126,15 @@ export default function EmployerPage() {
         description: 'Your job opening is now live.',
       });
       form.reset();
+      // Refetch jobs
+       const jobPostsSnapshot = await getDocs(jobPostsCollectionRef);
+        const jobsData = jobPostsSnapshot.docs.map(doc => ({ ...doc.data() as JobPost, id: doc.id }));
+         const jobsWithCounts = await Promise.all(jobsData.map(async (job) => {
+          const applicationsRef = collection(jobPostsCollectionRef, job.id, 'applications');
+          const applicationsSnapshot = await getDocs(applicationsRef);
+          return { ...job, applicantCount: applicationsSnapshot.size };
+        }));
+        setJobPostsWithCounts(jobsWithCounts);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -169,7 +214,7 @@ export default function EmployerPage() {
                       <FormItem>
                         <FormLabel>Job Description</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Describe the role and responsibilities..." rows={5}/>
+                          <Textarea placeholder="Describe the role and responsibilities..." rows={5} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -178,7 +223,7 @@ export default function EmployerPage() {
                       <FormItem>
                         <FormLabel>Requirements</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="List the required skills and experience..." rows={5}/>
+                          <Textarea placeholder="List the required skills and experience..." rows={5} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -211,13 +256,17 @@ export default function EmployerPage() {
                         <TableBody>
                             {isLoadingJobs ? (
                                 <TableRow><TableCell colSpan={4} className="text-center p-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-                            ) : jobPosts && jobPosts.length > 0 ? (
-                                jobPosts.map(job => (
+                            ) : jobPostsWithCounts && jobPostsWithCounts.length > 0 ? (
+                                jobPostsWithCounts.map(job => (
                                     <TableRow key={job.id}>
-                                        <TableCell className="font-medium">{job.title}</TableCell>
+                                        <TableCell className="font-medium">
+                                          <Link href={`/employer/job/${job.id}`} className="hover:underline text-primary">
+                                            {job.title}
+                                          </Link>
+                                        </TableCell>
                                         <TableCell>{job.location}</TableCell>
                                         <TableCell>{job.postDate ? format(job.postDate.toDate(), 'PPP') : 'N/A'}</TableCell>
-                                        <TableCell>0</TableCell>
+                                        <TableCell>{job.applicantCount}</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
