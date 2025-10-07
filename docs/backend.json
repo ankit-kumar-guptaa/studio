@@ -42,6 +42,46 @@
           "items": {
             "type": "string"
           }
+        },
+        "summary": {
+          "type": "string",
+          "description": "Professional summary of the job seeker."
+        },
+        "skills": {
+          "type": "array",
+          "description": "List of skills possessed by the job seeker.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "string" }
+            }
+          }
+        },
+        "workExperience": {
+          "type": "array",
+          "description": "Work experience of the job seeker.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "company": { "type": "string" },
+              "startDate": { "type": "string" },
+              "endDate": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "education": {
+          "type": "array",
+          "description": "Education history of the job seeker.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "degree": { "type": "string" },
+              "institution": { "type": "string" },
+              "graduationYear": { "type": "string" }
+            }
+          }
         }
       },
       "required": [
@@ -138,7 +178,7 @@
       ]
     },
     "JobApplication": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$schema": "http://json-schema.org/draft-07/schema#",,
       "title": "JobApplication",
       "type": "object",
       "description": "Represents a job application on the Hiring Dekho platform.",
