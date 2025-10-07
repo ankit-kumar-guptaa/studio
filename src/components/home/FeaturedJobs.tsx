@@ -8,7 +8,8 @@ import type { JobPost } from '@/lib/types';
 import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useFirebase } from '@/firebase';
-
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function FeaturedJobs() {
   const { firestore } = useFirebase();
@@ -21,13 +22,13 @@ export function FeaturedJobs() {
       
       setIsLoading(true);
       const fetchedJobs: (JobPost & { employerId: string })[] = [];
-      try {
-        const jobPostsQuery = query(
-          collectionGroup(firestore, 'jobPosts'),
-          orderBy('postDate', 'desc'),
-          limit(6)
-        );
-        const querySnapshot = await getDocs(jobPostsQuery);
+      const jobPostsQuery = query(
+        collectionGroup(firestore, 'jobPosts'),
+        orderBy('postDate', 'desc'),
+        limit(6)
+      );
+
+      getDocs(jobPostsQuery).then(querySnapshot => {
         querySnapshot.forEach((doc) => {
           const employerId = doc.ref.parent.parent?.id;
           if (employerId) {
@@ -35,11 +36,15 @@ export function FeaturedJobs() {
           }
         });
         setJobs(fetchedJobs);
-      } catch (error) {
-        console.error("Error fetching featured jobs:", error);
-      } finally {
         setIsLoading(false);
-      }
+      }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+            path: 'jobPosts',
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setIsLoading(false);
+      });
     }
 
     getFeaturedJobs();
@@ -74,7 +79,7 @@ export function FeaturedJobs() {
         )}
         <div className="mt-12 text-center">
           <Button asChild size="lg" className="gradient-indigo">
-            <Link href="/job-seeker">
+            <Link href="/job-seeker?tab=search">
               Explore All Jobs <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

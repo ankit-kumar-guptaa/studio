@@ -9,6 +9,8 @@ import { collection, getDocs, limit, query } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 export function TopCompanies() {
@@ -17,23 +19,27 @@ export function TopCompanies() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function getTopCompanies() {
+    function getTopCompanies() {
       if (!firestore) return;
 
       setIsLoading(true);
       const fetchedCompanies: Employer[] = [];
-      try {
-        const employersQuery = query(collection(firestore, 'employers'), limit(12));
-        const querySnapshot = await getDocs(employersQuery);
+      const employersQuery = query(collection(firestore, 'employers'), limit(12));
+      
+      getDocs(employersQuery).then(querySnapshot => {
         querySnapshot.forEach((doc) => {
           fetchedCompanies.push({ ...(doc.data() as Employer), id: doc.id });
         });
         setCompanies(fetchedCompanies);
-      } catch (error) {
-        console.error("Error fetching top companies:", error);
-      } finally {
         setIsLoading(false);
-      }
+      }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: 'employers',
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setIsLoading(false);
+      });
     }
     getTopCompanies();
   }, [firestore]);
