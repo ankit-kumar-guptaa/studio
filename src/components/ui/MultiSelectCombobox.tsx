@@ -97,7 +97,7 @@ export function MultiSelectCombobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  value={option.label}
                   onSelect={() => handleSelect(option.value)}
                 >
                   <Check

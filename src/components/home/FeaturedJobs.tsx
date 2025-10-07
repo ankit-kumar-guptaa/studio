@@ -38,7 +38,7 @@ export async function FeaturedJobs() {
         {jobs && jobs.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => (
-               <JobCard key={job.id} job={job} />
+               <JobCard key={job.id} job={job} employerId={job.employerId} />
             ))}
           </div>
         ) : (

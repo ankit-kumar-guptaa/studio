@@ -38,14 +38,21 @@ export function CandidateSearch() {
         const queryConstraints = [];
 
         if (locations.length > 0) {
-            queryConstraints.push(where('location', 'in', locations));
+            queryConstraints.push(where('location', 'in', locations.map(l => l.charAt(0).toUpperCase() + l.slice(1))));
         }
 
         if (experience !== 'any') {
-            const [min, max] = experience.split('-').map(Number);
-            queryConstraints.push(where('experienceYears', '>=', min));
-            if (max) {
-                 queryConstraints.push(where('experienceYears', '<=', max));
+            if(experience === 'fresher') {
+                queryConstraints.push(where('experienceLevel', '==', 'fresher'));
+            } else {
+                 queryConstraints.push(where('experienceLevel', '==', 'experienced'));
+                 const [min, max] = experience.split('-').map(Number);
+                 if (min >= 0) {
+                    queryConstraints.push(where('experienceYears', '>=', min));
+                 }
+                 if (max) {
+                    queryConstraints.push(where('experienceYears', '<=', max));
+                 }
             }
         }
         
@@ -60,12 +67,14 @@ export function CandidateSearch() {
             const querySnapshot = await getDocs(finalQuery);
             let candidates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as JobSeeker }));
 
-            // Local filtering for skills
+            // Local filtering for skills, as Firestore doesn't support array-contains-any with multiple different fields
             if (skills) {
-                const skillKeywords = skills.toLowerCase().split(',').map(s => s.trim());
-                candidates = candidates.filter(c => 
-                    c.skills?.some(s => skillKeywords.some(kw => s.value.toLowerCase().includes(kw)))
-                );
+                const skillKeywords = skills.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                if (skillKeywords.length > 0) {
+                    candidates = candidates.filter(c => 
+                        c.skills?.some(s => skillKeywords.some(kw => s.value.toLowerCase().includes(kw)))
+                    );
+                }
             }
 
             setSearchResults(candidates);
@@ -101,10 +110,11 @@ export function CandidateSearch() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="any">Any Experience</SelectItem>
-                            <SelectItem value="0-2">0-2 years</SelectItem>
-                            <SelectItem value="2-5">2-5 years</SelectItem>
-                            <SelectItem value="5-10">5-10 years</SelectItem>
-                            <SelectItem value="10-100">10+ years</SelectItem>
+                            <SelectItem value="fresher">Fresher</SelectItem>
+                            <SelectItem value="0-2">0-2 years (Exp.)</SelectItem>
+                            <SelectItem value="2-5">2-5 years (Exp.)</SelectItem>
+                            <SelectItem value="5-10">5-10 years (Exp.)</SelectItem>
+                            <SelectItem value="10-100">10+ years (Exp.)</SelectItem>
                         </SelectContent>
                     </Select>
                     <Button type="submit" className="w-full gradient-saffron">

@@ -147,10 +147,12 @@ export function ProfileForm() {
           </AlertDescription>
         </Alert>
 
-        <Button type="submit" className="gradient-saffron" disabled={isSaving}>
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Changes
-        </Button>
+        <div className="flex justify-end">
+            <Button type="submit" className="gradient-saffron" disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+            </Button>
+        </div>
       </form>
     </Form>
   );
