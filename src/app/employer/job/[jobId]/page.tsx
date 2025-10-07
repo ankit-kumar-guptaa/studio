@@ -42,18 +42,21 @@ export default function JobApplicantsPage() {
     );
   }
 
+  // Get the job title from the first application, or use the jobId as a fallback
+  const jobTitle = applications?.[0]?.jobTitle || `Job ID: ${jobId}`;
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1 bg-secondary py-8 sm:py-12">
         <PageHeader 
           title="Job Applicants"
-          description={`Viewing applicants for job ID: ${jobId}`}
+          description={`Viewing applicants for ${jobTitle}`}
         />
         <div className="container mx-auto max-w-7xl px-4 py-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>Applicants for '{applications?.[0]?.jobTitle || 'Job'}'</CardTitle>
+                    <CardTitle>Applicants for '{jobTitle}'</CardTitle>
                     <CardDescription>Review and manage candidates who have applied.</CardDescription>
                 </CardHeader>
                 <CardContent>
