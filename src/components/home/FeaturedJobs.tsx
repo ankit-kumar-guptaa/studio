@@ -2,44 +2,26 @@ import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { featuredJobs } from '@/lib/data';
 import type { JobPost } from '@/lib/types';
-import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase-admin/firestore';
-import { adminDb } from '@/lib/firebase-admin';
 
-async function getFeaturedJobs() {
-  if (!adminDb) {
-    console.error("Firebase Admin is not initialized. Check your server environment variables.");
-    return [];
-  }
-  const fetchedJobs: (JobPost & { employerId: string })[] = [];
-  try {
-    const jobPostsQuery = query(
-      collectionGroup(adminDb, 'jobPosts'),
-      orderBy('postDate', 'desc'),
-      limit(6)
-    );
 
-    const querySnapshot = await getDocs(jobPostsQuery);
-    
-    querySnapshot.forEach((doc) => {
-      const employerId = doc.ref.parent.parent?.id;
-      if (employerId) {
-        // Firestore admin SDK returns Timestamps, which need to be converted
-        const data = doc.data();
-        const jobPost: JobPost = {
-          ...data,
-          id: doc.id,
-          postDate: data.postDate.toDate(), // Convert Timestamp to Date
-        } as JobPost;
-
-        fetchedJobs.push({ ...jobPost, id: doc.id, employerId });
-      }
-    });
-  } catch (error) {
-    console.error("Error fetching featured jobs:", error);
-    // Return empty array on error
-  }
-  return fetchedJobs;
+// Using local dummy data to avoid Firestore fetching issues on the home page.
+// The component is kept async to allow for easy re-integration of server-side fetching later if needed.
+async function getFeaturedJobs(): Promise<(JobPost & { employerId: string })[]> {
+  // Sorting the local data to show the latest jobs first
+  const sortedJobs = [...featuredJobs].sort((a, b) => {
+      const dateA = a.postDate instanceof Date ? a.postDate.getTime() : a.postDate.toMillis();
+      const dateB = b.postDate instanceof Date ? b.postDate.getTime() : b.postDate.toMillis();
+      return dateB - dateA;
+  });
+  
+  // Adding a dummy employerId, as it's expected by the JobCard component.
+  // In a real scenario, this would come from the database structure.
+  return sortedJobs.map((job, index) => ({
+    ...job,
+    employerId: `employer-${index + 1}`
+  }));
 }
 
 export async function FeaturedJobs() {

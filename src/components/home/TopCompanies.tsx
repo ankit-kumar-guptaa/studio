@@ -2,27 +2,13 @@ import Image from 'next/image';
 import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
-import type { Employer } from '@/lib/types';
-import { collection, getDocs, limit, query } from 'firebase-admin/firestore';
-import { adminDb } from '@/lib/firebase-admin';
+import { topCompanies } from '@/lib/data';
+import type { Company } from '@/lib/types';
 
-async function getTopCompanies() {
-  if (!adminDb) {
-    console.error("Firebase Admin is not initialized. Check your server environment variables.");
-    return [];
-  }
-  const fetchedCompanies: Employer[] = [];
-  try {
-    const employersQuery = query(collection(adminDb, 'employers'), limit(12));
-    const querySnapshot = await getDocs(employersQuery);
-    querySnapshot.forEach((doc) => {
-      fetchedCompanies.push({ ...(doc.data() as Employer), id: doc.id });
-    });
-  } catch (error) {
-    console.error("Error fetching top companies:", error);
-    // Return empty array on error
-  }
-  return fetchedCompanies;
+
+// Using local dummy data to avoid Firestore fetching issues on the home page.
+async function getTopCompanies(): Promise<Company[]> {
+  return topCompanies;
 }
 
 export async function TopCompanies() {
@@ -42,7 +28,7 @@ export async function TopCompanies() {
         {companies.length > 0 ? (
           <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {companies.map((company) => {
-              const companyLogo = company.companyLogoUrl ? { imageUrl: company.companyLogoUrl, imageHint: 'company logo' } : findImage('company-logo-1');
+              const companyLogo = company.logo ? findImage(company.logo) : findImage('company-logo-1');
               return (
                 <Link href="#" key={company.id}>
                   <Card className="group flex h-full flex-col items-center justify-center p-4 text-center transition-all hover:bg-card hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
@@ -50,14 +36,14 @@ export async function TopCompanies() {
                       {companyLogo && (
                         <Image
                           src={companyLogo.imageUrl}
-                          alt={`${company.companyName} logo`}
+                          alt={`${company.name} logo`}
                           width={64}
                           height={64}
                           className="h-16 w-16 rounded-lg object-contain transition-transform group-hover:scale-110 border"
                           data-ai-hint={companyLogo.imageHint}
                         />
                       )}
-                      <h3 className="mt-4 font-semibold text-foreground">{company.companyName}</h3>
+                      <h3 className="mt-4 font-semibold text-foreground">{company.name}</h3>
                     </CardContent>
                   </Card>
                 </Link>

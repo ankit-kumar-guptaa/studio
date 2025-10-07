@@ -7,6 +7,7 @@ import { Testimonials } from '@/components/home/Testimonials';
 import { CtaSection } from '@/components/home/CtaSection';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
+import { HowItWorks } from '@/components/home/HowItWorks';
 
 function LoadingSpinner() {
   return (
@@ -25,6 +26,7 @@ export default function Home() {
         <Suspense fallback={<LoadingSpinner />}>
           <FeaturedJobs />
         </Suspense>
+        <HowItWorks />
         <Suspense fallback={<LoadingSpinner />}>
           <TopCompanies />
         </Suspense>
