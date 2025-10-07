@@ -15,6 +15,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
+import Link from 'next/link';
 
 // The job prop now expects postDate to be a string
 interface SerializableJobPost extends Omit<JobPost, 'postDate'> {
@@ -195,7 +196,11 @@ export function JobCard({ job, employerId: propEmployerId }: JobCardProps) {
           </div>
         )}
         <div className="flex-grow">
-          <CardTitle className="text-lg font-bold">{job.title}</CardTitle>
+          <CardTitle className="text-lg font-bold">
+            <Link href={`/job/${job.id}`} className="hover:underline">
+              {job.title}
+            </Link>
+          </CardTitle>
           <CardDescription className="font-medium text-primary">{job.companyName || 'Reputable Company'}</CardDescription>
         </div>
         <Button variant="ghost" size="icon" onClick={handleSave} disabled={isSaving || isUserLoading}>
