@@ -80,6 +80,12 @@ export function ProfileForm() {
     if (!jobSeekerRef) return;
     setIsSaving(true);
     try {
+      // Make sure to remove experienceYears if level is fresher
+      if (values.experienceLevel === 'fresher') {
+        values.experienceYears = 0;
+        values.currentCompany = '';
+        values.currentSalary = '';
+      }
       await updateDoc(jobSeekerRef, values);
       toast({
         title: 'Profile Updated',
@@ -117,17 +123,17 @@ export function ProfileForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Experience Level</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
+                <FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your experience level" />
                     </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="fresher">Fresher</SelectItem>
-                    <SelectItem value="experienced">Experienced</SelectItem>
-                  </SelectContent>
-                </Select>
+                    <SelectContent>
+                      <SelectItem value="fresher">Fresher</SelectItem>
+                      <SelectItem value="experienced">Experienced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
