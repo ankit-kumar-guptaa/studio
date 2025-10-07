@@ -14,6 +14,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Timestamp } from 'firebase/firestore';
 
 interface JobCardProps {
   job: JobPost;
@@ -28,6 +29,15 @@ export function JobCard({ job, employerId }: JobCardProps) {
   const [hasApplied, setHasApplied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+
+  // Helper to convert Date or Timestamp to Date
+  const toDate = (date: Date | Timestamp | undefined): Date | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    return date.toDate();
+  };
+
+  const postDate = toDate(job.postDate);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -178,7 +188,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
       <CardFooter className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          <span>{job.postDate ? `${formatDistanceToNow(job.postDate.toDate())} ago` : 'N/A'}</span>
+          <span>{postDate ? `${formatDistanceToNow(postDate)} ago` : 'N/A'}</span>
         </div>
         <Button 
           size="sm" 

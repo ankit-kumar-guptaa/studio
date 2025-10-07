@@ -1,49 +1,28 @@
-'use client';
-
 import Image from 'next/image';
 import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import type { Employer } from '@/lib/types';
 import { collection, getDocs, limit, query } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { useFirebase } from '@/firebase';
-import { Loader2 } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { adminDb } from '@/lib/firebase-admin';
 
+async function getTopCompanies() {
+  const fetchedCompanies: Employer[] = [];
+  try {
+    const employersQuery = query(collection(adminDb, 'employers'), limit(12));
+    const querySnapshot = await getDocs(employersQuery);
+    querySnapshot.forEach((doc) => {
+      fetchedCompanies.push({ ...(doc.data() as Employer), id: doc.id });
+    });
+  } catch (error) {
+    console.error("Error fetching top companies:", error);
+    // Return empty array on error
+  }
+  return fetchedCompanies;
+}
 
-export function TopCompanies() {
-  const { firestore } = useFirebase();
-  const [companies, setCompanies] = useState<Employer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    function getTopCompanies() {
-      if (!firestore) return;
-
-      setIsLoading(true);
-      const fetchedCompanies: Employer[] = [];
-      const employersQuery = query(collection(firestore, 'employers'), limit(12));
-      
-      getDocs(employersQuery).then(querySnapshot => {
-        querySnapshot.forEach((doc) => {
-          fetchedCompanies.push({ ...(doc.data() as Employer), id: doc.id });
-        });
-        setCompanies(fetchedCompanies);
-        setIsLoading(false);
-      }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-          path: 'employers',
-          operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        setIsLoading(false);
-      });
-    }
-    getTopCompanies();
-  }, [firestore]);
-
+export async function TopCompanies() {
+  const companies = await getTopCompanies();
 
   return (
     <section id="top-companies" className="bg-secondary py-16 sm:py-24">
@@ -56,11 +35,7 @@ export function TopCompanies() {
             Get hired by the most sought-after companies in the industry.
           </p>
         </div>
-         {isLoading ? (
-          <div className="mt-12 flex justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
-        ) : (
+        {companies.length > 0 ? (
           <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {companies.map((company) => {
               const companyLogo = company.companyLogoUrl ? { imageUrl: company.companyLogoUrl, imageHint: 'company logo' } : findImage('company-logo-1');
@@ -84,6 +59,10 @@ export function TopCompanies() {
                 </Link>
               );
             })}
+          </div>
+        ) : (
+          <div className="mt-12 text-center text-muted-foreground">
+             <p>No companies available at the moment.</p>
           </div>
         )}
       </div>

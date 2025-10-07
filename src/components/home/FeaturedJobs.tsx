@@ -1,55 +1,45 @@
-'use client';
-
 import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import type { JobPost } from '@/lib/types';
 import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { useFirebase } from '@/firebase';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { adminDb } from '@/lib/firebase-admin';
 
-export function FeaturedJobs() {
-  const { firestore } = useFirebase();
-  const [jobs, setJobs] = useState<(JobPost & { employerId: string })[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+async function getFeaturedJobs() {
+  const fetchedJobs: (JobPost & { employerId: string })[] = [];
+  try {
+    const jobPostsQuery = query(
+      collectionGroup(adminDb, 'jobPosts'),
+      orderBy('postDate', 'desc'),
+      limit(6)
+    );
 
-  useEffect(() => {
-    async function getFeaturedJobs() {
-      if (!firestore) return;
-      
-      setIsLoading(true);
-      const fetchedJobs: (JobPost & { employerId: string })[] = [];
-      const jobPostsQuery = query(
-        collectionGroup(firestore, 'jobPosts'),
-        orderBy('postDate', 'desc'),
-        limit(6)
-      );
+    const querySnapshot = await getDocs(jobPostsQuery);
+    
+    querySnapshot.forEach((doc) => {
+      const employerId = doc.ref.parent.parent?.id;
+      if (employerId) {
+        // Firestore admin SDK returns Timestamps, which need to be converted
+        const data = doc.data();
+        const jobPost: JobPost = {
+          ...data,
+          id: doc.id,
+          postDate: data.postDate.toDate(), // Convert Timestamp to Date
+        } as JobPost;
 
-      getDocs(jobPostsQuery).then(querySnapshot => {
-        querySnapshot.forEach((doc) => {
-          const employerId = doc.ref.parent.parent?.id;
-          if (employerId) {
-            fetchedJobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
-          }
-        });
-        setJobs(fetchedJobs);
-        setIsLoading(false);
-      }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-            path: 'jobPosts',
-            operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        setIsLoading(false);
-      });
-    }
+        fetchedJobs.push({ ...jobPost, id: doc.id, employerId });
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching featured jobs:", error);
+    // Return empty array on error
+  }
+  return fetchedJobs;
+}
 
-    getFeaturedJobs();
-  }, [firestore]);
-
+export async function FeaturedJobs() {
+  const jobs = await getFeaturedJobs();
 
   return (
     <section id="featured-jobs" className="py-16 sm:py-24 bg-background">
@@ -62,11 +52,7 @@ export function FeaturedJobs() {
             Explore a selection of top jobs from leading companies in India.
           </p>
         </div>
-        {isLoading ? (
-          <div className="mt-12 flex justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
-        ) : jobs.length > 0 ? (
+        {jobs && jobs.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => (
               <JobCard key={`${job.id}-${job.employerId}`} job={job} employerId={job.employerId} />
