@@ -23,6 +23,7 @@ import type { JobSeeker } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -119,29 +120,36 @@ export function ProfileForm() {
           <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Phone Number</FormLabel> <FormControl> <Input type="tel" placeholder="+91 98765 43210" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
           
-          {/* New Button-based selector for Experience Level */}
-          <div className="space-y-2">
-            <FormLabel>Experience Level</FormLabel>
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                variant={experienceLevel === 'fresher' ? 'default' : 'outline'}
-                onClick={() => form.setValue('experienceLevel', 'fresher', { shouldValidate: true })}
-                className={cn(experienceLevel === 'fresher' && 'gradient-saffron')}
-              >
-                Fresher
-              </Button>
-              <Button
-                type="button"
-                variant={experienceLevel === 'experienced' ? 'default' : 'outline'}
-                onClick={() => form.setValue('experienceLevel', 'experienced', { shouldValidate: true })}
-                className={cn(experienceLevel === 'experienced' && 'gradient-saffron')}
-              >
-                Experienced
-              </Button>
-            </div>
-            <FormMessage>{form.formState.errors.experienceLevel?.message}</FormMessage>
-          </div>
+           <FormField
+            control={form.control}
+            name="experienceLevel"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Experience Level</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-row space-x-4"
+                  >
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <RadioGroupItem value="fresher" />
+                      </FormControl>
+                      <FormLabel className="font-normal">Fresher</FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <RadioGroupItem value="experienced" />
+                      </FormControl>
+                      <FormLabel className="font-normal">Experienced</FormLabel>
+                    </FormItem>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {experienceLevel === 'experienced' && (
