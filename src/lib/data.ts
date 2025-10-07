@@ -1,4 +1,4 @@
-import type { Job, Company, Testimonial, JobPost } from './types';
+import type { Job, Company, Testimonial, JobPost, Blog } from './types';
 import { Timestamp } from 'firebase/firestore';
 
 
@@ -109,5 +109,77 @@ export const testimonials: Testimonial[] = [
     role: 'Marketing Specialist',
     avatar: 'testimonial-avatar-3',
     quote: 'As a recent graduate, I was overwhelmed. The resume builder and blog articles on Hiring Dekho were incredibly helpful in my job search.',
+  },
+];
+
+export const blogPosts: Blog[] = [
+  {
+    id: '1',
+    title: '5 Tips for a Standout Resume',
+    author: 'Hiring Dekho Team',
+    publicationDate: '2024-07-26',
+    imageUrl: 'https://picsum.photos/seed/resume/1200/600',
+    imageHint: 'resume document',
+    content: `
+      <h3>Introduction</h3>
+      <p>Your resume is often the first impression you make on a potential employer. A well-crafted resume can open doors to interviews, while a poorly structured one can get lost in the pile. Here are five essential tips to ensure your resume stands out from the competition.</p>
+
+      <h3>1. Tailor It to the Job Description</h3>
+      <p>One of the biggest mistakes job seekers make is sending a generic resume to every employer. Instead, take the time to customize your resume for each specific job you apply for. Carefully read the job description, identify the key skills and qualifications the employer is looking for, and highlight how your experience aligns with those requirements. Use the same keywords found in the job description to get past automated Applicant Tracking Systems (ATS).</p>
+
+      <h3>2. Start with a Powerful Summary</h3>
+      <p>Forget the outdated "Objective" statement. Replace it with a compelling Professional Summary. This short paragraph (3-4 sentences) at the top of your resume should concisely highlight your most relevant qualifications, experience, and career goals. Think of it as your elevator pitch – it should be engaging and make the recruiter want to read more.</p>
+
+      <h3>3. Quantify Your Achievements</h3>
+      <p>Don't just list your responsibilities; showcase your accomplishments. Use numbers and data to quantify your impact. For example, instead of saying "Managed social media accounts," you could say "Grew social media engagement by 40% over six months by implementing a new content strategy." Quantifiable results provide concrete evidence of your abilities and value.</p>
+
+      <h3>4. Keep It Clean and Readable</h3>
+      <p>Recruiters spend only a few seconds scanning each resume. Make sure yours is easy to read. Use a clean, professional font (like Calibri, Arial, or Times New Roman), maintain consistent formatting, and use plenty of white space. Stick to a one-page resume if you have less than 10 years of experience. Use bullet points to break up large blocks of text and make your accomplishments easy to scan.</p>
+
+      <h3>5. Proofread Meticulously</h3>
+      <p>Typos and grammatical errors are a major red flag for employers. They suggest a lack of attention to detail. Before you send your resume, proofread it multiple times. Read it aloud, have a friend or family member review it, and consider using a grammar-checking tool like Grammarly. A flawless resume demonstrates professionalism and care.</p>
+    `,
+  },
+  {
+    id: '2',
+    title: 'How to Ace Your Next Remote Interview',
+    author: 'Priya Desai',
+    publicationDate: '2024-07-24',
+    imageUrl: 'https://picsum.photos/seed/interview/1200/600',
+    imageHint: 'video conference',
+    content: `
+      <h3>The New Normal of Hiring</h3>
+      <p>Remote interviews have become a standard part of the hiring process for many companies. While they offer convenience, they also present unique challenges. Here’s how you can prepare to ace your next virtual interview.</p>
+      
+      <h3>1. Test Your Tech</h3>
+      <p>Technical glitches can derail an interview before it even starts. A day or two before the interview, test your setup. Check your internet connection, camera, and microphone. Make sure you have the correct software (Zoom, Google Meet, etc.) installed and are familiar with its basic functions. Do a test call with a friend to ensure everything works smoothly.</p>
+
+      <h3>2. Create a Professional Environment</h3>
+      <p>Your background matters. Choose a quiet, well-lit space free from distractions. A clean, neutral background is best. A tidy bookshelf or a simple wall is much better than a cluttered room. Ensure that pets, family members, or roommates won't interrupt you during the call. Dress professionally, just as you would for an in-person interview.</p>
+      
+      <h3>3. Practice Your Non-Verbal Cues</h3>
+      <p>It can be harder to convey enthusiasm and engagement through a screen. Practice maintaining eye contact by looking directly into the camera, not at the screen image of yourself or the interviewer. Sit up straight, smile, and use hand gestures naturally. Active listening is key—nod and provide verbal affirmations to show you're paying attention.</p>
+      
+      <h3>4. Be Prepared for Common Questions</h3>
+      <p>Just like any interview, preparation is crucial. Research the company and the role thoroughly. Prepare answers to common interview questions, including behavioral questions that start with "Tell me about a time when...". Also, have a list of thoughtful questions to ask the interviewer. This shows your genuine interest in the role and the company.</p>
+    `,
+  },
+  {
+    id: '3',
+    title: 'Navigating the Indian Job Market in 2024',
+    author: 'Aditya Verma',
+    publicationDate: '2024-07-22',
+    imageUrl: 'https://picsum.photos/seed/market/1200/600',
+    imageHint: 'city skyline',
+    content: `
+      <h3>Current Trends</h3>
+      <p>The Indian job market is dynamic and constantly evolving. In 2024, several sectors are experiencing rapid growth, driven by technological advancements and shifting economic priorities. The IT and tech sectors continue to be major employers, with high demand for professionals in AI/ML, data science, cybersecurity, and cloud computing. The rise of digital infrastructure is also fueling growth in ed-tech, fin-tech, and e-commerce.</p>
+
+      <h3>In-Demand Skills</h3>
+      <p>Beyond technical skills, employers are increasingly looking for soft skills. Communication, critical thinking, problem-solving, and adaptability are highly valued. The ability to work in a hybrid or remote setup is also a key competency. Upskilling and continuous learning are more important than ever. Certifications in trending technologies or project management methodologies (like Agile) can give you a significant edge.</p>
+
+      <h3>The Gig Economy</h3>
+      <p>The gig economy is no longer a niche segment. Freelancing and contract-based work are becoming mainstream career choices in India. Platforms that connect freelancers with projects are booming. This model offers flexibility but also requires strong self-discipline, financial planning, and networking skills. If you have a specialized skill, exploring the gig economy can be a lucrative and empowering career path.</p>
+    `,
   },
 ];

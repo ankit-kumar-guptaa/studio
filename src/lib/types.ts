@@ -50,6 +50,17 @@ export interface Testimonial {
   quote: string;
 }
 
+export interface Blog {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  publicationDate: string;
+  imageUrl: string;
+  imageHint: string;
+}
+
+
 export interface Employer {
     id: string;
     firstName: string;

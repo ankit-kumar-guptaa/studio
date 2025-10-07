@@ -6,36 +6,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-
-const blogPosts = [
-  {
-    id: 1,
-    title: '5 Tips for a Standout Resume',
-    description: 'Learn how to craft a resume that grabs the attention of recruiters and lands you more interviews.',
-    imageUrl: 'https://picsum.photos/seed/resume/600/400',
-    imageHint: 'resume document',
-    date: 'July 26, 2024',
-    author: 'Hiring Dekho Team',
-  },
-  {
-    id: 2,
-    title: 'How to Ace Your Next Remote Interview',
-    description: 'Remote interviews are the new norm. Discover key strategies to impress your future employer from home.',
-    imageUrl: 'https://picsum.photos/seed/interview/600/400',
-    imageHint: 'video conference',
-    date: 'July 24, 2024',
-    author: 'Priya Desai',
-  },
-  {
-    id: 3,
-    title: 'Navigating the Indian Job Market in 2024',
-    description: 'An overview of the trending industries and in-demand skills in India right now.',
-    imageUrl: 'https://picsum.photos/seed/market/600/400',
-    imageHint: 'city skyline',
-    date: 'July 22, 2024',
-    author: 'Aditya Verma',
-  },
-];
+import { blogPosts } from '@/lib/data';
+import { format } from 'date-fns';
 
 export default function BlogPage() {
   return (
@@ -60,14 +32,14 @@ export default function BlogPage() {
                 />
                 <CardHeader>
                   <CardTitle>{post.title}</CardTitle>
-                  <CardDescription>{post.date} by {post.author}</CardDescription>
+                  <CardDescription>{format(new Date(post.publicationDate), 'PPP')} by {post.author}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <p className="text-muted-foreground">{post.description}</p>
+                  <p className="text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: post.content.replace(/<[^>]+>/g, '') }} />
                 </CardContent>
                 <CardFooter>
                   <Button asChild variant="link" className="p-0">
-                    <Link href="#">
+                    <Link href={`/blog/${post.id}`}>
                       Read More <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
