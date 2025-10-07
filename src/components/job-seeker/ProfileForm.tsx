@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,7 @@ export function ProfileForm() {
 
   const { data: jobSeekerData, isLoading } = useDoc<JobSeeker>(jobSeekerRef);
 
-  const { register, handleSubmit, control, watch, reset, formState: { errors } } = useForm<ProfileFormData>({
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       firstName: '',
@@ -62,6 +62,7 @@ export function ProfileForm() {
   });
   
   const experienceLevel = watch('experienceLevel');
+  const locationValue = watch('location');
 
   useEffect(() => {
     if (jobSeekerData) {
@@ -118,39 +119,27 @@ export function ProfileForm() {
         </div>
         <div className="space-y-2">
            <Label htmlFor="location">Location</Label>
-           <Controller
-                name="location"
-                control={control}
-                render={({ field }) => (
-                    <Combobox
-                        options={locationOptions}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select location..."
-                        searchPlaceholder="Search location..."
-                        emptyPlaceholder="Location not found."
-                    />
-                )}
+            <Combobox
+                options={locationOptions}
+                value={locationValue}
+                onChange={(value) => setValue('location', value, { shouldValidate: true })}
+                placeholder="Select location..."
+                searchPlaceholder="Search location..."
+                emptyPlaceholder="Location not found."
             />
             {errors.location && <p className="text-sm font-medium text-destructive">{errors.location.message}</p>}
         </div>
         <div className="space-y-2">
             <Label htmlFor="experienceLevel">Experience Level</Label>
-             <Controller
-                name="experienceLevel"
-                control={control}
-                render={({ field }) => (
-                    <select
-                        id="experienceLevel"
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        {...field}
-                    >
-                        <option value="" disabled>Select your experience level</option>
-                        <option value="fresher">Fresher</option>
-                        <option value="experienced">Experienced</option>
-                    </select>
-                )}
-            />
+            <select
+                id="experienceLevel"
+                {...register('experienceLevel')}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                <option value="" disabled>Select your experience level</option>
+                <option value="fresher">Fresher</option>
+                <option value="experienced">Experienced</option>
+            </select>
             {errors.experienceLevel && <p className="text-sm font-medium text-destructive">{errors.experienceLevel.message}</p>}
         </div>
 
