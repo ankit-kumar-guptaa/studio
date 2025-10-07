@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import Link from 'next/link';
-import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -122,36 +122,28 @@ export function ProfileForm() {
               control={form.control}
               name="experienceLevel"
               render={({ field }) => (
-                <FormItem className="flex flex-col rounded-lg border p-4">
-                  <FormLabel className="mb-2">Experience Level</FormLabel>
-                  <div className="flex items-center space-x-4">
-                    <FormLabel
-                      className={
-                        field.value === 'fresher'
-                          ? 'font-bold text-primary'
-                          : 'text-muted-foreground'
-                      }
+                <FormItem className="space-y-3">
+                  <FormLabel>Experience Level</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex items-center gap-4 rounded-lg border p-4"
                     >
-                      Fresher
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value === 'experienced'}
-                        onCheckedChange={(checked) => {
-                          field.onChange(checked ? 'experienced' : 'fresher');
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      className={
-                        field.value === 'experienced'
-                          ? 'font-bold text-primary'
-                          : 'text-muted-foreground'
-                      }
-                    >
-                      Experienced
-                    </FormLabel>
-                  </div>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="fresher" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Fresher</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="experienced" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Experienced</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
