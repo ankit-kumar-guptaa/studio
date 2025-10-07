@@ -16,8 +16,13 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
 
+// The job prop now expects postDate to be a string
+interface SerializableJobPost extends Omit<JobPost, 'postDate'> {
+  postDate: string;
+}
+
 interface JobCardProps {
-  job: JobPost;
+  job: SerializableJobPost;
   employerId?: string; // Needed for creating the correct application path
 }
 
@@ -30,14 +35,8 @@ export function JobCard({ job, employerId }: JobCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Helper to convert Date or Timestamp to Date
-  const toDate = (date: Date | Timestamp | undefined): Date | null => {
-    if (!date) return null;
-    if (date instanceof Date) return date;
-    return date.toDate();
-  };
-
-  const postDate = toDate(job.postDate);
+  // Convert the string back to a Date object for formatting
+  const postDate = job.postDate ? new Date(job.postDate) : null;
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -134,7 +133,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
     } else {
       // Save the job
       // We store the full job object for easy retrieval, along with employerId
-      const jobDataToSave = { ...job, employerId, savedDate: serverTimestamp() };
+      const jobDataToSave = { ...job, postDate: Timestamp.fromDate(new Date(job.postDate)), employerId, savedDate: serverTimestamp() };
       setDoc(savedJobRef, jobDataToSave)
         .then(() => {
           toast({ title: 'Job Saved!', description: `${job.title} has been added to your saved jobs.` });

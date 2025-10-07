@@ -20,7 +20,7 @@ export interface JobPost {
   salary: string;
   description: string;
   requirements: string;
-  postDate: Timestamp | Date; // Allow both Timestamp and Date
+  postDate: Timestamp | Date | string; // Allow serializable string
   companyName?: string;
   companyLogo?: string;
 }

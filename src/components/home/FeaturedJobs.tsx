@@ -40,9 +40,16 @@ export async function FeaturedJobs() {
         </div>
         {jobs && jobs.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job) => (
-              <JobCard key={`${job.id}-${job.employerId}`} job={job} employerId={job.employerId} />
-            ))}
+            {jobs.map((job) => {
+              const plainJob = {
+                ...job,
+                // Convert Timestamp/Date to a serializable string
+                postDate: job.postDate instanceof Date ? job.postDate.toISOString() : job.postDate.toDate().toISOString(),
+              };
+              return (
+                 <JobCard key={`${job.id}-${job.employerId}`} job={plainJob} employerId={job.employerId} />
+              )
+            })}
           </div>
         ) : (
           <div className="mt-12 text-center text-muted-foreground">
