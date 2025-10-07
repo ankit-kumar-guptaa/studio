@@ -9,42 +9,44 @@ function PageTransitionInner({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
 
+  // This effect hides the loader when the new page is fully rendered.
   useEffect(() => {
-    // Hide loader on initial load or when navigation completes
     setIsLoading(false);
   }, [pathname, searchParams]);
 
-  // This effect is for triggering the loader. We use a separate state `isTransitioning`
-  // and a link capture mechanism to show the loader *before* the navigation starts.
-  // This approach is more complex and requires capturing link clicks.
-  // A simpler approach is to show a loader based on a timeout, but that can feel sluggish.
-  // For this implementation, we will rely on Suspense boundaries to show loading states
-  // for page content, and this loader will act as a fallback and transition visual.
-
-  // The logic to show loader on navigation start can be implemented by intercepting
-  // link clicks or using a global state. For simplicity, we can use a small delay
-  // before hiding the loader to smooth out fast transitions, but let's first
-  // build the loader component.
-
-  // Let's create a simplified version: any navigation will trigger the loading state.
-  // In Next.js App router, the layout doesn't re-render on navigation, but the children do.
-  // We can use a combination of Suspense and this state.
-  // A simple way is to use a key on the children to force re-mounting, which is not ideal.
-  
-  // A better approach using Next.js 13+ App Router:
-  // The layout itself doesn't re-render. We can use the router events if available,
-  // but they are not directly exposed as hooks. `usePathname` is the simplest trigger.
-  
-  // Let's simulate a loading state on route change.
-  // Note: This is a simplified implementation. A robust solution might use `next/router` events in a wrapper.
-  const [lastPath, setLastPath] = useState(pathname);
-
+  // This effect sets up a global click listener to show the loader *immediately* on navigation.
   useEffect(() => {
-    if (pathname !== lastPath) {
-      setIsLoading(true);
-      setLastPath(pathname);
-    }
-  }, [pathname, lastPath]);
+    const handleLinkClick = (event: MouseEvent) => {
+      let target = event.target as HTMLElement;
+      // Traverse up the DOM to find the nearest link tag
+      while (target && target.tagName !== 'A') {
+        target = target.parentElement as HTMLElement;
+      }
+
+      if (target && target.tagName === 'A') {
+        const link = target as HTMLAnchorElement;
+        const href = link.getAttribute('href');
+
+        // Check if it's an internal navigation link
+        if (href && href.startsWith('/') && href !== pathname) {
+           // Check if the link has a target="_blank" attribute
+           if (link.target !== '_blank') {
+               setIsLoading(true);
+           }
+        }
+      }
+    };
+
+    // Listen for clicks on the entire body
+    document.body.addEventListener('click', handleLinkClick);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      document.body.removeEventListener('click', handleLinkClick);
+    };
+    // We only want to set this up once.
+    // The `pathname` dependency is to re-evaluate the check for internal links correctly.
+  }, [pathname]);
 
 
   return (
