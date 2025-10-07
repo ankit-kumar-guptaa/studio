@@ -29,7 +29,7 @@ export function JobSearch() {
 
   const [keywords, setKeywords] = useState(searchParams.get('q') || "");
   const [location, setLocation] = useState(searchParams.get('loc') || "");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(searchParams.get('cat') || "all");
 
   const fetchAllJobs = async () => {
     if (!firestore) return;
@@ -66,7 +66,7 @@ export function JobSearch() {
         );
     }
 
-    if (category) {
+    if (category && category !== 'all') {
         filtered = filtered.filter(job =>
             job.category.toLowerCase() === category.toLowerCase()
         );
@@ -78,7 +78,7 @@ export function JobSearch() {
 
   useEffect(() => {
     fetchAllJobs().then(jobs => {
-      if(searchParams.get('q') || searchParams.get('loc')) {
+      if(searchParams.get('q') || searchParams.get('loc') || searchParams.get('cat')) {
         handleSearch(jobs);
       } else {
         setFilteredJobs(jobs);
@@ -117,7 +117,7 @@ export function JobSearch() {
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               <SelectItem value="Technology">Technology</SelectItem>
               <SelectItem value="Marketing">Marketing</SelectItem>
               <SelectItem value="Design">Design</SelectItem>
