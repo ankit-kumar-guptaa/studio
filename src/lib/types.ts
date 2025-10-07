@@ -81,6 +81,9 @@ export interface JobSeeker {
   email: string;
   phone?: string;
   location?: string;
+  experienceLevel?: 'fresher' | 'experienced';
+  currentSalary?: string;
+  currentCompany?: string;
   resumeUrl?: string;
   categoryPreferences?: string[];
   jobAlerts?: {

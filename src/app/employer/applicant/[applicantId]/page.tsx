@@ -7,12 +7,11 @@ import { doc } from 'firebase/firestore';
 import type { JobSeeker } from '@/lib/types';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Loader2, Mail, Phone, MapPin, Briefcase, GraduationCap, Star, FileText } from 'lucide-react';
+import { Loader2, Mail, Phone, MapPin, Briefcase, GraduationCap, Star, FileText, IndianRupee, Building } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 
 function ApplicantProfilePage() {
     const { user, isUserLoading, firestore } = useFirebase();
@@ -21,13 +20,13 @@ function ApplicantProfilePage() {
     const applicantId = params.applicantId as string;
 
     const applicantRef = useMemoFirebase(() => {
-        if (!firestore || !applicantId || !user) return null; // Wait for user to be available
+        if (!firestore || !applicantId || !user) return null;
         return doc(firestore, 'jobSeekers', applicantId);
     }, [firestore, applicantId, user]);
 
     const { data: applicant, isLoading: isApplicantLoading } = useDoc<JobSeeker>(applicantRef);
 
-    if (isUserLoading || !user) { // Show loader while user state is being determined
+    if (isUserLoading || !user) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -35,7 +34,6 @@ function ApplicantProfilePage() {
         );
     }
     
-    // Once user is loaded, if applicant is still loading, show loader
     if (isApplicantLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -81,7 +79,12 @@ function ApplicantProfilePage() {
                             </Avatar>
                             <div className="space-y-1">
                                 <CardTitle className="text-3xl">{applicant.firstName} {applicant.lastName}</CardTitle>
-                                <CardDescription className="text-base text-muted-foreground">{applicant.location || 'Location not specified'}</CardDescription>
+                                <CardDescription className="text-base text-muted-foreground capitalize flex items-center gap-2">
+                                   <Briefcase className="h-4 w-4" /> {applicant.experienceLevel || 'Experience not specified'}
+                                </CardDescription>
+                                <CardDescription className="text-base text-muted-foreground flex items-center gap-2">
+                                    <MapPin className="h-4 w-4" /> {applicant.location || 'Location not specified'}
+                                </CardDescription>
                             </div>
                              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                                 <a href={`mailto:${applicant.email}`} className="inline-flex items-center text-sm gap-2 text-muted-foreground hover:text-primary"><Mail className="h-4 w-4" /> {applicant.email}</a>
@@ -89,17 +92,31 @@ function ApplicantProfilePage() {
                                 {applicant.resumeUrl && <a href={applicant.resumeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm gap-2 text-primary hover:underline"><FileText className="h-4 w-4" /> View Resume</a>}
                             </div>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-8">
+                        <CardContent className="p-8 grid md:grid-cols-2 gap-8">
                             
                             {applicant.summary && (
-                                <div>
+                                <div className="md:col-span-2">
                                     <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary"/> Professional Summary</h3>
                                     <p className="text-muted-foreground">{applicant.summary}</p>
                                 </div>
                             )}
 
-                            {applicant.skills && applicant.skills.length > 0 && (
+                             {applicant.experienceLevel === 'experienced' && (
+                                <>
                                 <div>
+                                    <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><IndianRupee className="h-5 w-5 text-primary"/> Current Salary</h3>
+                                    <p className="text-lg text-muted-foreground">{applicant.currentSalary || 'Not specified'}</p>
+                                </div>
+                                 <div>
+                                    <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><Building className="h-5 w-5 text-primary"/> Current Company</h3>
+                                    <p className="text-lg text-muted-foreground">{applicant.currentCompany || 'Not specified'}</p>
+                                </div>
+                                </>
+                             )}
+
+
+                            {applicant.skills && applicant.skills.length > 0 && (
+                                <div className="md:col-span-2">
                                     <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><Star className="h-5 w-5 text-primary"/> Skills</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {applicant.skills.map(skill => <Badge key={skill.value} variant="secondary">{skill.value}</Badge>)}
@@ -108,7 +125,7 @@ function ApplicantProfilePage() {
                             )}
 
                              {applicant.workExperience && applicant.workExperience.length > 0 && (
-                                <div>
+                                <div className="md:col-span-2">
                                     <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><Briefcase className="h-5 w-5 text-primary"/> Work Experience</h3>
                                     <div className="space-y-6 relative pl-6 before:absolute before:left-2.5 before:top-2 before:h-full before:w-0.5 before:bg-border">
                                         {applicant.workExperience.map((exp, index) => (
@@ -125,7 +142,7 @@ function ApplicantProfilePage() {
                             )}
 
                              {applicant.education && applicant.education.length > 0 && (
-                                <div>
+                                <div className="md:col-span-2">
                                     <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary"/> Education</h3>
                                     <div className="space-y-4">
                                         {applicant.education.map((edu, index) => (

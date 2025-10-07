@@ -36,6 +36,22 @@
           "type": "string",
           "description": "Location of the job seeker."
         },
+        "experienceLevel": {
+          "type": "string",
+          "description": "Experience level of the job seeker (fresher or experienced).",
+          "enum": [
+            "fresher",
+            "experienced"
+          ]
+        },
+        "currentSalary": {
+            "type": "string",
+            "description": "Current salary of the job seeker."
+        },
+        "currentCompany": {
+            "type": "string",
+            "description": "Current company of the job seeker."
+        },
         "categoryPreferences": {
           "type": "array",
           "description": "Job category preferences of the job seeker.",
@@ -406,5 +422,3 @@
     }
   }
 }
-
-    
