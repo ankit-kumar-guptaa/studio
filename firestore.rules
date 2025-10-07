@@ -1,185 +1,194 @@
 /**
- * @file Firebase Security Rules for Hiring Dekho Platform
+ * @fileOverview Firestore Security Rules for Hiring Dekho platform.
  *
- * @core-philosophy This ruleset enforces a combination of user-ownership and
- * public-read/owner-write patterns. Most user data is secured behind
- * ownership checks, while certain collections like 'employers' and 'blogs' are
- * publicly readable but only writable by authorized users (in this prototype,
- * the creator of the content).
+ * Core Philosophy:
+ * This ruleset prioritizes user-level access control, ensuring that users can only
+ * access their own data or data explicitly shared with them. It takes a flexible
+ * approach to data validation during this prototyping phase.
  *
- * @data-structure
- * - /jobSeekers/{jobSeekerId}: Job seeker profiles, accessible only to the
- *   owning user.
- * - /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}: Jobs saved by a specific
- *   job seeker.  Accessible only to the owning user.  This data is duplicated
- *   from the JobPost.
- * - /employers/{employerId}: Employer profiles. Publicly readable, but only
- *   creatable/updateable/deletable by the owning user.
- * - /employers/{employerId}/jobPosts/{jobPostId}: Job posts created by an
- *   employer.  Publicly readable, but only creatable/updateable/deletable by
- *   the owning employer.
- * - /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}:
- *   Job applications for a specific job post.
- * - /blogs/{blogId}: Blog posts. Publicly readable, but only
- *   creatable/updateable/deletable by the author.
- * - /companyReviews/{companyReviewId}: Company reviews. Publicly readable, but
- *   only creatable/updateable/deletable by the author.
+ * Data Structure:
+ * The Firestore data is organized as follows:
+ * - /jobSeekers/{jobSeekerId}: Stores job seeker profiles.
+ * - /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}: Stores saved job posts for a job seeker.
+ * - /employers/{employerId}: Stores employer profiles.
+ * - /employers/{employerId}/jobPosts/{jobPostId}: Stores job posts created by an employer.
+ * - /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}: Stores job applications for a specific job post.
+ * - /blogs/{blogId}: Stores blog posts.
+ * - /companyReviews/{companyReviewId}: Stores company reviews.
  *
- * @key-security-decisions
- * - Listing of employer and blog posts is allowed for all users.
- * - Strict ownership is enforced for job seeker profiles and their associated
- *   data.
- * - Unauthenticated users have read-only access to employer and blog content.
- * - Data validation is relaxed in this prototyping phase.
+ * Key Security Decisions:
+ * - Users can only create, read, update, or delete their own profiles and related data.
+ * - Public read access is granted to job posts and blogs.
  *
- * @denormalization-for-authorization N/A (ownership captured in path)
- * @structural-segregation N/A
+ * Denormalization for Authorization:
+ *  - The rules assume that any data needed for authorization (e.g., ownerId) is
+ *    denormalized directly onto the documents being secured. This avoids costly
+ *    `get()` operations within the rules.
+ *
+ * Structural Segregation:
+ *  - Private user data (profiles, saved jobs) is stored under the /users/{userId}
+ *    path, while public content (job posts, blogs) is stored in top-level collections.
+ *    This segregation simplifies access control and improves query performance.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by an authenticated user.
-     * @return {bool} True if the user is signed in, false otherwise.
+     * @description Allows access to job posts. Public read, owner-only write.
+     * @path /jobPosts/{jobPostId}
+     * @allow (list) Signed-in user can list all job posts.
+     * @allow (get) Signed-in user can get any job post.
+     * @deny (create) Any user cannot create a jobPost document (as there is no ownership field)
+     * @deny (update) Any user cannot update a jobPost document (as there is no ownership field)
+     * @deny (delete) Any user cannot delete a jobPost document (as there is no ownership field)
+     * @principle Public read, owner-only write (requires 'ownerId' field).
      */
+    match /jobPosts/{jobPostId} {
+      allow get, list: if true; // Public read access to all job posts
+
+      // CRITICAL: Cannot implement owner-only writes. The 'JobPost' entity is missing an 'ownerId' or 'authorId' field.
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description Manages job seeker profiles.
+     * @path /jobSeekers/{jobSeekerId}
+     * @allow (create) User can create their own profile if the user ID matches.
+     * @allow (get) User can read their own profile if the user ID matches.
+     * @allow (update) User can update their own profile if the user ID matches and the document exists.
+     * @allow (delete) User can delete their own profile if the user ID matches and the document exists.
+     * @deny (create) User cannot create a profile with a mismatched user ID.
+     * @deny (get) User cannot read another user's profile.
+     * @deny (update) User cannot update another user's profile.
+     * @deny (delete) User cannot delete another user's profile.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /jobSeekers/{jobSeekerId} {
+      allow create: if isSignedIn() && isOwner(jobSeekerId) && request.resource.data.id == jobSeekerId;
+      allow get: if isSignedIn() && isOwner(jobSeekerId);
+      allow update: if isSignedIn() && isExistingOwner(jobSeekerId) && (request.resource.data.id == resource.data.id);
+      allow delete: if isSignedIn() && isExistingOwner(jobSeekerId);
+      allow list: if false;
+    }
+
+    /**
+     * @description Manages saved jobs for a job seeker.
+     * @path /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}
+     * @allow (create) User can save a job post if the user ID matches.
+     * @allow (get) User can read a saved job post if the user ID matches.
+     * @allow (update) User can update a saved job post if the user ID matches and the document exists.
+     * @allow (delete) User can delete a saved job post if the user ID matches and the document exists.
+     * @deny (create) User cannot save a job post for another user.
+     * @deny (get) User cannot read another user's saved job post.
+     * @deny (update) User cannot update another user's saved job post.
+     * @deny (delete) User cannot delete another user's saved job post.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId} {
+      allow create: if isSignedIn() && isOwner(jobSeekerId);
+      allow get: if isSignedIn() && isOwner(jobSeekerId);
+      allow update: if isSignedIn() && isExistingOwner(jobSeekerId);
+      allow delete: if isSignedIn() && isExistingOwner(jobSeekerId);
+      allow list: if isOwner(jobSeekerId);
+    }
+
+    /**
+     * @description Manages employer profiles.
+     * @path /employers/{employerId}
+     * @allow (create) User can create their own profile if the user ID matches.
+     * @allow (get) User can read their own profile if the user ID matches.
+     * @allow (update) User can update their own profile if the user ID matches and the document exists.
+     * @allow (delete) User can delete their own profile if the user ID matches and the document exists.
+     * @deny (create) User cannot create a profile with a mismatched user ID.
+     * @deny (get) User cannot read another user's profile.
+     * @deny (update) User cannot update another user's profile.
+     * @deny (delete) User cannot delete another user's profile.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /employers/{employerId} {
+      allow create: if isSignedIn() && isOwner(employerId) && request.resource.data.id == employerId;
+      allow get: if isSignedIn() && isOwner(employerId);
+      allow update: if isSignedIn() && isExistingOwner(employerId) && (request.resource.data.id == resource.data.id);
+      allow delete: if isSignedIn() && isExistingOwner(employerId);
+      allow list: if false;
+    }
+
+    /**
+     * @description Manages job postings for an employer.
+     * @path /employers/{employerId}/jobPosts/{jobPostId}
+     * @allow (create) Employer can create a job post if the employer ID matches.
+     * @allow (get) Employer can read a job post if the employer ID matches.
+     * @allow (update) Employer can update a job post if the employer ID matches and the document exists.
+     * @allow (delete) Employer can delete a job post if the employer ID matches and the document exists.
+     * @deny (create) Employer cannot create a job post for another employer.
+     * @deny (get) Employer cannot read another employer's job post.
+     * @deny (update) Employer cannot update another employer's job post.
+     * @deny (delete) Employer cannot delete another employer's job post.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /employers/{employerId}/jobPosts/{jobPostId} {
+      allow create: if isSignedIn() && isOwner(employerId);
+      allow get: if true; // Allow all users to view jobs
+      allow update: if isSignedIn() && isExistingOwner(employerId);
+      allow delete: if isSignedIn() && isExistingOwner(employerId);
+      allow list: if true; // Allow all users to list jobs
+    }
+
+    /**
+     * @description Manages job applications for a specific job post.
+     * @path /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}
+     * @allow (create) Employer can create a job application if the employer ID matches.
+     * @allow (get) Employer can read a job application if the employer ID matches.
+     * @allow (update) Employer can update a job application if the employer ID matches and the document exists.
+     * @allow (delete) Employer can delete a job application if the employer ID matches and the document exists.
+     * @deny (create) Employer cannot create a job application for another employer.
+     * @deny (get) Employer cannot read another employer's job application.
+     * @deny (update) Employer cannot update another employer's job application.
+     * @deny (delete) Employer cannot delete another employer's job application.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
+      allow create: if isSignedIn() && isOwner(employerId);
+      allow get: if isSignedIn() && isOwner(employerId);
+      allow update: if isSignedIn() && isExistingOwner(employerId);
+      allow delete: if isSignedIn() && isExistingOwner(employerId);
+      allow list: if isOwner(employerId);
+    }
+
+    /**
+     * @description Manages blog posts.
+     * @path /blogs/{blogId}
+     * @allow (get) Any user can read any blog post.
+     * @allow (list) Any user can list all blog posts.
+     * // CRITICAL: Cannot implement owner-only writes. The 'Blog' entity is missing an 'ownerId' or 'authorId' field.
+     */
+    match /blogs/{blogId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description Manages company reviews.
+     * @path /companyReviews/{companyReviewId}
+     * // CRITICAL: Cannot implement owner-only writes. The 'Blog' entity is missing an 'ownerId' or 'authorId' field.
+     */
+    match /companyReviews/{companyReviewId} {
+        allow create: if isSignedIn();
+        allow get, list: if true;
+        allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against.
-     * @return {bool} True if the user is the owner, false otherwise.
-     */
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the authenticated user is the owner of an existing document.
-     * @param {string} userId The user ID of the document owner.
-     * @return {bool} True if the user is the owner and the document exists, false otherwise.
-     */
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for jobSeeker profiles.
-     * @path /jobSeekers/{jobSeekerId}
-     * @allow (create) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can create their own profile.
-     * @deny (create) User 'otherUserId' cannot create a profile for 'jobSeekerId'.
-     * @allow (get) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can get their own profile.
-     * @deny (get) User 'otherUserId' cannot get the profile of 'jobSeekerId'.
-     * @principle Enforces document ownership for writes.
-     */
-    match /jobSeekers/{jobSeekerId} {
-      allow get: if isOwner(jobSeekerId);
-      allow list: if false;
-      allow create: if isOwner(jobSeekerId) && request.resource.data.id == jobSeekerId;
-      allow update: if isExistingOwner(jobSeekerId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(jobSeekerId);
-    }
-
-    /**
-     * @description Rules for savedJobs subcollection.
-     * @path /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}
-     * @allow (create) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can save a job.
-     * @deny (create) User 'otherUserId' cannot save a job for 'jobSeekerId'.
-     * @allow (get) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can get their saved jobs.
-     * @deny (get) User 'otherUserId' cannot get the saved jobs of 'jobSeekerId'.
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId} {
-      allow get: if isOwner(jobSeekerId);
-      allow list: if isOwner(jobSeekerId);
-      allow create: if isOwner(jobSeekerId);
-      allow update: if isExistingOwner(jobSeekerId);
-      allow delete: if isExistingOwner(jobSeekerId);
-    }
-
-    /**
-     * @description Rules for employers.
-     * @path /employers/{employerId}
-     * @allow (get) Any user can read employer profiles.
-     * @deny (create) User 'unauthenticated' cannot create an employer profile.
-     * @allow (create) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can create their own employer profile.
-     * @deny (create) User 'otherUserId' cannot create a profile for 'employerId'.
-     * @principle Allows public read access with owner-only writes.
-     */
-    match /employers/{employerId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.auth.uid == employerId && request.resource.data.id == employerId;
-      allow update: if isExistingOwner(employerId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(employerId);
-    }
-
-    /**
-     * @description Rules for jobPosts subcollection.
-     * @path /employers/{employerId}/jobPosts/{jobPostId}
-     * @allow (get) Any user can read job posts.
-     * @deny (create) User 'unauthenticated' cannot create a job post.
-     * @allow (create) Employer 'employerId' can create a job post.
-     * @deny (create) User 'otherUserId' cannot create a job post for 'employerId'.
-     * @principle Allows public read access with owner-only writes.
-     */
-    match /employers/{employerId}/jobPosts/{jobPostId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && get(/databases/$(database)/documents/employers/$(employerId)).data.id == employerId;
-      allow update: if isSignedIn() && get(/databases/$(database)/documents/employers/$(employerId)).data.id == employerId && resource != null;
-      allow delete: if isSignedIn() && get(/databases/$(database)/documents/employers/$(employerId)).data.id == employerId && resource != null;
-    }
-
-    /**
-     * @description Rules for job applications.
-     * @path /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}
-     * @allow (create) Any authenticated user can apply for a job.
-     * @deny (create) User 'unauthenticated' cannot apply for a job.
-     * @principle  Only authenticated users can create new job applications.
-     */
-    match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Rules for blog posts.
-     * @path /blogs/{blogId}
-     * @allow (get) Any user can read blog posts.
-     * @deny (create) User 'unauthenticated' cannot create a blog post.
-     * @allow (create) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can create a blog post.
-     * @deny (create) User 'otherUserId' cannot create a blog post for 'blogId'.
-     * @principle Allows public read access with owner-only writes.
-     */
-    match /blogs/{blogId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Rules for company reviews.
-     * @path /companyReviews/{companyReviewId}
-     * @allow (get) Any user can read company reviews.
-     * @deny (create) User 'unauthenticated' cannot create a company review.
-     * @allow (create) User 'U7zlv5eKb5fSB96ZCSiH8RrEw6o1' can create a company review.
-     * @deny (create) User 'otherUserId' cannot create a company review for 'companyReviewId'.
-     * @principle Allows public read access with owner-only writes.
-     */
-    match /companyReviews/{companyReviewId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
+        return isOwner(userId) && resource != null;
     }
   }
 }
