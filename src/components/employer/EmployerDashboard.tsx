@@ -1,18 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { useFirebase, useMemoFirebase, useDoc } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Briefcase, Users, FileText, Building, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Briefcase, Users, Building, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { collection, getDocs, doc } from 'firebase/firestore';
-import type { JobPost, JobApplication } from '@/lib/types';
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import type { JobPost } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { PostJobForm } from './PostJobForm';
 import { EmployerProfileForm } from './EmployerProfileForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+
 
 interface JobPostWithApplicantCount extends JobPost {
   applicantCount: number;
@@ -23,6 +36,7 @@ export function EmployerDashboard() {
   const [jobPostsWithCounts, setJobPostsWithCounts] = useState<JobPostWithApplicantCount[]>([]);
   const [totalApplicants, setTotalApplicants] = useState(0);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const { toast } = useToast();
 
   const jobPostsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -54,6 +68,30 @@ export function EmployerDashboard() {
       setIsLoadingJobs(false);
     }
   };
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (!firestore || !user) return;
+    
+    const jobDocRef = doc(firestore, `employers/${user.uid}/jobPosts`, jobId);
+
+    // Note: This doesn't delete subcollections (applications) on the client.
+    // A Firebase Function would be needed for that, but for now this removes the job post.
+    try {
+      await deleteDoc(jobDocRef);
+      toast({
+        title: "Job Deleted",
+        description: "The job posting has been successfully removed.",
+      });
+      fetchJobsAndCounts(); // Refresh the list
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Deletion Failed",
+        description: error.message || "Could not delete the job post.",
+      });
+    }
+  }
+
 
   useEffect(() => {
     fetchJobsAndCounts();
@@ -145,9 +183,25 @@ export function EmployerDashboard() {
                                   <TableCell className="hidden lg:table-cell">{job.postDate ? `${formatDistanceToNow(job.postDate.toDate())} ago` : 'N/A'}</TableCell>
                                   <TableCell className="text-center">{job.applicantCount}</TableCell>
                                   <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this job posting and all associated applications.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteJob(job.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   </TableCell>
                               </TableRow>
                           ))
