@@ -7,6 +7,10 @@ import { collection, getDocs, limit, query } from 'firebase/firestore';
 import { adminDb } from '@/lib/firebase-admin';
 
 async function getTopCompanies() {
+  if (!adminDb) {
+    console.error("Firebase Admin is not initialized. Check your server environment variables.");
+    return [];
+  }
   const fetchedCompanies: Employer[] = [];
   try {
     const employersQuery = query(collection(adminDb, 'employers'), limit(12));

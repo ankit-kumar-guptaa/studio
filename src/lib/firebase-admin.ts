@@ -5,32 +5,35 @@ import { config } from 'dotenv';
 
 config(); // Load environment variables from .env file
 
-// IMPORTANT: Do not expose this to the client-side.
-// This is a server-side only file.
-const serviceAccount = {
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
+let app: App | undefined;
+let db: Firestore | undefined;
 
-let app: App;
-let db: Firestore;
+try {
+  const serviceAccount = {
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  };
 
-// Check if all required service account properties are available
-if (serviceAccount.project_id && serviceAccount.client_email && serviceAccount.private_key) {
-    if (getApps().length === 0) {
-      app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } else {
-      app = getApps()[0];
-    }
+  if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
+    throw new Error('Firebase Admin SDK service account environment variables are not set.');
+  }
+
+  if (getApps().length === 0) {
+    app = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    app = getApps()[0];
+  }
+
+  if (app) {
     db = getFirestore(app);
-} else {
-    console.error('Firebase Admin SDK initialization failed: Service account environment variables are not set.');
-    // In a production environment, you might want to throw an error.
-    // For now, db will be undefined, and any attempt to use it will fail gracefully in the components.
-}
+  }
 
+} catch (error: any) {
+  console.error(`Firebase Admin SDK initialization failed: ${error.message}`);
+  // db remains undefined, components should handle this.
+}
 
 export { db as adminDb };

@@ -7,6 +7,10 @@ import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase/firest
 import { adminDb } from '@/lib/firebase-admin';
 
 async function getFeaturedJobs() {
+  if (!adminDb) {
+    console.error("Firebase Admin is not initialized. Check your server environment variables.");
+    return [];
+  }
   const fetchedJobs: (JobPost & { employerId: string })[] = [];
   try {
     const jobPostsQuery = query(
