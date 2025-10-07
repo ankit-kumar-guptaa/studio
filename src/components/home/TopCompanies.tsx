@@ -1,3 +1,4 @@
+// This component is not currently used, but kept for potential future use.
 import Image from 'next/image';
 import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
@@ -5,8 +6,6 @@ import Link from 'next/link';
 import { topCompanies } from '@/lib/data';
 import type { Company } from '@/lib/types';
 
-
-// Using local dummy data to avoid Firestore fetching issues on the home page.
 async function getTopCompanies(): Promise<Company[]> {
   return topCompanies;
 }

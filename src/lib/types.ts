@@ -35,6 +35,7 @@ export interface JobApplication {
     jobTitle: string;
     jobSeekerName: string;
     companyName?: string;
+    jobPostId: string;
 }
 
 export interface Company {
@@ -82,6 +83,7 @@ export interface JobSeeker {
   phone?: string;
   location?: string;
   experienceLevel?: 'fresher' | 'experienced';
+  experienceYears?: number;
   currentSalary?: string;
   currentCompany?: string;
   resumeUrl?: string;
@@ -122,5 +124,3 @@ export interface CompanyReview {
     companyLogo?: string;
     jobSeekerName: string;
 }
-
-    

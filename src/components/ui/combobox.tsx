@@ -46,7 +46,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
 
   const selectedOption = options.find(
-    (option) => option.value.toLowerCase() === value?.toLowerCase()
+    (option) => option.value === value
   );
 
   return (

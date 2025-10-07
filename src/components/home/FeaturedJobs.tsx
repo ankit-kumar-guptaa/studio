@@ -1,4 +1,5 @@
-
+// This component is not currently used, but kept for potential future use.
+// It uses dummy data to avoid server-side build issues.
 import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
@@ -6,18 +7,14 @@ import { ArrowRight } from 'lucide-react';
 import type { JobPost } from '@/lib/types';
 import { featuredJobs as dummyJobs } from '@/lib/data';
 
-
-// This function now correctly uses the Firebase Admin SDK methods
 async function getFeaturedJobs(): Promise<(JobPost & { id: string })[]> {
-  // Reverting to dummy data to resolve server-side auth issues in development.
-  // The live data fetching logic can be restored once the environment is configured.
+  // Using dummy data to resolve server-side auth issues in development.
   const jobs = dummyJobs.map(job => ({
     ...job,
     id: job.id || `dummy-${Math.random()}`,
-    postDate: job.postDate.toDate(), // Convert Timestamp to Date
+    postDate: job.postDate.toDate(),
   }));
   
-  // Sort by date just in case, and take the first 6.
   return jobs
     .sort((a, b) => b.postDate.getTime() - a.postDate.getTime())
     .slice(0, 6)
@@ -40,12 +37,9 @@ export async function FeaturedJobs() {
         </div>
         {jobs && jobs.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job) => {
-              // The data is now serializable from the getFeaturedJobs function
-              return (
-                 <JobCard key={job.id} job={job} />
-              )
-            })}
+            {jobs.map((job) => (
+               <JobCard key={job.id} job={job} />
+            ))}
           </div>
         ) : (
           <div className="mt-12 text-center text-muted-foreground">
