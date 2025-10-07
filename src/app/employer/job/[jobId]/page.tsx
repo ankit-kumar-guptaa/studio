@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
@@ -9,30 +9,69 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { collection } from 'firebase/firestore';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { JobApplication } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
+const statusOptions: JobApplication['status'][] = ['Applied', 'Reviewed', 'Interviewing', 'Offered', 'Rejected'];
 
 export default function JobApplicantsPage() {
   const { user, isUserLoading, firestore } = useFirebase();
   const router = useRouter();
   const params = useParams();
   const jobId = params.jobId as string;
+  const { toast } = useToast();
 
   const applicationsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user || !jobId) return null;
     return collection(firestore, `employers/${user.uid}/jobPosts/${jobId}/applications`);
   }, [firestore, user, jobId]);
 
-  const { data: applications, isLoading: isLoadingApplications } = useCollection<JobApplication>(applicationsCollectionRef);
+  const { data: applications, isLoading: isLoadingApplications, setData: setApplications } = useCollection<JobApplication>(applicationsCollectionRef);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
+
+  const handleStatusChange = async (applicationId: string, newStatus: JobApplication['status']) => {
+    if (!firestore || !user || !jobId) return;
+
+    const appDocRef = doc(firestore, `employers/${user.uid}/jobPosts/${jobId}/applications`, applicationId);
+    try {
+      await updateDoc(appDocRef, { status: newStatus });
+
+      // Optimistically update the local state
+      if (applications) {
+        const updatedApplications = applications.map(app => 
+            app.id === applicationId ? { ...app, status: newStatus } : app
+        );
+        setApplications(updatedApplications);
+      }
+      
+      toast({
+        title: "Status Updated",
+        description: `Applicant status changed to ${newStatus}.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error.message || "Could not update applicant status.",
+      });
+    }
+  };
 
 
   if (isUserLoading || !user) {
@@ -45,6 +84,22 @@ export default function JobApplicantsPage() {
 
   // Get the job title from the first application, or use the jobId as a fallback
   const jobTitle = applications?.[0]?.jobTitle || `Job ID: ${jobId}`;
+
+  const getStatusBadgeVariant = (status: JobApplication['status']) => {
+    switch (status) {
+      case 'Interviewing':
+      case 'Offered':
+        return 'default';
+      case 'Reviewed':
+        return 'secondary';
+      case 'Rejected':
+        return 'destructive';
+      case 'Applied':
+      default:
+        return 'outline';
+    }
+  }
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -66,8 +121,8 @@ export default function JobApplicantsPage() {
                             <TableRow>
                                 <TableHead>Applicant Name</TableHead>
                                 <TableHead>Application Date</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Actions</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -82,9 +137,26 @@ export default function JobApplicantsPage() {
                                           </Link>
                                         </TableCell>
                                         <TableCell>{app.applicationDate ? format(app.applicationDate.toDate(), 'PPP') : 'N/A'}</TableCell>
-                                        <TableCell><Badge variant="secondary">{app.status}</Badge></TableCell>
-                                        <TableCell>
-                                          {/* Action buttons can go here */}
+                                        <TableCell className="text-center">
+                                            <Badge variant={getStatusBadgeVariant(app.status)}>{app.status}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="sm">Change Status</Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    {statusOptions.map(status => (
+                                                        <DropdownMenuItem 
+                                                            key={status} 
+                                                            onClick={() => handleStatusChange(app.id, status)}
+                                                            disabled={app.status === status}
+                                                        >
+                                                            {status}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))
