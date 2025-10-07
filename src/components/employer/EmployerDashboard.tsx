@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useFirebase, useMemoFirebase, useDoc } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Briefcase, Users, Building, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Briefcase, Users, Building, Trash2, LineChart } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import type { JobPost } from '@/lib/types';
@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 
 
 interface JobPostWithApplicantCount extends JobPost {
@@ -147,10 +148,11 @@ export function EmployerDashboard() {
       </div>
 
       <Tabs defaultValue="manage-jobs">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 h-auto">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 h-auto">
           <TabsTrigger value="manage-jobs"><Briefcase className="mr-2 h-4 w-4" /> Manage Jobs</TabsTrigger>
           <TabsTrigger value="post-job"><PlusCircle className="mr-2 h-4 w-4" /> Post a New Job</TabsTrigger>
           <TabsTrigger value="profile"><Building className="mr-2 h-4 w-4" /> Company Profile</TabsTrigger>
+          <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Analytics</TabsTrigger>
         </TabsList>
         <TabsContent value="manage-jobs">
           <Card>
@@ -236,6 +238,9 @@ export function EmployerDashboard() {
               <EmployerProfileForm />
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="analytics">
+          <AnalyticsDashboard />
         </TabsContent>
       </Tabs>
     </div>
