@@ -32,6 +32,10 @@
           "type": "string",
           "description": "URL of the job seeker's resume."
         },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL of the job seeker's profile picture."
+        },
         "location": {
           "type": "string",
           "description": "Location of the job seeker."

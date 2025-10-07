@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
+import type { JobSeeker } from '@/lib/types';
 
 const navLinks = [
   { href: '/find-jobs', label: 'Find Jobs' },
@@ -32,22 +33,31 @@ export function Header() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
   const router = useRouter();
   const [userRole, setUserRole] = useState<'job-seeker' | 'employer' | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserData = async () => {
       if (user && firestore) {
         const employerRef = doc(firestore, 'employers', user.uid);
         const employerSnap = await getDoc(employerRef);
         if (employerSnap.exists()) {
           setUserRole('employer');
+          setProfilePictureUrl(employerSnap.data()?.companyLogoUrl || user.photoURL);
         } else {
-          setUserRole('job-seeker');
+          const seekerRef = doc(firestore, 'jobSeekers', user.uid);
+          const seekerSnap = await getDoc(seekerRef);
+          if (seekerSnap.exists()) {
+              setUserRole('job-seeker');
+              const seekerData = seekerSnap.data() as JobSeeker;
+              setProfilePictureUrl(seekerData.profilePictureUrl || user.photoURL);
+          }
         }
       } else {
         setUserRole(null);
+        setProfilePictureUrl(null);
       }
     };
-    fetchUserRole();
+    fetchUserData();
   }, [user, firestore]);
 
   const handleLogout = async () => {
@@ -93,7 +103,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                      <AvatarImage src={profilePictureUrl || ''} alt={user.displayName || 'User'} />
                       <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
                     </Avatar>
                   </Button>

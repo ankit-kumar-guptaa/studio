@@ -4,6 +4,7 @@ import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { JobSeeker } from '@/lib/types';
 import { Loader2, Mail, Phone, MapPin, Briefcase, GraduationCap, Star, FileText, IndianRupee, Building, User } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 
 function InfoField({ icon, label, value }: { icon: React.ReactNode, label: string, value?: string | null }) {
     if (!value) return null;
@@ -46,9 +47,18 @@ export function ViewProfile() {
 
     return (
         <div className="space-y-8">
+            <div className="flex items-center gap-6">
+                <Avatar className="h-24 w-24">
+                    <AvatarImage src={jobSeekerData.profilePictureUrl} alt={`${jobSeekerData.firstName} ${jobSeekerData.lastName}`} />
+                    <AvatarFallback className="text-3xl">{jobSeekerData.firstName?.[0]}{jobSeekerData.lastName?.[0]}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <h2 className="text-2xl font-bold">{jobSeekerData.firstName} {jobSeekerData.lastName}</h2>
+                    <p className="text-muted-foreground">{jobSeekerData.email}</p>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-                 <InfoField icon={<User className="h-4 w-4"/>} label="Full Name" value={`${jobSeekerData.firstName} ${jobSeekerData.lastName}`} />
-                 <InfoField icon={<Mail className="h-4 w-4"/>} label="Email" value={jobSeekerData.email} />
                  <InfoField icon={<Phone className="h-4 w-4"/>} label="Phone" value={jobSeekerData.phone} />
                  <InfoField icon={<MapPin className="h-4 w-4"/>} label="Location" value={jobSeekerData.location} />
                  <InfoField icon={<Briefcase className="h-4 w-4"/>} label="Experience Level" value={jobSeekerData.experienceLevel} />

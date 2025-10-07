@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useEffect, useState }from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { indianStatesAndCities } from '@/lib/locations';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location,
@@ -30,6 +32,7 @@ const profileSchema = z.object({
   currentSalary: z.string().optional(),
   currentCompany: z.string().optional(),
   resumeUrl: z.string().url().or(z.literal('')).optional(),
+  profilePictureUrl: z.string().url().or(z.literal('')).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -46,7 +49,7 @@ export function ProfileForm() {
 
   const { data: jobSeekerData, isLoading } = useDoc<JobSeeker>(jobSeekerRef);
 
-  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ProfileFormData>({
+  const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       firstName: '',
@@ -58,17 +61,18 @@ export function ProfileForm() {
       currentSalary: '',
       currentCompany: '',
       resumeUrl: '',
+      profilePictureUrl: '',
     },
   });
-  
-  const experienceLevel = watch('experienceLevel');
-  const locationValue = watch('location');
+
+  const experienceLevel = form.watch('experienceLevel');
+  const profilePictureUrl = form.watch('profilePictureUrl');
 
   useEffect(() => {
     if (jobSeekerData) {
-      reset(jobSeekerData);
+      form.reset(jobSeekerData);
     }
-  }, [jobSeekerData, reset]);
+  }, [jobSeekerData, form]);
 
   async function onSubmit(values: ProfileFormData) {
     if (!jobSeekerRef) return;
@@ -95,82 +99,96 @@ export function ProfileForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-            <Label htmlFor="firstName">First Name</Label>
-            <Input id="firstName" {...register('firstName')} />
-            {errors.firstName && <p className="text-sm font-medium text-destructive">{errors.firstName.message}</p>}
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input id="lastName" {...register('lastName')} />
-            {errors.lastName && <p className="text-sm font-medium text-destructive">{errors.lastName.message}</p>}
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" {...register('email')} readOnly className="bg-muted" />
-            {errors.email && <p className="text-sm font-medium text-destructive">{errors.email.message}</p>}
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" {...register('phone')} />
-            {errors.phone && <p className="text-sm font-medium text-destructive">{errors.phone.message}</p>}
-        </div>
-        <div className="space-y-2">
-           <Label htmlFor="location">Location</Label>
-            <Combobox
-                options={locationOptions}
-                value={locationValue}
-                onChange={(value) => setValue('location', value, { shouldValidate: true })}
-                placeholder="Select location..."
-                searchPlaceholder="Search location..."
-                emptyPlaceholder="Location not found."
-            />
-            {errors.location && <p className="text-sm font-medium text-destructive">{errors.location.message}</p>}
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="experienceLevel">Experience Level</Label>
-            <select
-                id="experienceLevel"
-                {...register('experienceLevel')}
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-                <option value="" disabled>Select your experience level</option>
-                <option value="fresher">Fresher</option>
-                <option value="experienced">Experienced</option>
-            </select>
-            {errors.experienceLevel && <p className="text-sm font-medium text-destructive">{errors.experienceLevel.message}</p>}
-        </div>
-
-        {experienceLevel === 'experienced' && (
-        <>
-            <div className="space-y-2">
-                <Label htmlFor="currentCompany">Current Company</Label>
-                <Input id="currentCompany" {...register('currentCompany')} placeholder="Your current company" />
-                {errors.currentCompany && <p className="text-sm font-medium text-destructive">{errors.currentCompany.message}</p>}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        
+        <div className='flex items-center gap-6'>
+            <Avatar className="h-24 w-24">
+                <AvatarImage src={profilePictureUrl || jobSeekerData?.profilePictureUrl} alt="Profile Picture" />
+                <AvatarFallback className='text-3xl'>{jobSeekerData?.firstName?.[0]}{jobSeekerData?.lastName?.[0]}</AvatarFallback>
+            </Avatar>
+            <div className='flex-grow'>
+                <FormField
+                    control={form.control}
+                    name="profilePictureUrl"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Profile Picture URL</FormLabel>
+                        <FormControl>
+                            <Input placeholder="https://example.com/your-photo.jpg" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="currentSalary">Current Salary (LPA)</Label>
-                <Input id="currentSalary" {...register('currentSalary')} placeholder="e.g., 10 LPA" />
-                {errors.currentSalary && <p className="text-sm font-medium text-destructive">{errors.currentSalary.message}</p>}
-            </div>
-        </>
-        )}
-
-        <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="resumeUrl">Resume URL</Label>
-            <Input id="resumeUrl" {...register('resumeUrl')} placeholder="https://example.com/my-resume.pdf" />
-            {errors.resumeUrl && <p className="text-sm font-medium text-destructive">{errors.resumeUrl.message}</p>}
         </div>
-      </div>
 
-      <div className="flex justify-end">
-        <Button type="submit" className="gradient-saffron" disabled={isSaving}>
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Changes
-        </Button>
-      </div>
-    </form>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <FormField control={form.control} name="firstName" render={({ field }) => ( <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+          <FormField control={form.control} name="lastName" render={({ field }) => ( <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+          <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem> )} />
+          <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+          
+           <FormField
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <Combobox
+                    options={locationOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select location..."
+                    searchPlaceholder="Search location..."
+                    emptyPlaceholder="Location not found."
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="experienceLevel"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Experience Level</FormLabel>
+                <FormControl>
+                  <select
+                    {...field}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="" disabled>Select your experience level</option>
+                    <option value="fresher">Fresher</option>
+                    <option value="experienced">Experienced</option>
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {experienceLevel === 'experienced' && (
+          <>
+            <FormField control={form.control} name="currentCompany" render={({ field }) => ( <FormItem><FormLabel>Current Company</FormLabel><FormControl><Input placeholder="Your current company" {...field} /></FormControl><FormMessage /></FormItem> )} />
+            <FormField control={form.control} name="currentSalary" render={({ field }) => ( <FormItem><FormLabel>Current Salary (LPA)</FormLabel><FormControl><Input placeholder="e.g., 10 LPA" {...field} /></FormControl><FormMessage /></FormItem> )} />
+          </>
+          )}
+
+          <div className="md:col-span-2">
+            <FormField control={form.control} name="resumeUrl" render={({ field }) => ( <FormItem><FormLabel>Resume URL</FormLabel><FormControl><Input placeholder="https://example.com/my-resume.pdf" {...field} /></FormControl><FormMessage /></FormItem> )} />
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" className="gradient-saffron" disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

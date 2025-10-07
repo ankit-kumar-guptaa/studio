@@ -87,6 +87,7 @@ export interface JobSeeker {
   currentSalary?: string;
   currentCompany?: string;
   resumeUrl?: string;
+  profilePictureUrl?: string;
   categoryPreferences?: string[];
   jobAlerts?: {
     keywords: string;
