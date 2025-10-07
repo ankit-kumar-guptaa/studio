@@ -4,26 +4,24 @@ import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { JobPost } from '@/lib/types';
-import { adminDb } from '@/lib/firebase-admin';
+import { featuredJobs as dummyJobs } from '@/lib/data';
+
 
 // This function now correctly uses the Firebase Admin SDK methods
 async function getFeaturedJobs(): Promise<(JobPost & { id: string })[]> {
-  if (!adminDb) {
-    console.log("Firebase Admin is not initialized. Cannot fetch jobs.");
-    return [];
-  }
+  // Reverting to dummy data to resolve server-side auth issues in development.
+  // The live data fetching logic can be restored once the environment is configured.
+  const jobs = dummyJobs.map(job => ({
+    ...job,
+    id: job.id || `dummy-${Math.random()}`,
+    postDate: job.postDate.toDate(), // Convert Timestamp to Date
+  }));
   
-  // Use adminDb methods: .collection(), .orderBy(), .limit(), .get()
-  const jobsRef = adminDb.collection('jobPosts');
-  const q = jobsRef.orderBy('postDate', 'desc').limit(6);
-  
-  const querySnapshot = await q.get();
-  const jobs: (JobPost & { id: string })[] = [];
-  querySnapshot.forEach((doc) => {
-    jobs.push({ id: doc.id, ...(doc.data() as JobPost) });
-  });
-
-  return jobs;
+  // Sort by date just in case, and take the first 6.
+  return jobs
+    .sort((a, b) => b.postDate.getTime() - a.postDate.getTime())
+    .slice(0, 6)
+    .map(job => ({...job, postDate: job.postDate.toISOString()}));
 }
 
 export async function FeaturedJobs() {
@@ -43,15 +41,9 @@ export async function FeaturedJobs() {
         {jobs && jobs.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => {
-              // The data from admin SDK is already serializable.
-              // We just need to handle the Timestamp object.
-              const plainJob = {
-                ...job,
-                // @ts-ignore
-                postDate: job.postDate.toDate().toISOString(),
-              };
+              // The data is now serializable from the getFeaturedJobs function
               return (
-                 <JobCard key={job.id} job={plainJob} />
+                 <JobCard key={job.id} job={job} />
               )
             })}
           </div>
