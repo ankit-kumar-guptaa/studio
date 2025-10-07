@@ -130,17 +130,17 @@ export function ProfileForm() {
                       defaultValue={field.value}
                       className="flex space-x-4"
                     >
-                      <FormItem className="flex items-center space-x-2">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="fresher" />
                         </FormControl>
-                        <Label className="font-normal">Fresher</Label>
+                        <FormLabel className="font-normal">Fresher</FormLabel>
                       </FormItem>
-                      <FormItem className="flex items-center space-x-2">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="experienced" />
                         </FormControl>
-                        <Label className="font-normal">Experienced</Label>
+                        <FormLabel className="font-normal">Experienced</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
