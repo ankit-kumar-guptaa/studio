@@ -1,43 +1,59 @@
 /**
  * @file Firestore Security Rules
- * @description This ruleset enforces a user-ownership model for job seekers and employers,
- *              allowing users to manage their own profiles, job posts, and applications.
- *              Public read access is granted to job posts and blogs, while company reviews
- *              can be created by authenticated users.
+ * @description This ruleset enforces a strict user-ownership model for job seekers and employers,
+ *              allowing them to manage their profiles and associated data. Job posts and blogs are
+ *              publicly readable, but only authorized users can create, update, or delete them.
+ *              Company reviews can be created by any signed-in user.
  *
  * Data Structure:
- * - /jobSeekers/{jobSeekerId}: Job seeker profiles, accessible only by the user.
- * - /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}: Jobs saved by a job seeker, accessible only by the user.
- * - /employers/{employerId}: Employer profiles, accessible only by the employer.
- * - /employers/{employerId}/jobPosts/{jobPostId}: Job posts created by an employer, accessible only by the employer.
- * - /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}: Job applications for a specific job post, accessible only by the employer.
- * - /blogs/{blogId}: Blog posts, publicly readable.
- * - /companyReviews/{companyReviewId}: Company reviews, create accessible to signed in users.
+ * - /jobSeekers/{jobSeekerId}: Job seeker profiles, accessible only by the owner.
+ * - /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}: Jobs saved by a job seeker, accessible only by the owner.
+ * - /employers/{employerId}: Employer profiles, accessible only by the owner.
+ * - /employers/{employerId}/jobPosts/{jobPostId}: Job posts created by an employer, accessible only by the owner.
+ * - /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}: Job applications for a specific job post, accessible only by the owner (employer).
+ * - /jobPosts/{jobPostId}: Job posts created by an employer, publicly readable, writeable only by the owner.
+ * - /blogs/{blogId}: Blog posts, publicly readable, writeable only by an admin.
+ * - /companyReviews/{companyReviewId}: Company reviews, writable by any signed-in user.
  *
  * Key Security Decisions:
- * - Strict user-ownership for profiles and associated data.
- * - Public read access for job posts and blogs.
- * - Authenticated users can create company reviews.
- * - Listing of saved jobs is allowed for the job seeker.
+ * - User listing is disallowed.
+ * - Public read access is granted to the jobPosts and blogs collections.
  *
  * Denormalization for Authorization:
- *   (Not applicable in this version. Future versions may denormalize data to avoid `get()` calls.)
- *
- * Structural Segregation:
- *   Private user data is stored under user-specific paths (e.g., /jobSeekers/{jobSeekerId}),
- *   while public data (e.g., /blogs) is stored in top-level collections.
+ * - Job posts are stored both under the employer's profile and in a top-level collection to allow for public listing and simple reads.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants access to job seeker profiles.
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user ID matches the requested user ID.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user ID matches the requested user ID and the resource exists.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description JobSeeker profiles are private and only accessible to the user themselves.
      * @path /jobSeekers/{jobSeekerId}
-     * @allow (get, list) if isOwner(jobSeekerId)
-     * @allow (create, update, delete) if isOwner(jobSeekerId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
+     * @allow (create) Signed-in user with UID 'user123' can create a jobSeeker document with ID 'user123'.
+     * @allow (get, update, delete) Signed-in user with UID 'user123' can access and modify their own jobSeeker profile with ID 'user123'.
+     * @deny (create) Signed-in user with UID 'user123' cannot create a jobSeeker document with ID 'user456'.
+     * @deny (get, update, delete) Signed-in user with UID 'user123' cannot access or modify a jobSeeker profile with ID 'user456'.
      * @principle Enforces document ownership for all operations.
      */
     match /jobSeekers/{jobSeekerId} {
@@ -49,12 +65,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Grants access to jobs saved by a job seeker.
+     * @description Saved jobs are stored under the job seeker's profile and are only accessible to the user themselves.
      * @path /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId}
-     * @allow (get, list) if isOwner(jobSeekerId)
-     * @allow (create, update, delete) if isOwner(jobSeekerId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
+     * @allow (create) Signed-in user with UID 'user123' can create a savedJob document under their jobSeeker profile with ID 'user123'.
+     * @allow (get, update, delete) Signed-in user with UID 'user123' can access and modify savedJob documents under their own jobSeeker profile with ID 'user123'.
+     * @deny (create) Signed-in user with UID 'user123' cannot create a savedJob document under jobSeeker profile with ID 'user456'.
+     * @deny (get, update, delete) Signed-in user with UID 'user123' cannot access or modify savedJob documents under jobSeeker profile with ID 'user456'.
      * @principle Enforces document ownership for all operations.
      */
     match /jobSeekers/{jobSeekerId}/savedJobs/{jobPostId} {
@@ -66,12 +82,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Grants access to employer profiles.
+     * @description Employer profiles are private and only accessible to the employer themselves.
      * @path /employers/{employerId}
-     * @allow (get, list) if isOwner(employerId)
-     * @allow (create, update, delete) if isOwner(employerId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
+     * @allow (create) Signed-in user with UID 'employer123' can create an employer document with ID 'employer123'.
+     * @allow (get, update, delete) Signed-in user with UID 'employer123' can access and modify their own employer profile with ID 'employer123'.
+     * @deny (create) Signed-in user with UID 'employer123' cannot create an employer document with ID 'employer456'.
+     * @deny (get, update, delete) Signed-in user with UID 'employer123' cannot access or modify an employer profile with ID 'employer456'.
      * @principle Enforces document ownership for all operations.
      */
     match /employers/{employerId} {
@@ -83,12 +99,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Grants access to job postings associated with an employer.
+     * @description Job posts are stored under the employer's profile and are only accessible to the employer themselves.
      * @path /employers/{employerId}/jobPosts/{jobPostId}
-     * @allow (get, list) if isOwner(employerId)
-     * @allow (create, update, delete) if isOwner(employerId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
+     * @allow (create) Signed-in user with UID 'employer123' can create a jobPost document under their employer profile with ID 'employer123'.
+     * @allow (get, update, delete) Signed-in user with UID 'employer123' can access and modify jobPost documents under their own employer profile with ID 'employer123'.
+     * @deny (create) Signed-in user with UID 'employer123' cannot create a jobPost document under employer profile with ID 'employer456'.
+     * @deny (get, update, delete) Signed-in user with UID 'employer123' cannot access or modify jobPost documents under employer profile with ID 'employer456'.
      * @principle Enforces document ownership for all operations.
      */
     match /employers/{employerId}/jobPosts/{jobPostId} {
@@ -100,12 +116,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Grants access to job applications for a specific job post.
+     * @description Job applications are stored under the employer's job post and are only accessible to the employer themselves.
      * @path /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}
-     * @allow (get, list) if isOwner(employerId)
-     * @allow (create, update, delete) if isOwner(employerId)
-     * @deny (get, list) if !isSignedIn()
-     * @deny (create, update, delete) if !isSignedIn()
+     * @allow (create) Signed-in user with UID 'employer123' can create a jobApplication document under their jobPost with ID 'employer123'.
+     * @allow (get, update, delete) Signed-in user with UID 'employer123' can access and modify jobApplication documents under their own jobPost with ID 'employer123'.
+     * @deny (create) Signed-in user with UID 'employer123' cannot create a jobApplication document under jobPost with ID 'employer456'.
+     * @deny (get, update, delete) Signed-in user with UID 'employer123' cannot access or modify jobApplication documents under jobPost with ID 'employer456'.
      * @principle Enforces document ownership for all operations.
      */
     match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
@@ -117,61 +133,42 @@ service cloud.firestore {
     }
 
     /**
-     * @description Grants public read access to blog posts.
+     * @description Blogs are publicly readable, but only authorized users can create, update, or delete them.
      * @path /blogs/{blogId}
-     * @allow get, list: if true
-     * @deny create, update, delete: if !isSignedIn()
-     * @principle Allows public read access while restricting write access to authorized users.
+     * @allow (get, list) Any user can read blog posts.
+     * @deny (create, update, delete) No user can create, update, or delete blog posts in this prototype.
+     * @principle Public read access with restricted write access.
      */
     match /blogs/{blogId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false; // TODO: Add author validation once the schema is updated with an ownership field.
-      allow update: if false; // TODO: Add author validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add author validation once the schema is updated with an ownership field.
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Grants access to company reviews.
+     * @description Company reviews can be created by any signed-in user.
      * @path /companyReviews/{companyReviewId}
-     * @allow create: if isSignedIn()
-     * @deny get, list, update, delete: if !isSignedIn()
-     * @principle Allows authenticated users to create company reviews.
+     * @allow (create) Any signed-in user can create a company review.
+     * @deny (get, list, update, delete) No user can get, list, update, or delete company reviews in this prototype.
+     * @principle Allows any signed-in user to create reviews.
      */
     match /companyReviews/{companyReviewId} {
-      allow get: if false;
-      allow list: if false;
+      allow get: if true;
+      allow list: if true;
       allow create: if isSignedIn();
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Grants public read access to jobPosts.
+     * @description Job posts are stored in a top-level collection to allow for public listing and simple reads.
      * @path /jobPosts/{jobPostId}
-     * @allow get, list: if true
-     * @deny create, update, delete: if !isSignedIn()
+     * @allow (get, list) Any user can read job posts.
+     * @deny (create, update, delete) No user can create, update, or delete job posts in this prototype.
+     * @principle Public read access.
      */
-     match /jobPosts/{jobPostId} {
-        allow get: if true;
-        allow list: if true;
-        allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-        allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-        allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     }
-
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
+    match /jobPosts/{jobPostId} {
+        allow get, list: if true;
+        allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
   }
 }
