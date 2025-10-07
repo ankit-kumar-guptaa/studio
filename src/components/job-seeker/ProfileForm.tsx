@@ -59,6 +59,7 @@ export function ProfileForm() {
       email: '',
       phone: '',
       location: '',
+      experienceLevel: undefined,
       experienceYears: 0,
       currentCompany: '',
       currentSalary: '',
@@ -68,7 +69,10 @@ export function ProfileForm() {
 
   useEffect(() => {
     if (jobSeekerData) {
-      form.reset(jobSeekerData);
+      form.reset({
+        ...jobSeekerData,
+        experienceLevel: jobSeekerData.experienceLevel || undefined,
+      });
     }
   }, [jobSeekerData, form]);
 
