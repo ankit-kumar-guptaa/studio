@@ -117,7 +117,7 @@ export function ProfileForm() {
           <FormField control={form.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Email</FormLabel> <FormControl> <Input type="email" placeholder="your.email@example.com" {...field} readOnly className="bg-muted" /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Phone Number</FormLabel> <FormControl> <Input type="tel" placeholder="+91 98765 43210" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-          <FormField
+           <FormField
             control={form.control}
             name="experienceLevel"
             render={({ field }) => (
@@ -129,14 +129,14 @@ export function ProfileForm() {
                     value={field.value}
                     className="flex items-center space-x-4"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="fresher" id="fresher" />
-                      <Label htmlFor="fresher" className="font-normal">Fresher</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="experienced" id="experienced" />
-                      <Label htmlFor="experienced" className="font-normal">Experienced</Label>
-                    </div>
+                    <FormItem className="flex items-center space-x-2">
+                        <RadioGroupItem value="fresher" id="fresher" />
+                        <Label htmlFor="fresher" className="font-normal">Fresher</Label>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-2">
+                        <RadioGroupItem value="experienced" id="experienced" />
+                        <Label htmlFor="experienced" className="font-normal">Experienced</Label>
+                    </FormItem>
                   </RadioGroup>
                 </FormControl>
                 <FormMessage />
