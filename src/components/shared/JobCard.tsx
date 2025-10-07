@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -22,10 +23,9 @@ interface SerializableJobPost extends Omit<JobPost, 'postDate'> {
 
 interface JobCardProps {
   job: SerializableJobPost;
-  employerId?: string; // Needed for creating the correct application path
 }
 
-export function JobCard({ job, employerId }: JobCardProps) {
+export function JobCard({ job }: JobCardProps) {
   const { user, firestore, isUserLoading } = useFirebase();
   const { toast } = useToast();
   const [isApplying, setIsApplying] = useState(false);
@@ -40,15 +40,14 @@ export function JobCard({ job, employerId }: JobCardProps) {
     const checkStatus = async () => {
       if (!user || !firestore || !job.id) return;
 
-      // Determine the employerId if it's not directly passed
-      const effectiveEmployerId = employerId || (job as any).employerId;
+      const effectiveEmployerId = job.employerId;
       if (!effectiveEmployerId) return;
 
-      // Check application status
-      const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
-      const appQuery = query(applicationsRef, where("jobSeekerId", "==", user.uid));
-      const appSnapshot = await getDocs(appQuery);
-      setHasApplied(!appSnapshot.empty);
+      // Check application status in jobSeeker's subcollection for efficiency
+      const appRef = doc(firestore, `jobSeekers/${user.uid}/applications/${job.id}`);
+      const appSnap = await getDoc(appRef);
+      setHasApplied(appSnap.exists());
+
 
       // Check saved status
       const savedJobRef = doc(firestore, `jobSeekers/${user.uid}/savedJobs/${job.id}`);
@@ -60,7 +59,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
       checkStatus();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, firestore, job.id, employerId, isUserLoading]);
+  }, [user, firestore, job.id, isUserLoading]);
   
   const checkIsEmployer = async () => {
     if (!user || !firestore) return false;
@@ -83,7 +82,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
       return;
     }
     if (await checkIsEmployer()) return;
-    const effectiveEmployerId = employerId || (job as any).employerId;
+    const effectiveEmployerId = job.employerId;
     if (!firestore || !effectiveEmployerId) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not process application. Employer information is missing.' });
       return;
@@ -97,13 +96,16 @@ export function JobCard({ job, employerId }: JobCardProps) {
       jobTitle: job.title,
       jobSeekerName: user.displayName,
       companyName: job.companyName,
+      jobPostId: job.id,
     };
     const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
 
     addDoc(applicationsRef, applicationData)
       .then((docRef) => {
+        // Also add a record to the jobseeker's own application collection for easy querying
+        const seekerApplicationData = { ...applicationData, id: docRef.id };
         const seekerApplicationRef = doc(firestore, `jobSeekers/${user.uid}/applications/${docRef.id}`);
-        setDoc(seekerApplicationRef, applicationData)
+        setDoc(seekerApplicationRef, seekerApplicationData)
           .then(() => {
             toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
             setHasApplied(true);
@@ -156,7 +158,7 @@ export function JobCard({ job, employerId }: JobCardProps) {
         .finally(() => setIsSaving(false));
     } else {
       // Save the job
-      const effectiveEmployerId = employerId || (job as any).employerId;
+      const effectiveEmployerId = job.employerId;
       const jobDataToSave = { ...job, postDate: Timestamp.fromDate(new Date(job.postDate)), employerId: effectiveEmployerId, savedDate: serverTimestamp() };
       
       setDoc(savedJobRef, jobDataToSave)

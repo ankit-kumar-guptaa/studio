@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Input } from "@/components/ui/input";
@@ -9,9 +10,9 @@ import { Card } from "../ui/card";
 import { Combobox, ComboboxOption } from "../ui/combobox";
 import { indianStatesAndCities } from "@/lib/locations";
 import { useState, useEffect } from "react";
-import { useFirebase } from "@/firebase";
-import type { JobSeeker, JobPost } from "@/lib/types";
-import { collectionGroup, getDocs, query, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import type { JobPost } from "@/lib/types";
+import { collection, query, doc, updateDoc, arrayUnion, orderBy, getDocs } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -26,8 +27,8 @@ export function JobSearch() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const [allJobs, setAllJobs] = useState<(JobPost & { employerId: string })[]>([]);
-  const [filteredJobs, setFilteredJobs] = useState<(JobPost & { employerId: string })[]>([]);
+  const [allJobs, setAllJobs] = useState<JobPost[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<JobPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingAlert, setIsCreatingAlert] = useState(false);
 
@@ -35,33 +36,35 @@ export function JobSearch() {
   const [location, setLocation] = useState(searchParams.get('loc') || "");
   const [category, setCategory] = useState(searchParams.get('cat') || "all");
 
-  const fetchAllJobs = async () => {
-    if (!firestore) return;
-    setIsLoading(true);
-    const jobs: (JobPost & { employerId: string })[] = [];
-    const jobPostsQuery = query(collectionGroup(firestore, 'jobPosts'));
-    try {
-      const querySnapshot = await getDocs(jobPostsQuery);
-      querySnapshot.forEach((doc) => {
-        const employerId = doc.ref.parent.parent?.id;
-        if(employerId) {
-          jobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
-        }
-      });
-    } catch(e) {
-      console.error("Error fetching jobs: ", e)
-    }
-    const sortedJobs = jobs.sort((a,b) => b.postDate.toMillis() - a.postDate.toMillis())
-    setAllJobs(sortedJobs);
-    return sortedJobs;
-  };
+  const jobsCollectionRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'jobPosts'), orderBy('postDate', 'desc'));
+  }, [firestore]);
+  
+  const { data: jobsData, isLoading: isLoadingJobs } = useCollection<JobPost>(jobsCollectionRef);
 
-  const handleSearch = (jobsToFilter: (JobPost & { employerId: string })[]) => {
+  useEffect(() => {
+    if (!isLoadingJobs && jobsData) {
+      setAllJobs(jobsData);
+      // Initial search based on URL params or show all jobs
+      handleSearch(jobsData, true);
+    }
+    if(!isLoadingJobs && !jobsData) {
+        setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobsData, isLoadingJobs]);
+
+  const handleSearch = (jobsToFilter: JobPost[], isInitialLoad = false) => {
     setIsLoading(true);
     let filtered = [...jobsToFilter];
+    
+    const currentKeywords = isInitialLoad ? searchParams.get('q') || "" : keywords;
+    const currentLocation = isInitialLoad ? searchParams.get('loc') || "" : location;
+    const currentCategory = isInitialLoad ? searchParams.get('cat') || "all" : category;
 
-    if (keywords) {
-        const lowerKeywords = keywords.toLowerCase();
+    if (currentKeywords) {
+        const lowerKeywords = currentKeywords.toLowerCase();
         filtered = filtered.filter(job => 
             job.title.toLowerCase().includes(lowerKeywords) ||
             job.description.toLowerCase().includes(lowerKeywords) ||
@@ -69,36 +72,21 @@ export function JobSearch() {
         );
     }
 
-    if (location) {
+    if (currentLocation) {
         filtered = filtered.filter(job => 
-            job.location.toLowerCase().includes(location)
+            job.location.toLowerCase().includes(currentLocation)
         );
     }
 
-    if (category && category !== 'all') {
+    if (currentCategory && currentCategory !== 'all') {
         filtered = filtered.filter(job =>
-            job.category.toLowerCase() === category.toLowerCase()
+            job.category.toLowerCase() === currentCategory.toLowerCase()
         );
     }
 
     setFilteredJobs(filtered);
     setIsLoading(false);
   }
-
-  useEffect(() => {
-    fetchAllJobs().then(jobs => {
-      if(jobs && (searchParams.get('q') || searchParams.get('loc') || searchParams.get('cat'))) {
-        handleSearch(jobs);
-      } else if (jobs) {
-        setFilteredJobs(jobs);
-        setIsLoading(false);
-      } else {
-        setIsLoading(false)
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore]);
-
 
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,10 +186,10 @@ export function JobSearch() {
                 {filteredJobs.map((job) => {
                    const plainJob = {
                       ...job,
-                      postDate: job.postDate instanceof Date ? job.postDate.toISOString() : job.postDate.toDate().toISOString(),
+                      postDate: job.postDate instanceof Date ? job.postDate.toISOString() : (job.postDate as any).toDate().toISOString(),
                     };
                   return (
-                    <JobCard key={`${job.id}-${job.employerId}`} job={plainJob} employerId={job.employerId} />
+                    <JobCard key={job.id} job={plainJob} />
                   )
                 })}
             </div>

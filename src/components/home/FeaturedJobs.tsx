@@ -1,27 +1,28 @@
+
 import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { featuredJobs } from '@/lib/data';
 import type { JobPost } from '@/lib/types';
+import { adminDb } from '@/lib/firebase-admin';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 
-// Using local dummy data to avoid Firestore fetching issues on the home page.
-// The component is kept async to allow for easy re-integration of server-side fetching later if needed.
-async function getFeaturedJobs(): Promise<(JobPost & { employerId: string })[]> {
-  // Sorting the local data to show the latest jobs first
-  const sortedJobs = [...featuredJobs].sort((a, b) => {
-      const dateA = a.postDate instanceof Date ? a.postDate.getTime() : new Date(a.postDate.seconds * 1000).getTime();
-      const dateB = b.postDate instanceof Date ? b.postDate.getTime() : new Date(b.postDate.seconds * 1000).getTime();
-      return dateB - dateA;
-  });
+async function getFeaturedJobs(): Promise<(JobPost & { id: string })[]> {
+  if (!adminDb) {
+    console.log("Firebase Admin is not initialized. Cannot fetch jobs.");
+    return [];
+  }
+  const jobsRef = collection(adminDb, 'jobPosts');
+  const q = query(jobsRef, orderBy('postDate', 'desc'), limit(6));
   
-  // Adding a dummy employerId, as it's expected by the JobCard component.
-  // In a real scenario, this would come from the database structure.
-  return sortedJobs.slice(0, 6).map((job, index) => ({
-    ...job,
-    employerId: `employer-${index + 1}`
-  }));
+  const querySnapshot = await getDocs(q);
+  const jobs: (JobPost & { id: string })[] = [];
+  querySnapshot.forEach((doc) => {
+    jobs.push({ id: doc.id, ...(doc.data() as JobPost) });
+  });
+
+  return jobs;
 }
 
 export async function FeaturedJobs() {
@@ -44,10 +45,13 @@ export async function FeaturedJobs() {
               const plainJob = {
                 ...job,
                 // Convert Timestamp/Date to a serializable string
-                postDate: job.postDate instanceof Date ? job.postDate.toISOString() : new Date(job.postDate.seconds * 1000).toISOString(),
+                postDate: job.postDate instanceof Date 
+                  ? job.postDate.toISOString() 
+                  // @ts-ignore
+                  : new Date(job.postDate.seconds * 1000).toISOString(),
               };
               return (
-                 <JobCard key={`${job.id}-${job.employerId}`} job={plainJob} employerId={job.employerId} />
+                 <JobCard key={job.id} job={plainJob} />
               )
             })}
           </div>
