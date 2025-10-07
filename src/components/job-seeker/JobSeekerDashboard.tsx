@@ -3,20 +3,20 @@
 import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { User, Search, Bookmark, Sparkles, FileText, Loader2, List } from 'lucide-react';
+import { User, Search, Bookmark, Sparkles, FileText, Loader2, List, ExternalLink } from 'lucide-react';
 import { RecommendedJobs } from "./RecommendedJobs";
 import { ProfileForm } from "./ProfileForm";
-import { JobSearch } from "./JobSearch";
 import { ResumeBuilder } from "./ResumeBuilder";
 import { SavedJobs } from "./SavedJobs";
 import { useSearchParams } from "next/navigation";
 import { MyApplications } from './MyApplications';
+import { Button } from '../ui/button';
+import Link from 'next/link';
 
 
 function JobSeekerDashboardContent() {
   const searchParams = useSearchParams();
-  const hasSearchQuery = searchParams.has('q') || searchParams.has('loc');
-  const defaultTab = hasSearchQuery ? 'search' : 'recommendations';
+  const defaultTab = searchParams.get('tab') || 'profile';
 
   return (
      <div className="container mx-auto max-w-7xl px-4">
@@ -48,10 +48,15 @@ function JobSeekerDashboardContent() {
           <Card>
             <CardHeader>
               <CardTitle>Search for Jobs</CardTitle>
-              <CardDescription>Find your next role with our powerful search filters.</CardDescription>
+              <CardDescription>Find your next role with our powerful search filters on the main jobs page.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <JobSearch />
+            <CardContent className="text-center py-16">
+              <p className="mb-4">You are now in the dashboard. Use the main job search page to find new opportunities.</p>
+              <Button asChild className="gradient-saffron">
+                  <Link href="/find-jobs">
+                      Go to Job Search Page <ExternalLink className="ml-2 h-4 w-4"/>
+                  </Link>
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

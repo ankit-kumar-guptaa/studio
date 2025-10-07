@@ -36,15 +36,20 @@ export function JobSearch() {
     setIsLoading(true);
     const jobs: (JobPost & { employerId: string })[] = [];
     const jobPostsQuery = query(collectionGroup(firestore, 'jobPosts'));
-    const querySnapshot = await getDocs(jobPostsQuery);
-    querySnapshot.forEach((doc) => {
-      const employerId = doc.ref.parent.parent?.id;
-      if(employerId) {
-        jobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
-      }
-    });
-    setAllJobs(jobs);
-    return jobs;
+    try {
+      const querySnapshot = await getDocs(jobPostsQuery);
+      querySnapshot.forEach((doc) => {
+        const employerId = doc.ref.parent.parent?.id;
+        if(employerId) {
+          jobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
+        }
+      });
+    } catch(e) {
+      console.error("Error fetching jobs: ", e)
+    }
+    const sortedJobs = jobs.sort((a,b) => b.postDate.toMillis() - a.postDate.toMillis())
+    setAllJobs(sortedJobs);
+    return sortedJobs;
   };
 
   const handleSearch = (jobsToFilter: (JobPost & { employerId: string })[]) => {
@@ -78,11 +83,13 @@ export function JobSearch() {
 
   useEffect(() => {
     fetchAllJobs().then(jobs => {
-      if(searchParams.get('q') || searchParams.get('loc') || searchParams.get('cat')) {
+      if(jobs && (searchParams.get('q') || searchParams.get('loc') || searchParams.get('cat'))) {
         handleSearch(jobs);
-      } else {
+      } else if (jobs) {
         setFilteredJobs(jobs);
         setIsLoading(false);
+      } else {
+        setIsLoading(false)
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,7 +103,7 @@ export function JobSearch() {
   
   return (
     <div className="space-y-8">
-      <Card className="p-4">
+      <Card className="p-4 md:p-6 sticky top-20 z-40 bg-background/80 backdrop-blur-sm">
         <form onSubmit={onSearchSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Input 
             placeholder="Keywords..." 
@@ -139,15 +146,21 @@ export function JobSearch() {
           <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : (
           filteredJobs.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {filteredJobs.map((job) => (
-                    <JobCard key={`${job.id}-${job.employerId}`} job={job} employerId={job.employerId} />
-                ))}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {filteredJobs.map((job) => {
+                   const plainJob = {
+                      ...job,
+                      postDate: job.postDate instanceof Date ? job.postDate.toISOString() : job.postDate.toDate().toISOString(),
+                    };
+                  return (
+                    <JobCard key={`${job.id}-${job.employerId}`} job={plainJob} employerId={job.employerId} />
+                  )
+                })}
             </div>
           ) : (
-            <div className="text-center py-16 text-muted-foreground">
-                <p>No jobs found matching your criteria.</p>
-                <p className="text-sm">Try adjusting your search filters.</p>
+            <div className="text-center py-16 text-muted-foreground rounded-lg bg-secondary">
+                <p className="font-semibold text-lg">No jobs found matching your criteria.</p>
+                <p className="text-sm">Try adjusting your search filters or check back later.</p>
             </div>
           )
         )}

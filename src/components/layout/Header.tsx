@@ -21,7 +21,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
 const navLinks = [
-  { href: '/job-seeker', label: 'Find Jobs' },
+  { href: '/find-jobs', label: 'Find Jobs' },
   { href: '/employer', label: 'For Employers' },
   { href: '/reviews', label: 'Company Reviews' },
   { href: '/blog', label: 'Career Blog' },

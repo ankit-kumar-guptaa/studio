@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 
 
 // This data is now used for the FeaturedJobs component on the home page.
-export const featuredJobs: JobPost[] = [
+export const featuredJobs: (Omit<JobPost, 'postDate'> & { postDate: Timestamp })[] = [
   {
     id: 'job-1',
     title: 'Senior Frontend Developer',

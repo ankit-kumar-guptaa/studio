@@ -28,7 +28,7 @@ export function HeroSection() {
     if (location) {
       params.set('loc', location);
     }
-    router.push(`/job-seeker?${params.toString()}&tab=search`);
+    router.push(`/find-jobs?${params.toString()}`);
   };
 
 

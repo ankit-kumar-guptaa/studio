@@ -11,14 +11,14 @@ import type { JobPost } from '@/lib/types';
 async function getFeaturedJobs(): Promise<(JobPost & { employerId: string })[]> {
   // Sorting the local data to show the latest jobs first
   const sortedJobs = [...featuredJobs].sort((a, b) => {
-      const dateA = a.postDate instanceof Date ? a.postDate.getTime() : a.postDate.toMillis();
-      const dateB = b.postDate instanceof Date ? b.postDate.getTime() : b.postDate.toMillis();
+      const dateA = a.postDate instanceof Date ? a.postDate.getTime() : new Date(a.postDate.seconds * 1000).getTime();
+      const dateB = b.postDate instanceof Date ? b.postDate.getTime() : new Date(b.postDate.seconds * 1000).getTime();
       return dateB - dateA;
   });
   
   // Adding a dummy employerId, as it's expected by the JobCard component.
   // In a real scenario, this would come from the database structure.
-  return sortedJobs.map((job, index) => ({
+  return sortedJobs.slice(0, 6).map((job, index) => ({
     ...job,
     employerId: `employer-${index + 1}`
   }));
@@ -44,7 +44,7 @@ export async function FeaturedJobs() {
               const plainJob = {
                 ...job,
                 // Convert Timestamp/Date to a serializable string
-                postDate: job.postDate instanceof Date ? job.postDate.toISOString() : job.postDate.toDate().toISOString(),
+                postDate: job.postDate instanceof Date ? job.postDate.toISOString() : new Date(job.postDate.seconds * 1000).toISOString(),
               };
               return (
                  <JobCard key={`${job.id}-${job.employerId}`} job={plainJob} employerId={job.employerId} />
@@ -58,7 +58,7 @@ export async function FeaturedJobs() {
         )}
         <div className="mt-12 text-center">
           <Button asChild size="lg" className="gradient-indigo">
-            <Link href="/job-seeker?tab=search">
+            <Link href="/find-jobs">
               Explore All Jobs <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
