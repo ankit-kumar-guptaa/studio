@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import Link from 'next/link';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -30,6 +30,7 @@ const profileSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(10, 'Phone number is invalid').optional().or(z.literal('')),
   location: z.string().optional(),
+  isExperienced: z.boolean().default(false),
   experienceYears: z.coerce.number().min(0).optional(),
   currentCompany: z.string().optional(),
   currentSalary: z.string().optional(),
@@ -42,7 +43,6 @@ export function ProfileForm() {
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [showExperiencedFields, setShowExperiencedFields] = useState(false);
 
   const jobSeekerRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -59,17 +59,22 @@ export function ProfileForm() {
       email: '',
       phone: '',
       location: '',
+      isExperienced: false,
       experienceYears: 0,
       currentCompany: '',
       currentSalary: '',
       resumeUrl: '',
     },
   });
+  
+  const isExperienced = form.watch("isExperienced");
 
   useEffect(() => {
     if (jobSeekerData) {
-      form.reset(jobSeekerData);
-      setShowExperiencedFields(!!jobSeekerData.experienceYears && jobSeekerData.experienceYears > 0);
+      form.reset({
+        ...jobSeekerData,
+        isExperienced: jobSeekerData.experienceLevel === 'experienced'
+      });
     }
   }, [jobSeekerData, form]);
 
@@ -77,16 +82,18 @@ export function ProfileForm() {
     if (!jobSeekerRef) return;
     setIsSaving(true);
     try {
-      const dataToUpdate: Partial<ProfileFormData> = { ...values };
-      if (!showExperiencedFields) {
+      const dataToUpdate: Partial<JobSeeker> = { 
+        ...values,
+        experienceLevel: values.isExperienced ? 'experienced' : 'fresher'
+      };
+
+      if (!values.isExperienced) {
         dataToUpdate.experienceYears = 0;
         dataToUpdate.currentCompany = '';
         dataToUpdate.currentSalary = '';
       }
-      await updateDoc(jobSeekerRef, {
-        ...dataToUpdate,
-        experienceLevel: showExperiencedFields ? 'experienced' : 'fresher'
-      });
+
+      await updateDoc(jobSeekerRef, dataToUpdate);
       toast({
         title: 'Profile Updated',
         description: 'Your information has been saved successfully.',
@@ -117,7 +124,31 @@ export function ProfileForm() {
           <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl> <Input placeholder="e.g., Bangalore, India" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
         </div>
 
-        {showExperiencedFields && (
+        <FormField
+          control={form.control}
+          name="isExperienced"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">
+                  Are you an experienced professional?
+                </FormLabel>
+                <FormDescription>
+                  Select this if you have prior work experience.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+
+        {isExperienced && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
              <FormField control={form.control} name="experienceYears" render={({ field }) => ( <FormItem> <FormLabel>Years of Experience</FormLabel> <FormControl> <Input type="number" placeholder="e.g., 5" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
              <FormField control={form.control} name="currentCompany" render={({ field }) => ( <FormItem> <FormLabel>Current Company</FormLabel> <FormControl> <Input placeholder="Your current company" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
