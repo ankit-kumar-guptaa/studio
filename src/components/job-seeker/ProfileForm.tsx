@@ -23,7 +23,6 @@ import type { JobSeeker } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import Link from 'next/link';
-import { Label } from '../ui/label';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -127,20 +126,22 @@ export function ProfileForm() {
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex space-x-4"
                     >
-                      <FormItem className="flex items-center space-x-3">
+                      <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="fresher" />
                         </FormControl>
                         <FormLabel className="font-normal">Fresher</FormLabel>
                       </FormItem>
-                      <FormItem className="flex items-center space-x-3">
+                      <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="experienced" />
                         </FormControl>
-                        <FormLabel className="font-normal">Experienced</FormLabel>
+                        <FormLabel className="font-normal">
+                          Experienced
+                        </FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
