@@ -46,7 +46,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
 
   const selectedOption = options.find(
-    (option) => option.value === value
+    (option) => option.value.toLowerCase() === value?.toLowerCase()
   );
 
   return (
@@ -72,15 +72,19 @@ export function Combobox({
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue === value ? "" : currentValue)
+                  onSelect={() => { // Keep onSelect for keyboard navigation
+                    onChange(option.value === value ? "" : option.value)
+                    setOpen(false)
+                  }}
+                  onClick={() => { // Add onClick for mouse interaction
+                    onChange(option.value === value ? "" : option.value)
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value?.toLowerCase() === option.value.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}

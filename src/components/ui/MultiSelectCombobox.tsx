@@ -4,7 +4,6 @@ import * as React from "react"
 import { Check, ChevronsUpDown, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
@@ -66,6 +65,7 @@ export function MultiSelectCombobox({
                         <Badge key={value} variant="secondary">
                             {option?.label}
                             <button
+                                type="button"
                                 className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
@@ -99,6 +99,7 @@ export function MultiSelectCombobox({
                   key={option.value}
                   value={option.value}
                   onSelect={() => handleSelect(option.value)}
+                  onClick={() => handleSelect(option.value)}
                 >
                   <Check
                     className={cn(

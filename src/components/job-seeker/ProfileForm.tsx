@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { JobSeeker } from '@/lib/types';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -32,7 +32,7 @@ const profileSchema = z.object({
   currentSalary: z.string().optional(),
   currentCompany: z.string().optional(),
   resumeUrl: z.string().url().or(z.literal('')).optional(),
-  profilePictureUrl: z.string().url().or(z.literal('')).optional(),
+  profilePictureUrl: z.string().optional(), // Can be a data URI or URL
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -41,6 +41,7 @@ export function ProfileForm() {
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const jobSeekerRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -74,6 +75,26 @@ export function ProfileForm() {
     }
   }, [jobSeekerData, form]);
 
+  const handlePictureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Please select an image smaller than 2MB.",
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue('profilePictureUrl', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
   async function onSubmit(values: ProfileFormData) {
     if (!jobSeekerRef) return;
     setIsSaving(true);
@@ -104,23 +125,22 @@ export function ProfileForm() {
         
         <div className='flex items-center gap-6'>
             <Avatar className="h-24 w-24">
-                <AvatarImage src={profilePictureUrl || jobSeekerData?.profilePictureUrl} alt="Profile Picture" />
+                <AvatarImage src={profilePictureUrl || undefined} alt="Profile Picture" />
                 <AvatarFallback className='text-3xl'>{jobSeekerData?.firstName?.[0]}{jobSeekerData?.lastName?.[0]}</AvatarFallback>
             </Avatar>
             <div className='flex-grow'>
-                <FormField
-                    control={form.control}
-                    name="profilePictureUrl"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Profile Picture URL</FormLabel>
-                        <FormControl>
-                            <Input placeholder="https://example.com/your-photo.jpg" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
+                <Label>Profile Picture</Label>
+                 <Input 
+                    type="file" 
+                    className="hidden"
+                    ref={fileInputRef}
+                    accept="image/png, image/jpeg"
+                    onChange={handlePictureChange}
                 />
+                 <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    Change Picture
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">Click button to select a new photo (PNG, JPG up to 2MB).</p>
             </div>
         </div>
 
@@ -136,7 +156,7 @@ export function ProfileForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
-                <Combobox
+                 <Combobox
                     options={locationOptions}
                     value={field.value}
                     onChange={field.onChange}
