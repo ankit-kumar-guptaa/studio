@@ -21,13 +21,22 @@ function ApplicantProfilePage() {
     const applicantId = params.applicantId as string;
 
     const applicantRef = useMemoFirebase(() => {
-        if (!firestore || !applicantId) return null;
+        if (!firestore || !applicantId || !user) return null; // Wait for user to be available
         return doc(firestore, 'jobSeekers', applicantId);
-    }, [firestore, applicantId]);
+    }, [firestore, applicantId, user]);
 
     const { data: applicant, isLoading: isApplicantLoading } = useDoc<JobSeeker>(applicantRef);
 
-    if (isUserLoading || isApplicantLoading || !user) {
+    if (isUserLoading || !user) { // Show loader while user state is being determined
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            </div>
+        );
+    }
+    
+    // Once user is loaded, if applicant is still loading, show loader
+    if (isApplicantLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
