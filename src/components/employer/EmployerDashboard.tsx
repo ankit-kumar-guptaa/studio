@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle, Briefcase, Users, FileText, Building, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc } from 'firebase/firestore';
 import type { JobPost, JobApplication } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ export function EmployerDashboard() {
     return collection(firestore, `employers/${user.uid}/jobPosts`);
   }, [firestore, user]);
 
-  const { data: employerData } = useDoc(useMemoFirebase(() => user && firestore ? collection(firestore, 'employers').doc(user.uid) : null, [user, firestore]));
+  const { data: employerData } = useDoc(useMemoFirebase(() => user && firestore ? doc(firestore, 'employers', user.uid) : null, [user, firestore]));
 
   const fetchJobsAndCounts = async () => {
     if (!jobPostsCollectionRef) return;
