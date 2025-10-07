@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { PageTransition } from '@/components/layout/PageTransition';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -28,7 +29,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn('min-h-screen bg-background font-sans antialiased', ptSans.variable)}>
         <FirebaseClientProvider>
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
           <Toaster />
         </FirebaseClientProvider>
       </body>
