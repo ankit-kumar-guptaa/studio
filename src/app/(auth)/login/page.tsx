@@ -32,7 +32,8 @@ import {
 } from 'firebase/auth';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
+import { doc, getDoc } from 'firebase/firestore';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -45,7 +46,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { auth } = useFirebase();
+  const { auth, firestore } = useFirebase();
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -55,18 +56,44 @@ export default function LoginPage() {
     },
   });
 
+  const handleSuccessfulLogin = async (userId: string) => {
+    if (!firestore) return;
+
+    // Check if the user is an employer
+    const employerRef = doc(firestore, 'employers', userId);
+    const employerSnap = await getDoc(employerRef);
+
+    if (employerSnap.exists()) {
+      router.push('/employer');
+    } else {
+      router.push('/job-seeker');
+    }
+  };
+
+
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
       if (!auth) {
         throw new Error('Firebase not initialized');
       }
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      
+      if (!userCredential.user.emailVerified) {
+        toast({
+          variant: 'destructive',
+          title: 'Email Not Verified',
+          description: 'Please verify your email before logging in.',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       toast({
         title: 'Login Successful',
         description: "Welcome back!",
       });
-      router.push('/'); // Redirect to home page after login
+      await handleSuccessfulLogin(userCredential.user.uid);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -85,11 +112,15 @@ export default function LoginPage() {
       if (!auth) {
         throw new Error('Firebase not initialized');
       }
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
       toast({
         title: 'Login Successful',
         description: 'Welcome!',
       });
+      // For Google sign-in, we might need a different logic to determine user type
+      // For now, let's assume they might be a job seeker by default if no record exists
+      // or we can prompt them to choose a role on first login.
+      // Let's redirect to a generic dashboard or home for now.
       router.push('/');
     } catch (error: any) {
       toast({

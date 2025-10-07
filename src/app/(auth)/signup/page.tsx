@@ -25,11 +25,11 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Logo } from '@/components/icons/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
 
 const signupSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -76,8 +76,10 @@ export default function SignupPage() {
       await updateProfile(user, {
         displayName: `${data.firstName} ${data.lastName}`,
       });
+      
+      await sendEmailVerification(user);
 
-      const userDoc = {
+      const userDocData = {
         id: user.uid,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -85,18 +87,19 @@ export default function SignupPage() {
       };
       
       if (data.userType === 'job-seeker') {
-         await setDoc(doc(firestore, 'jobSeekers', user.uid), userDoc);
+         await setDoc(doc(firestore, 'jobSeekers', user.uid), userDocData);
       } else {
-         await setDoc(doc(firestore, 'employers', user.uid), { ...userDoc, companyName: '' });
+         await setDoc(doc(firestore, 'employers', user.uid), { ...userDocData, companyName: `${data.firstName}'s Company` });
       }
 
       toast({
-        title: 'Account Created',
-        description: 'You have been successfully signed up!',
+        title: 'Verification Email Sent',
+        description: 'Please check your email to verify your account and complete registration.',
       });
       
-      const redirectPath = data.userType === 'job-seeker' ? '/job-seeker' : '/employer';
-      router.push(redirectPath);
+      // Don't redirect immediately. Let them know to check their email.
+      // The user will login after verification.
+      router.push('/login');
 
     } catch (error: any) {
       toast({
