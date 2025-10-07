@@ -1,9 +1,9 @@
 import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { JobPost } from '@/lib/types';
-import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase-admin';
 
 async function getFeaturedJobs() {

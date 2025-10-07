@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin, Briefcase } from 'lucide-react';
+import { indianStatesAndCities } from '@/lib/locations';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+
+const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
+    value: location.toLowerCase(),
+    label: location,
+}));
+
 
 export function HeroSection() {
   const [keywords, setKeywords] = useState('');
@@ -20,7 +28,7 @@ export function HeroSection() {
     if (location) {
       params.set('loc', location);
     }
-    router.push(`/job-seeker?${params.toString()}`);
+    router.push(`/job-seeker?${params.toString()}&tab=search`);
   };
 
 
@@ -49,16 +57,14 @@ export function HeroSection() {
                 onChange={(e) => setKeywords(e.target.value)}
               />
             </div>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="City, state, or remote"
-                className="w-full pl-10"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
-            </div>
+            <Combobox
+              options={locationOptions}
+              value={location}
+              onChange={setLocation}
+              placeholder="City, state, or remote"
+              searchPlaceholder="Search location..."
+              emptyPlaceholder="Location not found."
+            />
             <Button type="submit" className="w-full gradient-saffron shadow-lg hover:shadow-primary/50 md:col-span-1 sm:col-span-2">
               <Search className="mr-2 h-5 w-5" />
               Search Jobs
