@@ -2,25 +2,22 @@
 
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
-import { collectionGroup, query, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { JobApplication } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 
-interface ApplicationWithDetails extends JobApplication {
-    companyName: string;
-}
-
 export function MyApplications() {
     const { user, firestore, isUserLoading } = useFirebase();
 
+    // Query the user's own applications subcollection for efficiency
     const applicationsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        return query(collectionGroup(firestore, 'applications'), where('jobSeekerId', '==', user.uid));
+        return collection(firestore, `jobSeekers/${user.uid}/applications`);
     }, [firestore, user]);
 
-    const { data: applications, isLoading } = useCollection<ApplicationWithDetails>(applicationsQuery);
+    const { data: applications, isLoading } = useCollection<JobApplication>(applicationsQuery);
 
     if (isLoading || isUserLoading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -28,6 +25,21 @@ export function MyApplications() {
 
     // Sort applications by date, most recent first
     const sortedApplications = applications?.sort((a, b) => b.applicationDate.toMillis() - a.applicationDate.toMillis());
+
+    const getStatusBadgeVariant = (status: JobApplication['status']) => {
+        switch (status) {
+        case 'Interviewing':
+        case 'Offered':
+            return 'default';
+        case 'Reviewed':
+            return 'secondary';
+        case 'Rejected':
+            return 'destructive';
+        case 'Applied':
+        default:
+            return 'outline';
+        }
+    }
 
     return (
         <div>
@@ -48,7 +60,7 @@ export function MyApplications() {
                                 <TableCell>{app.companyName || 'N/A'}</TableCell>
                                 <TableCell>{app.applicationDate ? format(app.applicationDate.toDate(), 'PPP') : 'N/A'}</TableCell>
                                 <TableCell className="text-right">
-                                    <Badge variant="secondary">{app.status}</Badge>
+                                    <Badge variant={getStatusBadgeVariant(app.status)}>{app.status}</Badge>
                                 </TableCell>
                             </TableRow>
                         ))}

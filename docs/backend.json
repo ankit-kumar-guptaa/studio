@@ -152,7 +152,7 @@
           "description": "Category of the job."
         },
         "salary": {
-          "type": "number",
+          "type": "string",
           "description": "Salary for the job."
         },
         "description": {
@@ -333,6 +333,12 @@
         "$ref": "#/entities/JobPost"
       },
       "description": "Stores jobs saved by a job seeker. The document is a copy of the original job post."
+    },
+     "/jobSeekers/{jobSeekerId}/applications/{applicationId}": {
+      "schema": {
+        "$ref": "#/entities/JobApplication"
+      },
+      "description": "Stores a record of applications made by a job seeker for efficient querying."
     },
     "/employers/{employerId}": {
       "schema": {

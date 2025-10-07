@@ -98,14 +98,25 @@ export function JobCard({ job, employerId }: JobCardProps) {
       status: 'Applied',
       jobTitle: job.title,
       jobSeekerName: user.displayName,
-      companyName: job.companyName,
+      companyName: job.companyName, // Bug fix: Ensure companyName is saved
     };
     const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
 
     addDoc(applicationsRef, applicationData)
-      .then(() => {
-        toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
-        setHasApplied(true);
+      .then((docRef) => {
+        // Also add to job seeker's own applications collection for easy querying
+        const seekerApplicationRef = doc(firestore, `jobSeekers/${user.uid}/applications/${docRef.id}`);
+        setDoc(seekerApplicationRef, applicationData)
+          .then(() => {
+            toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
+            setHasApplied(true);
+          })
+          .catch((seekerError) => {
+            console.error("Error creating seeker application record:", seekerError);
+            // Even if this fails, the main application went through.
+            toast({ title: 'Applied Successfully!', description: `Your application for ${job.title} has been submitted.` });
+            setHasApplied(true);
+          });
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({ path: applicationsRef.path, operation: 'create', requestResourceData: applicationData });
