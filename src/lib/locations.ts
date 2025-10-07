@@ -39,7 +39,6 @@ export const indianStatesAndCities: string[] = [
   "West Bengal",
   // Major Cities
   "Mumbai",
-  "Delhi",
   "Bangalore",
   "Hyderabad",
   "Ahmedabad",
@@ -85,7 +84,6 @@ export const indianStatesAndCities: string[] = [
   "Raipur",
   "Kota",
   "Guwahati",
-  "Chandigarh",
   "Solapur",
   "Hubli-Dharwad",
   "Bareilly",
