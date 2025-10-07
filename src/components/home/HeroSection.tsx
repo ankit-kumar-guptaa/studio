@@ -1,8 +1,29 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin, Briefcase } from 'lucide-react';
 
 export function HeroSection() {
+  const [keywords, setKeywords] = useState('');
+  const [location, setLocation] = useState('');
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (keywords) {
+      params.set('q', keywords);
+    }
+    if (location) {
+      params.set('loc', location);
+    }
+    router.push(`/job-seeker?${params.toString()}`);
+  };
+
+
   return (
     <section className="relative overflow-hidden bg-secondary py-20 md:py-32">
        <div
@@ -17,13 +38,15 @@ export function HeroSection() {
           Rozgaar ka Sahi Rasta – Hiring Dekho
         </p>
         <div className="mx-auto mt-10 max-w-4xl">
-          <form className="grid grid-cols-1 gap-4 rounded-lg bg-card p-4 shadow-2xl sm:grid-cols-2 md:grid-cols-3 md:p-6">
+          <form onSubmit={handleSearch} className="grid grid-cols-1 gap-4 rounded-lg bg-card p-4 shadow-2xl sm:grid-cols-2 md:grid-cols-3 md:p-6">
             <div className="relative">
               <Briefcase className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Job title, keywords, or company"
                 className="w-full pl-10"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
               />
             </div>
             <div className="relative">
@@ -32,6 +55,8 @@ export function HeroSection() {
                 type="text"
                 placeholder="City, state, or remote"
                 className="w-full pl-10"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             <Button type="submit" className="w-full gradient-saffron shadow-lg hover:shadow-primary/50 md:col-span-1 sm:col-span-2">

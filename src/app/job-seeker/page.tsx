@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
@@ -9,7 +10,7 @@ import { Footer } from "@/components/layout/Footer";
 import { JobSeekerDashboard } from "@/components/job-seeker/JobSeekerDashboard";
 import { Loader2 } from 'lucide-react';
 
-export default function JobSeekerPage() {
+function JobSeekerPageContent() {
   const { user, isUserLoading } = useFirebase();
   const router = useRouter();
 
@@ -35,5 +36,13 @@ export default function JobSeekerPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function JobSeekerPage() {
+  return (
+    <Suspense>
+      <JobSeekerPageContent />
+    </Suspense>
   );
 }

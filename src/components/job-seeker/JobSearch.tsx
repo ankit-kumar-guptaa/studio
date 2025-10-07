@@ -8,11 +8,12 @@ import { JobCard } from "../shared/JobCard";
 import { Card } from "../ui/card";
 import { Combobox, ComboboxOption } from "../ui/combobox";
 import { indianStatesAndCities } from "@/lib/locations";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useFirebase } from "@/firebase";
 import type { JobPost } from "@/lib/types";
 import { collectionGroup, getDocs, query } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location.toLowerCase(),
@@ -21,43 +22,38 @@ const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => 
 
 export function JobSearch() {
   const { firestore } = useFirebase();
+  const searchParams = useSearchParams();
   const [allJobs, setAllJobs] = useState<(JobPost & { employerId: string })[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<(JobPost & { employerId: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [keywords, setKeywords] = useState("");
-  const [location, setLocation] = useState("");
+  const [keywords, setKeywords] = useState(searchParams.get('q') || "");
+  const [location, setLocation] = useState(searchParams.get('loc') || "");
   const [category, setCategory] = useState("");
 
-  useEffect(() => {
-    const fetchAllJobs = async () => {
-      if (!firestore) return;
-      setIsLoading(true);
-      const jobs: (JobPost & { employerId: string })[] = [];
-      const jobPostsQuery = query(collectionGroup(firestore, 'jobPosts'));
-      const querySnapshot = await getDocs(jobPostsQuery);
-      querySnapshot.forEach((doc) => {
-        const employerId = doc.ref.parent.parent?.id;
-        if(employerId) {
-          jobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
-        }
-      });
-      setAllJobs(jobs);
-      setFilteredJobs(jobs);
-      setIsLoading(false);
-    };
-
-    fetchAllJobs();
-  }, [firestore]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchAllJobs = async () => {
+    if (!firestore) return;
     setIsLoading(true);
-    let jobsToFilter = [...allJobs];
+    const jobs: (JobPost & { employerId: string })[] = [];
+    const jobPostsQuery = query(collectionGroup(firestore, 'jobPosts'));
+    const querySnapshot = await getDocs(jobPostsQuery);
+    querySnapshot.forEach((doc) => {
+      const employerId = doc.ref.parent.parent?.id;
+      if(employerId) {
+        jobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
+      }
+    });
+    setAllJobs(jobs);
+    return jobs;
+  };
+
+  const handleSearch = (jobsToFilter: (JobPost & { employerId: string })[]) => {
+    setIsLoading(true);
+    let filtered = [...jobsToFilter];
 
     if (keywords) {
         const lowerKeywords = keywords.toLowerCase();
-        jobsToFilter = jobsToFilter.filter(job => 
+        filtered = filtered.filter(job => 
             job.title.toLowerCase().includes(lowerKeywords) ||
             job.description.toLowerCase().includes(lowerKeywords) ||
             job.companyName?.toLowerCase().includes(lowerKeywords)
@@ -65,25 +61,43 @@ export function JobSearch() {
     }
 
     if (location) {
-        jobsToFilter = jobsToFilter.filter(job => 
+        filtered = filtered.filter(job => 
             job.location.toLowerCase().includes(location)
         );
     }
 
     if (category) {
-        jobsToFilter = jobsToFilter.filter(job =>
+        filtered = filtered.filter(job =>
             job.category.toLowerCase() === category.toLowerCase()
         );
     }
 
-    setFilteredJobs(jobsToFilter);
+    setFilteredJobs(filtered);
     setIsLoading(false);
+  }
+
+  useEffect(() => {
+    fetchAllJobs().then(jobs => {
+      if(searchParams.get('q') || searchParams.get('loc')) {
+        handleSearch(jobs);
+      } else {
+        setFilteredJobs(jobs);
+        setIsLoading(false);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firestore]);
+
+
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearch(allJobs);
   }
   
   return (
     <div className="space-y-8">
       <Card className="p-4">
-        <form onSubmit={handleSearch} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <form onSubmit={onSearchSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Input 
             placeholder="Keywords..." 
             className="lg:col-span-2"
@@ -103,6 +117,7 @@ export function JobSearch() {
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="">All Categories</SelectItem>
               <SelectItem value="Technology">Technology</SelectItem>
               <SelectItem value="Marketing">Marketing</SelectItem>
               <SelectItem value="Design">Design</SelectItem>

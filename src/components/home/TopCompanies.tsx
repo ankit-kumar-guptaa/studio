@@ -1,10 +1,44 @@
+'use client';
+
 import Image from 'next/image';
-import { topCompanies } from '@/lib/data';
 import { findImage } from '@/lib/placeholder-images';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
+import type { Employer } from '@/lib/types';
+import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { useFirebase } from '@/firebase';
+import { Loader2 } from 'lucide-react';
+
 
 export function TopCompanies() {
+  const { firestore } = useFirebase();
+  const [companies, setCompanies] = useState<Employer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function getTopCompanies() {
+      if (!firestore) return;
+
+      setIsLoading(true);
+      const fetchedCompanies: Employer[] = [];
+      try {
+        const employersQuery = query(collection(firestore, 'employers'), limit(12));
+        const querySnapshot = await getDocs(employersQuery);
+        querySnapshot.forEach((doc) => {
+          fetchedCompanies.push({ ...(doc.data() as Employer), id: doc.id });
+        });
+        setCompanies(fetchedCompanies);
+      } catch (error) {
+        console.error("Error fetching top companies:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    getTopCompanies();
+  }, [firestore]);
+
+
   return (
     <section id="top-companies" className="bg-secondary py-16 sm:py-24">
       <div className="container mx-auto max-w-7xl px-4">
@@ -16,31 +50,36 @@ export function TopCompanies() {
             Get hired by the most sought-after companies in the industry.
           </p>
         </div>
-        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {topCompanies.map((company) => {
-            const companyLogo = findImage(company.logo);
-            return (
-              <Link href="#" key={company.id}>
-                <Card className="group flex h-full flex-col items-center justify-center p-4 text-center transition-all hover:bg-card hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
-                  <CardContent className="flex flex-col items-center justify-center p-0">
-                    {companyLogo && (
-                       <Image
-                        src={companyLogo.imageUrl}
-                        alt={`${company.name} logo`}
-                        width={64}
-                        height={64}
-                        className="h-16 w-16 rounded-lg object-contain transition-transform group-hover:scale-110"
-                        data-ai-hint={companyLogo.imageHint}
-                      />
-                    )}
-                    <h3 className="mt-4 font-semibold text-foreground">{company.name}</h3>
-                    <p className="text-xs text-primary">{company.jobCount} open positions</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+         {isLoading ? (
+          <div className="mt-12 flex justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {companies.map((company) => {
+              const companyLogo = company.companyLogoUrl ? { imageUrl: company.companyLogoUrl, imageHint: 'company logo' } : findImage('company-logo-1');
+              return (
+                <Link href="#" key={company.id}>
+                  <Card className="group flex h-full flex-col items-center justify-center p-4 text-center transition-all hover:bg-card hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
+                    <CardContent className="flex flex-col items-center justify-center p-0">
+                      {companyLogo && (
+                        <Image
+                          src={companyLogo.imageUrl}
+                          alt={`${company.companyName} logo`}
+                          width={64}
+                          height={64}
+                          className="h-16 w-16 rounded-lg object-contain transition-transform group-hover:scale-110 border"
+                          data-ai-hint={companyLogo.imageHint}
+                        />
+                      )}
+                      <h3 className="mt-4 font-semibold text-foreground">{company.companyName}</h3>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

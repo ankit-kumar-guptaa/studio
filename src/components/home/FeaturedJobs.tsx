@@ -1,26 +1,49 @@
 'use client';
 
-import { featuredJobs } from '@/lib/data';
 import { JobCard } from '@/components/shared/JobCard';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import type { JobPost } from '@/lib/types';
-import { Timestamp } from 'firebase/firestore';
+import { collectionGroup, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { useFirebase } from '@/firebase';
+
 
 export function FeaturedJobs() {
-  const jobs: JobPost[] = featuredJobs.map(job => ({
-    id: job.id,
-    title: job.title,
-    companyName: job.company,
-    companyLogo: job.companyLogo,
-    location: job.location,
-    category: job.tags[0] || 'General',
-    salary: job.salary,
-    description: '',
-    requirements: '',
-    postDate: Timestamp.now(),
-  }));
+  const { firestore } = useFirebase();
+  const [jobs, setJobs] = useState<(JobPost & { employerId: string })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function getFeaturedJobs() {
+      if (!firestore) return;
+      
+      setIsLoading(true);
+      const fetchedJobs: (JobPost & { employerId: string })[] = [];
+      try {
+        const jobPostsQuery = query(
+          collectionGroup(firestore, 'jobPosts'),
+          orderBy('postDate', 'desc'),
+          limit(6)
+        );
+        const querySnapshot = await getDocs(jobPostsQuery);
+        querySnapshot.forEach((doc) => {
+          const employerId = doc.ref.parent.parent?.id;
+          if (employerId) {
+            fetchedJobs.push({ ...(doc.data() as JobPost), id: doc.id, employerId });
+          }
+        });
+        setJobs(fetchedJobs);
+      } catch (error) {
+        console.error("Error fetching featured jobs:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    getFeaturedJobs();
+  }, [firestore]);
 
 
   return (
@@ -34,11 +57,21 @@ export function FeaturedJobs() {
             Explore a selection of top jobs from leading companies in India.
           </p>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {jobs.slice(0, 3).map((job) => (
-            <JobCard key={job.id} job={job} employerId="placeholder-employer-id" />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="mt-12 flex justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : jobs.length > 0 ? (
+          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {jobs.map((job) => (
+              <JobCard key={`${job.id}-${job.employerId}`} job={job} employerId={job.employerId} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-12 text-center text-muted-foreground">
+            <p>No featured jobs available at the moment. Please check back later.</p>
+          </div>
+        )}
         <div className="mt-12 text-center">
           <Button asChild size="lg" className="gradient-indigo">
             <Link href="/job-seeker">

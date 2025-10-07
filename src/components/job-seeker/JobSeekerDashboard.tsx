@@ -1,20 +1,29 @@
+'use client';
+
+import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { User, Search, Bookmark, Sparkles, FileText } from 'lucide-react';
+import { User, Search, Bookmark, Sparkles, FileText, Loader2 } from 'lucide-react';
 import { RecommendedJobs } from "./RecommendedJobs";
 import { ProfileForm } from "./ProfileForm";
 import { JobSearch } from "./JobSearch";
 import { ResumeBuilder } from "./ResumeBuilder";
 import { SavedJobs } from "./SavedJobs";
+import { useSearchParams } from "next/navigation";
 
-export function JobSeekerDashboard() {
+
+function JobSeekerDashboardContent() {
+  const searchParams = useSearchParams();
+  const hasSearchQuery = searchParams.has('q') || searchParams.has('loc');
+  const defaultTab = hasSearchQuery ? 'search' : 'recommendations';
+
   return (
-    <div className="container mx-auto max-w-7xl px-4">
+     <div className="container mx-auto max-w-7xl px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Job Seeker Dashboard</h1>
         <p className="text-muted-foreground">Manage your profile, job applications, and career path.</p>
       </div>
-      <Tabs defaultValue="recommendations" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
           <TabsTrigger value="profile" className="py-2"><User className="mr-2 h-4 w-4"/>Profile</TabsTrigger>
           <TabsTrigger value="search" className="py-2"><Search className="mr-2 h-4 w-4"/>Search Jobs</TabsTrigger>
@@ -79,5 +88,13 @@ export function JobSeekerDashboard() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+export function JobSeekerDashboard() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-full"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+      <JobSeekerDashboardContent />
+    </Suspense>
   );
 }
