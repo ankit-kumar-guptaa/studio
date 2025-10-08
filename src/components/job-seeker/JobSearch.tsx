@@ -43,25 +43,13 @@ export function JobSearch() {
   
   const { data: jobsData, isLoading: isLoadingJobs } = useCollection<JobPost>(jobsCollectionRef);
 
-  useEffect(() => {
-    if (!isLoadingJobs && jobsData) {
-      setAllJobs(jobsData);
-      // Initial search based on URL params or show all jobs
-      handleSearch(jobsData, true);
-    }
-    if(!isLoadingJobs && !jobsData) {
-        setIsLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobsData, isLoadingJobs]);
-
   const handleSearch = (jobsToFilter: JobPost[], isInitialLoad = false) => {
     setIsLoading(true);
     let filtered = [...jobsToFilter];
     
-    const currentKeywords = isInitialLoad ? searchParams.get('q') || "" : keywords;
-    const currentLocation = isInitialLoad ? searchParams.get('loc') || "" : location;
-    const currentCategory = isInitialLoad ? searchParams.get('cat') || "all" : category;
+    const currentKeywords = isInitialLoad ? (searchParams.get('q') || "") : keywords;
+    const currentLocation = isInitialLoad ? (searchParams.get('loc') || "") : location;
+    const currentCategory = isInitialLoad ? (searchParams.get('cat') || "all") : category;
 
     if (currentKeywords) {
         const lowerKeywords = currentKeywords.toLowerCase();
@@ -87,6 +75,17 @@ export function JobSearch() {
     setFilteredJobs(filtered);
     setIsLoading(false);
   }
+
+  useEffect(() => {
+    if (!isLoadingJobs && jobsData) {
+      setAllJobs(jobsData);
+      handleSearch(jobsData, true);
+    }
+    if (!isLoadingJobs && !jobsData) {
+        setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobsData, isLoadingJobs]);
 
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
