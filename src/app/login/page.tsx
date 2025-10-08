@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,14 +43,19 @@ const loginSchema = z.object({
 
 type FormData = z.infer<typeof loginSchema>;
 
+const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRoleSelectionOpen, setIsRoleSelectionOpen] = useState(false);
   const [googleUser, setGoogleUser] = useState<User | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { auth, firestore } = useFirebase();
+  const fromUrl = searchParams.get('from') || '/';
+
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -63,26 +68,25 @@ export default function LoginPage() {
   const handleSuccessfulLogin = async (user: User) => {
     if (!firestore) return;
 
-    // Check if the user is an employer
+    if (user.email === SUPER_ADMIN_EMAIL) {
+        router.push('/admin');
+        return;
+    }
+
     const employerRef = doc(firestore, 'employers', user.uid);
     const employerSnap = await getDoc(employerRef);
-
     if (employerSnap.exists()) {
-      router.push('/employer');
+      router.push(fromUrl !== '/' ? fromUrl : '/employer');
       return;
     }
     
-    // Check if the user is a job seeker
     const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
     const jobSeekerSnap = await getDoc(jobSeekerRef);
-
     if (jobSeekerSnap.exists()) {
-      router.push('/job-seeker');
+      router.push(fromUrl !== '/' ? fromUrl : '/job-seeker');
       return;
     }
     
-    // This case handles Google sign-in for a new user
-    // The document doesn't exist, so we need to ask for their role.
     setGoogleUser(user);
     setIsRoleSelectionOpen(true);
   };

@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LogOut, User, Briefcase, Star } from 'lucide-react';
+import { Menu, LogOut, User, Briefcase, Star, Shield } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
@@ -23,49 +23,34 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import type { JobSeeker } from '@/lib/types';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { JobSeeker, Employer } from '@/lib/types';
 
-const navLinks = [
+
+const defaultNavLinks = [
   { href: '/find-jobs', label: 'Find Jobs' },
-  { href: '/employer', label: 'For Employers' },
   { href: '/reviews', label: 'Company Reviews' },
   { href: '/blog', label: 'Career Blog' },
-  { href: '/about', label: 'About Us' },
 ];
+
 
 export function Header() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
+  const { userRole, isRoleLoading } = useUserRole();
   const router = useRouter();
-  const [userRole, setUserRole] = useState<'job-seeker' | 'employer' | null>(null);
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  
+  const userDocRef = useMemoFirebase(() => {
+    if (!user || !firestore || !userRole || userRole === 'none' || userRole === 'admin') return null;
+    const collectionName = userRole === 'employer' ? 'employers' : 'jobSeekers';
+    return doc(firestore, collectionName, user.uid);
+  }, [user, firestore, userRole]);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (user && firestore) {
-        const employerRef = doc(firestore, 'employers', user.uid);
-        const employerSnap = await getDoc(employerRef);
-        if (employerSnap.exists()) {
-          setUserRole('employer');
-          setProfilePictureUrl(employerSnap.data()?.companyLogoUrl || user.photoURL);
-        } else {
-          const seekerRef = doc(firestore, 'jobSeekers', user.uid);
-          const seekerSnap = await getDoc(seekerRef);
-          if (seekerSnap.exists()) {
-              setUserRole('job-seeker');
-              const seekerData = seekerSnap.data() as JobSeeker;
-              setProfilePictureUrl(seekerData.profilePictureUrl || user.photoURL);
-          }
-        }
-      } else {
-        setUserRole(null);
-        setProfilePictureUrl(null);
-      }
-    };
-    fetchUserData();
-  }, [user, firestore]);
+  const { data: userData } = useDoc<JobSeeker | Employer>(userDocRef);
 
+  const profilePictureUrl = (userData as Employer)?.companyLogoUrl || (userData as JobSeeker)?.profilePictureUrl || user?.photoURL;
+  
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
@@ -80,6 +65,23 @@ export function Header() {
     }
     return name[0];
   };
+
+  const getDashboardLink = () => {
+    switch(userRole) {
+      case 'admin': return '/admin';
+      case 'employer': return '/employer';
+      case 'job-seeker': return '/job-seeker';
+      default: return '/';
+    }
+  }
+
+  const navLinks = userRole === 'employer' 
+    ? [
+        { href: '/employer', label: 'Dashboard' },
+        { href: '/employer?tab=search-candidates', label: 'Search Candidates' }
+      ] 
+    : defaultNavLinks;
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -98,11 +100,16 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+             {userRole !== 'employer' && (
+               <Link href="/employer" className="text-sm font-medium text-foreground/70 transition-colors hover:text-foreground">
+                  For Employers
+              </Link>
+            )}
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <div className="hidden items-center space-x-2 md:flex">
-            {isUserLoading ? (
+            {isUserLoading || isRoleLoading ? (
               <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
             ) : user ? (
               <DropdownMenu>
@@ -124,8 +131,10 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push(userRole === 'employer' ? '/employer' : '/job-seeker')}>
-                    {userRole === 'employer' ? <Briefcase className="mr-2 h-4 w-4" /> : <User className="mr-2 h-4 w-4" />}
+                  <DropdownMenuItem onClick={() => router.push(getDashboardLink())}>
+                    {userRole === 'admin' && <Shield className="mr-2 h-4 w-4" />}
+                    {userRole === 'employer' && <Briefcase className="mr-2 h-4 w-4" />}
+                    {userRole === 'job-seeker' && <User className="mr-2 h-4 w-4" />}
                     <span>Dashboard</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -154,12 +163,12 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="p-0">
-              <SheetHeader className="border-b p-4">
-                <Link href="/">
-                  <Logo />
-                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                </Link>
-              </SheetHeader>
+               <SheetHeader className="border-b p-4">
+                  <Link href="/">
+                    <Logo />
+                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                  </Link>
+               </SheetHeader>
               <div className="flex h-full flex-col">
                 <nav className="flex flex-col gap-4 p-4">
                   {navLinks.map((link) => (
@@ -171,12 +180,17 @@ export function Header() {
                       {link.label}
                     </Link>
                   ))}
+                  {userRole !== 'employer' && (
+                    <Link href="/employer" className="text-lg font-semibold text-foreground/80 transition-colors hover:text-foreground">
+                      For Employers
+                    </Link>
+                  )}
                 </nav>
                 <div className="mt-auto flex flex-col gap-2 border-t p-4">
                   {user ? (
                     <>
                       <Button variant="outline" asChild>
-                        <Link href={userRole === 'employer' ? '/employer' : '/job-seeker'}>My Dashboard</Link>
+                        <Link href={getDashboardLink()}>My Dashboard</Link>
                       </Button>
                       <Button className="gradient-saffron" onClick={handleLogout}>
                         Log Out

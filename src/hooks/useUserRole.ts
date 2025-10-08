@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-type UserRole = 'employer' | 'job-seeker' | 'none';
+type UserRole = 'admin' | 'employer' | 'job-seeker' | 'none';
+
+const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
 
 export function useUserRole() {
   const { user, firestore, isUserLoading } = useFirebase();
@@ -25,7 +27,13 @@ export function useUserRole() {
       }
 
       setIsRoleLoading(true);
-      // Check if the user is an employer
+
+      if (user.email === SUPER_ADMIN_EMAIL) {
+          setUserRole('admin');
+          setIsRoleLoading(false);
+          return;
+      }
+
       const employerRef = doc(firestore, 'employers', user.uid);
       const employerSnap = await getDoc(employerRef);
       if (employerSnap.exists()) {
@@ -34,16 +42,14 @@ export function useUserRole() {
         return;
       }
 
-      // Check if the user is a job seeker
       const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
-      const jobSeekerSnap = await getDoc(jobSeekerRef);
+      const jobSeekerSnap = await getDoc(jobSeekerSnap.ref);
       if (jobSeekerSnap.exists()) {
         setUserRole('job-seeker');
         setIsRoleLoading(false);
         return;
       }
 
-      // User exists but has no role document yet (e.g., during signup)
       setUserRole('none');
       setIsRoleLoading(false);
     };

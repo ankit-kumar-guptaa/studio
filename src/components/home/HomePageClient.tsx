@@ -9,11 +9,12 @@ import { Testimonials } from './Testimonials';
 import { CtaSection } from './CtaSection';
 import { HowItWorks } from './HowItWorks';
 import { WhyChooseHiringDekho } from './WhyChooseHiringDekho';
+import { JobSearch } from '../job-seeker/JobSearch';
 
 function LoadingSpinner() {
   return (
-    <div className="flex h-64 items-center justify-center">
-      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+    <div className="flex h-screen items-center justify-center">
+      <Loader2 className="h-16 w-16 animate-spin text-primary" />
     </div>
   );
 }
@@ -46,8 +47,24 @@ function EmployerHomePage() {
   )
 }
 
+function JobSeekerHomePage() {
+    return (
+        <div className="container mx-auto max-w-7xl px-4 py-16">
+            <div className="text-center mb-12">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                    Find Your Dream Job
+                </h1>
+                <p className="mt-4 text-lg text-muted-foreground">
+                    Search and filter from thousands of job openings to find your perfect match.
+                </p>
+            </div>
+            <JobSearch />
+        </div>
+    )
+}
+
 export function HomePageClient() {
-  const { user, isUserLoading } = useFirebase();
+  const { isUserLoading } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
 
   if (isUserLoading || isRoleLoading) {
@@ -55,6 +72,9 @@ export function HomePageClient() {
   }
   
   switch (userRole) {
+    case 'admin':
+        // Admin will be redirected to /admin, but as a fallback:
+        return <DefaultHomePage />;
     case 'employer':
       return <EmployerHomePage />;
     case 'job-seeker':
