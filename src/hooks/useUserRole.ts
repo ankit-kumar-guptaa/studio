@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -43,7 +42,7 @@ export function useUserRole() {
       }
 
       const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
-      const jobSeekerSnap = await getDoc(jobSeekerSnap.ref);
+      const jobSeekerSnap = await getDoc(jobSeekerRef);
       if (jobSeekerSnap.exists()) {
         setUserRole('job-seeker');
         setIsRoleLoading(false);
