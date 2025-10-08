@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useEffect } from 'react';
@@ -24,12 +25,14 @@ export default function AdminPage() {
     const router = useRouter();
 
     useEffect(() => {
+        // This effect ensures that only a real, authenticated admin can access this page.
+        // It prevents access even if a session flag is manually set in the browser.
         if (!isRoleLoading) {
-            if (userRole !== 'admin') {
+            if (userRole !== 'admin' || !user) {
                 router.push('/login');
             }
         }
-    }, [userRole, isRoleLoading, router]);
+    }, [userRole, isRoleLoading, router, user]);
 
     // Fetch all collections
     const jobSeekersQuery = useMemoFirebase(() => {
@@ -76,7 +79,8 @@ export default function AdminPage() {
         return `/employer/applicant/${user.id}`;
     };
 
-    if (isLoading || userRole !== 'admin') {
+    // Show a loader while verifying the role or if the user is not an admin yet.
+    if (isLoading || userRole !== 'admin' || !user) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
