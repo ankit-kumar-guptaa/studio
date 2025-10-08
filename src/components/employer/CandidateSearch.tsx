@@ -65,7 +65,10 @@ export function CandidateSearch() {
 
         try {
             const querySnapshot = await getDocs(finalQuery);
-            let candidates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as JobSeeker }));
+            let candidates = querySnapshot.docs.map(doc => {
+                const data = doc.data() as JobSeeker;
+                return { ...data, id: doc.id };
+            });
 
             // Local filtering for skills, as Firestore doesn't support array-contains-any with multiple different fields
             if (skills) {

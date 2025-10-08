@@ -52,7 +52,10 @@ export function AnalyticsDashboard() {
       try {
         // 1. Get all job posts for the current employer
         const jobPostsSnapshot = await getDocs(employerJobPostsQuery);
-        const employerJobPosts = jobPostsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as JobPost }));
+        const employerJobPosts = jobPostsSnapshot.docs.map(doc => {
+          const { id: _id, ...data } = doc.data() as JobPost;
+          return { id: doc.id, ...data };
+        });
         
         const applications: JobApplication[] = [];
         const applicationsByJob: Record<string, number> = {};

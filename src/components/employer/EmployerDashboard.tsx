@@ -61,7 +61,17 @@ export function EmployerDashboard() {
         return { ...job, applicantCount: applicationsSnapshot.size };
       }));
 
-      setJobPostsWithCounts(jobsWithCounts.sort((a, b) => b.postDate.toMillis() - a.postDate.toMillis()));
+      setJobPostsWithCounts(
+        jobsWithCounts.sort((a, b) => {
+          const getMillis = (date: any) => {
+            if (date && typeof date.toMillis === 'function') return date.toMillis();
+            if (date instanceof Date) return date.getTime();
+            if (typeof date === 'string') return new Date(date).getTime();
+            return 0;
+          };
+          return getMillis(b.postDate) - getMillis(a.postDate);
+        })
+      );
       setTotalApplicants(applicantsCount);
     } catch (error) {
       console.error("Error fetching jobs and counts: ", error);
@@ -184,7 +194,23 @@ export function EmployerDashboard() {
                                     <div className="text-xs text-muted-foreground md:hidden">{job.location}</div>
                                   </TableCell>
                                   <TableCell className="hidden md:table-cell">{job.location}</TableCell>
-                                  <TableCell className="hidden lg:table-cell">{job.postDate ? `${formatDistanceToNow(job.postDate.toDate())} ago` : 'N/A'}</TableCell>
+                                  <TableCell className="hidden lg:table-cell">
+                                    {job.postDate
+                                      ? (() => {
+                                          let dateObj: Date;
+                                          if (typeof job.postDate === 'string') {
+                                            dateObj = new Date(job.postDate);
+                                          } else if (job.postDate instanceof Date) {
+                                            dateObj = job.postDate;
+                                          } else if (job.postDate && typeof job.postDate.toDate === 'function') {
+                                            dateObj = job.postDate.toDate();
+                                          } else {
+                                            return 'N/A';
+                                          }
+                                          return `${formatDistanceToNow(dateObj)} ago`;
+                                        })()
+                                      : 'N/A'}
+                                  </TableCell>
                                   <TableCell className="text-center">{job.applicantCount}</TableCell>
                                   <TableCell className="text-right">
                                     <AlertDialog>
