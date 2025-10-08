@@ -44,7 +44,6 @@ const loginSchema = z.object({
 type FormData = z.infer<typeof loginSchema>;
 
 const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-const SUPER_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_SUPER_ADMIN_PASSWORD;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -96,26 +95,6 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-
-    // Special case for Super Admin login without Firebase Auth
-    if (data.email === SUPER_ADMIN_EMAIL && data.password === SUPER_ADMIN_PASSWORD) {
-        toast({
-            title: 'Admin Login Successful',
-            description: "Welcome, Super Admin!",
-        });
-        // We'll use a session storage flag for the "fake" admin session
-        // This is a simple client-side flag and not a secure session.
-        // For a real app, a proper JWT-based session managed by a backend is required.
-        try {
-            sessionStorage.setItem('isSuperAdmin', 'true');
-        } catch (e) {
-            console.error("Session storage is not available.");
-        }
-        router.push('/admin');
-        setIsLoading(false);
-        return;
-    }
-
     try {
       if (!auth) {
         throw new Error('Firebase not initialized');
@@ -126,7 +105,7 @@ export default function LoginPage() {
         toast({
           variant: 'destructive',
           title: 'Email Not Verified',
-          description: 'Please verify your email before logging in.',
+          description: 'Please verify your email before logging in. Check your inbox for the verification link.',
         });
         setIsLoading(false);
         return;

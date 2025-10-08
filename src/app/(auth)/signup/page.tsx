@@ -65,16 +65,6 @@ export default function SignupPage() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
 
-    if (data.email === SUPER_ADMIN_EMAIL) {
-        toast({
-            variant: 'destructive',
-            title: 'Registration Failed',
-            description: 'This email is reserved for administrative use.',
-        });
-        setIsLoading(false);
-        return;
-    }
-
     try {
       if (!auth || !firestore) {
         throw new Error('Firebase not initialized');
@@ -92,17 +82,20 @@ export default function SignupPage() {
       
       await sendEmailVerification(user);
 
-      const userDocData = {
-        id: user.uid,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-      };
-      
-      if (data.userType === 'job-seeker') {
-         await setDoc(doc(firestore, 'jobSeekers', user.uid), userDocData);
-      } else {
-         await setDoc(doc(firestore, 'employers', user.uid), { ...userDocData, companyName: `${data.firstName}'s Company` });
+      // Only create a user document if it's not the admin
+      if (data.email !== SUPER_ADMIN_EMAIL) {
+          const userDocData = {
+            id: user.uid,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+          };
+          
+          if (data.userType === 'job-seeker') {
+             await setDoc(doc(firestore, 'jobSeekers', user.uid), userDocData);
+          } else {
+             await setDoc(doc(firestore, 'employers', user.uid), { ...userDocData, companyName: `${data.firstName}'s Company` });
+          }
       }
 
       toast({
@@ -115,10 +108,14 @@ export default function SignupPage() {
       router.push('/login');
 
     } catch (error: any) {
+      let errorMessage = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please log in or use a different email.';
+      }
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: error.message,
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
