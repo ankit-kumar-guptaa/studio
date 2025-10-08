@@ -26,7 +26,7 @@ export default function AdminPage() {
 
     useEffect(() => {
         // This effect ensures that only a real, authenticated admin can access this page.
-        // It prevents access even if a session flag is manually set in the browser.
+        // It waits until the role loading is complete before making a decision.
         if (!isRoleLoading) {
             if (userRole !== 'admin' || !user) {
                 router.push('/login');
@@ -80,7 +80,7 @@ export default function AdminPage() {
     };
 
     // Show a loader while verifying the role or if the user is not an admin yet.
-    if (isLoading || userRole !== 'admin' || !user) {
+    if (isLoading || userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
