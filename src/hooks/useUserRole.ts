@@ -15,53 +15,58 @@ export function useUserRole() {
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      // First, check for the session-based super admin flag
-      try {
-        if (sessionStorage.getItem('isSuperAdmin') === 'true') {
-          setUserRole('admin');
-          setIsRoleLoading(false);
-          return;
-        }
-      } catch (e) {
-        // Session storage might not be available (e.g., in some server contexts or if disabled)
-        console.warn("Could not check for admin session.");
-      }
-
+      // Don't do anything until Firebase auth state is resolved.
       if (isUserLoading) {
         return;
       }
       
+      // If there's no user, the role is 'none'.
       if (!user || !firestore) {
         setUserRole('none');
         setIsRoleLoading(false);
         return;
       }
 
+      // Start the role checking process.
       setIsRoleLoading(true);
 
-      // This is for Firebase-authenticated admin users, can be a fallback
+      // Check 1: Is the user the super admin by email?
       if (user.email === SUPER_ADMIN_EMAIL) {
           setUserRole('admin');
           setIsRoleLoading(false);
           return;
       }
 
-      const employerRef = doc(firestore, 'employers', user.uid);
-      const employerSnap = await getDoc(employerRef);
-      if (employerSnap.exists()) {
-        setUserRole('employer');
-        setIsRoleLoading(false);
-        return;
+      // Check 2: Is the user in the 'employers' collection?
+      try {
+        const employerRef = doc(firestore, 'employers', user.uid);
+        const employerSnap = await getDoc(employerRef);
+        if (employerSnap.exists()) {
+          setUserRole('employer');
+          setIsRoleLoading(false);
+          return;
+        }
+      } catch (e) {
+        // This might happen if rules deny access, which is fine.
+        console.warn("Could not check employer role:", e);
       }
 
-      const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
-      const jobSeekerSnap = await getDoc(jobSeekerRef);
-      if (jobSeekerSnap.exists()) {
-        setUserRole('job-seeker');
-        setIsRoleLoading(false);
-        return;
+
+      // Check 3: Is the user in the 'jobSeekers' collection?
+      try {
+        const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
+        const jobSeekerSnap = await getDoc(jobSeekerRef);
+        if (jobSeekerSnap.exists()) {
+          setUserRole('job-seeker');
+          setIsRoleLoading(false);
+          return;
+        }
+      } catch (e) {
+         console.warn("Could not check job seeker role:", e);
       }
 
+
+      // If none of the above, the user has no specific role yet.
       setUserRole('none');
       setIsRoleLoading(false);
     };
@@ -71,3 +76,5 @@ export function useUserRole() {
 
   return { userRole, isRoleLoading };
 }
+
+    
