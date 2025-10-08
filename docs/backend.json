@@ -48,6 +48,10 @@
             "experienced"
           ]
         },
+        "experienceYears": {
+          "type": "number",
+          "description": "Total years of work experience."
+        },
         "currentSalary": {
             "type": "string",
             "description": "Current salary of the job seeker."

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useFirebase, useMemoFirebase, useDoc } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Briefcase, Users, Building, Trash2, LineChart } from 'lucide-react';
+import { Loader2, PlusCircle, Briefcase, Users, Building, Trash2, LineChart, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import type { JobPost } from '@/lib/types';
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { CandidateSearch } from './CandidateSearch';
 
 
 interface JobPostWithApplicantCount extends JobPost {
@@ -158,9 +159,10 @@ export function EmployerDashboard() {
       </div>
 
       <Tabs defaultValue="manage-jobs">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-5 h-auto">
           <TabsTrigger value="manage-jobs"><Briefcase className="mr-2 h-4 w-4" /> Manage Jobs</TabsTrigger>
           <TabsTrigger value="post-job"><PlusCircle className="mr-2 h-4 w-4" /> Post a New Job</TabsTrigger>
+          <TabsTrigger value="search-candidates"><Search className="mr-2 h-4 w-4" /> Search Candidates</TabsTrigger>
           <TabsTrigger value="profile"><Building className="mr-2 h-4 w-4" /> Company Profile</TabsTrigger>
           <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Analytics</TabsTrigger>
         </TabsList>
@@ -251,6 +253,17 @@ export function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <PostJobForm onJobPosted={fetchJobsAndCounts} />
+              </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="search-candidates">
+           <Card>
+              <CardHeader>
+                <CardTitle>Search for Candidates</CardTitle>
+                <CardDescription>Find the perfect talent for your company by searching our database.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CandidateSearch />
               </CardContent>
             </Card>
         </TabsContent>

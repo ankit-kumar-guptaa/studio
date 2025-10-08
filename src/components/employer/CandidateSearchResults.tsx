@@ -9,9 +9,10 @@ import { MapPin, Briefcase } from "lucide-react";
 
 interface CandidateSearchResultsProps {
     results: JobSeeker[];
+    hasSearched: boolean;
 }
 
-export function CandidateSearchResults({ results }: CandidateSearchResultsProps) {
+export function CandidateSearchResults({ results, hasSearched }: CandidateSearchResultsProps) {
 
     const getInitials = (name: string) => {
         const names = name.split(' ');
@@ -22,11 +23,20 @@ export function CandidateSearchResults({ results }: CandidateSearchResultsProps)
     };
 
 
-    if (results.length === 0) {
+    if (results.length === 0 && hasSearched) {
         return (
              <div className="text-center py-16 text-muted-foreground rounded-lg bg-secondary">
                 <p className="font-semibold text-lg">No candidates found.</p>
                 <p className="text-sm">Try adjusting your search filters to find the perfect hire.</p>
+            </div>
+        )
+    }
+
+     if (!hasSearched) {
+        return (
+             <div className="text-center py-16 text-muted-foreground rounded-lg bg-secondary">
+                <p className="font-semibold text-lg">Find talent now.</p>
+                <p className="text-sm">Use the filters above to start searching for candidates.</p>
             </div>
         )
     }
@@ -38,7 +48,7 @@ export function CandidateSearchResults({ results }: CandidateSearchResultsProps)
                     <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1">
                         <CardHeader className="flex-row items-center gap-4">
                             <Avatar className="h-14 w-14 border">
-                                <AvatarImage src={undefined} />
+                                <AvatarImage src={candidate.profilePictureUrl} />
                                 <AvatarFallback className="text-xl">{getInitials(`${candidate.firstName} ${candidate.lastName}`)}</AvatarFallback>
                             </Avatar>
                             <div>

@@ -22,6 +22,7 @@ export function CandidateSearch() {
     const { firestore } = useFirebase();
     const [isLoading, setIsLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<JobSeeker[]>([]);
+    const [hasSearched, setHasSearched] = useState(false);
 
     const [skills, setSkills] = useState('');
     const [locations, setLocations] = useState<string[]>([]);
@@ -32,6 +33,7 @@ export function CandidateSearch() {
         if (!firestore) return;
 
         setIsLoading(true);
+        setHasSearched(true);
         setSearchResults([]);
 
         const candidatesRef = collection(firestore, 'jobSeekers');
@@ -130,7 +132,7 @@ export function CandidateSearch() {
              {isLoading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
              ) : (
-                <CandidateSearchResults results={searchResults} />
+                <CandidateSearchResults results={searchResults} hasSearched={hasSearched} />
              )}
         </div>
     )
