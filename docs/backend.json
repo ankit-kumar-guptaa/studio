@@ -371,7 +371,12 @@
     "providers": [
       "password",
       "google.com"
-    ]
+    ],
+    "customClaims": {
+      "isSuperAdmin": {
+        "type": "boolean"
+      }
+    }
   },
   "firestore": {
     "/jobSeekers/{jobSeekerId}": {

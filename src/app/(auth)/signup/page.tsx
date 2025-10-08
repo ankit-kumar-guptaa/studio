@@ -65,15 +65,11 @@ export default function SignupPage() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
 
-    if (data.email === SUPER_ADMIN_EMAIL) {
-        // Just create the admin user, no doc, no special handling here.
-        // The login page will handle the redirect and role.
-    }
-
     try {
       if (!auth || !firestore) {
         throw new Error('Firebase not initialized');
       }
+      
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         data.email,
@@ -85,13 +81,15 @@ export default function SignupPage() {
         displayName: `${data.firstName} ${data.lastName}`,
       });
       
-      // The admin account is a special case handled by login logic, no DB entry needed.
+      // The admin account is a special case.
+      // We don't create a DB record for it, and we skip email verification.
       if (data.email === SUPER_ADMIN_EMAIL) {
          toast({
           title: 'Admin Account Created',
           description: 'You can now log in with your admin credentials.',
         });
         router.push('/login');
+        setIsLoading(false);
         return;
       }
         

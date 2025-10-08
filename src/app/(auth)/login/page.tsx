@@ -35,6 +35,7 @@ import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase/provider';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { RoleSelectionDialog } from '@/components/auth/RoleSelectionDialog';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -67,7 +68,9 @@ export default function LoginPage() {
 
   const handleSuccessfulLogin = async (user: User) => {
     if (!firestore) return;
-
+    
+    // The useUserRole hook will handle role detection, but we can do an
+    // initial redirect for the admin for a faster experience.
     if (user.email === SUPER_ADMIN_EMAIL) {
         router.push('/admin');
         return;
@@ -101,7 +104,7 @@ export default function LoginPage() {
       }
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
-      // For the super admin, we bypass the email verification check.
+      // For the super admin, we bypass the email verification check for login purposes.
       if (userCredential.user.email !== SUPER_ADMIN_EMAIL && !userCredential.user.emailVerified) {
         toast({
           variant: 'destructive',
