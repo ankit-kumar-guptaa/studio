@@ -38,12 +38,13 @@ import { RoleSelectionDialog } from '@/components/auth/RoleSelectionDialog';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  password: z.string().min(1, 'Password is required.'),
 });
 
 type FormData = z.infer<typeof loginSchema>;
 
 const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+const SUPER_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_SUPER_ADMIN_PASSWORD;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +88,7 @@ export default function LoginPage() {
       return;
     }
     
+    // This case handles users who signed up with Google but haven't selected a role yet.
     setGoogleUser(user);
     setIsRoleSelectionOpen(true);
   };
@@ -94,6 +96,26 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+
+    // Special case for Super Admin login without Firebase Auth
+    if (data.email === SUPER_ADMIN_EMAIL && data.password === SUPER_ADMIN_PASSWORD) {
+        toast({
+            title: 'Admin Login Successful',
+            description: "Welcome, Super Admin!",
+        });
+        // We'll use a session storage flag for the "fake" admin session
+        // This is a simple client-side flag and not a secure session.
+        // For a real app, a proper JWT-based session managed by a backend is required.
+        try {
+            sessionStorage.setItem('isSuperAdmin', 'true');
+        } catch (e) {
+            console.error("Session storage is not available.");
+        }
+        router.push('/admin');
+        setIsLoading(false);
+        return;
+    }
+
     try {
       if (!auth) {
         throw new Error('Firebase not initialized');
@@ -116,10 +138,22 @@ export default function LoginPage() {
       });
       await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
+      let errorMessage = 'An unknown error occurred.';
+      if (error.code) {
+        switch (error.code) {
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+                errorMessage = 'Invalid email or password.';
+                break;
+            default:
+                errorMessage = error.message;
+        }
+      }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message,
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -164,10 +198,10 @@ export default function LoginPage() {
 
     try {
         if (role === 'job-seeker') {
-            await setDoc(doc(firestore, 'jobSeekers', googleUser.uid), userData);
+            await setDoc(doc(firestore, 'jobSeekers', googleUser.uid), userData, { merge: true });
             router.push('/job-seeker');
         } else {
-            await setDoc(doc(firestore, 'employers', googleUser.uid), { ...userData, companyName: `${firstName}'s Company` });
+            await setDoc(doc(firestore, 'employers', googleUser.uid), { ...userData, companyName: `${firstName}'s Company` }, { merge: true });
             router.push('/employer');
         }
         toast({

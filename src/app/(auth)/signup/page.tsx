@@ -43,6 +43,8 @@ const signupSchema = z.object({
 
 type FormData = z.infer<typeof signupSchema>;
 
+const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -62,6 +64,17 @@ export default function SignupPage() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+
+    if (data.email === SUPER_ADMIN_EMAIL) {
+        toast({
+            variant: 'destructive',
+            title: 'Registration Failed',
+            description: 'This email is reserved for administrative use.',
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       if (!auth || !firestore) {
         throw new Error('Firebase not initialized');

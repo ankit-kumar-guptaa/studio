@@ -15,6 +15,18 @@ export function useUserRole() {
 
   useEffect(() => {
     const fetchUserRole = async () => {
+      // First, check for the session-based super admin flag
+      try {
+        if (sessionStorage.getItem('isSuperAdmin') === 'true') {
+          setUserRole('admin');
+          setIsRoleLoading(false);
+          return;
+        }
+      } catch (e) {
+        // Session storage might not be available (e.g., in some server contexts or if disabled)
+        console.warn("Could not check for admin session.");
+      }
+
       if (isUserLoading) {
         return;
       }
@@ -27,6 +39,7 @@ export function useUserRole() {
 
       setIsRoleLoading(true);
 
+      // This is for Firebase-authenticated admin users, can be a fallback
       if (user.email === SUPER_ADMIN_EMAIL) {
           setUserRole('admin');
           setIsRoleLoading(false);
