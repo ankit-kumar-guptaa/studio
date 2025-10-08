@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
@@ -25,7 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 
 const statusOptions: JobApplication['status'][] = ['Applied', 'Reviewed', 'Interviewing', 'Offered', 'Rejected'];
 
-export default function JobApplicantsPage() {
+
+function JobApplicantsPageContent() {
   const { user, isUserLoading, firestore } = useFirebase();
   const router = useRouter();
   const params = useParams();
@@ -39,11 +40,10 @@ export default function JobApplicantsPage() {
 
   const { data: applications, isLoading: isLoadingApplications, setData: setApplications } = useCollection<JobApplication>(applicationsCollectionRef);
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
+  if (!isUserLoading && !user) {
+    router.push('/login');
+    return null;
+  }
 
   const handleStatusChange = async (applicationId: string, newStatus: JobApplication['status']) => {
     if (!firestore || !user || !jobId) return;
@@ -81,8 +81,7 @@ export default function JobApplicantsPage() {
       </div>
     );
   }
-
-  // Get the job title from the first application, or use the jobId as a fallback
+  
   const jobTitle = applications?.[0]?.jobTitle || `Job ID: ${jobId}`;
 
   const getStatusBadgeVariant = (status: JobApplication['status']) => {
@@ -172,4 +171,12 @@ export default function JobApplicantsPage() {
       <Footer />
     </div>
   );
+}
+
+export default function JobApplicantsPage() {
+    return (
+        <Suspense>
+            <JobApplicantsPageContent />
+        </Suspense>
+    )
 }
