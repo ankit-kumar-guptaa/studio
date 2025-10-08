@@ -65,16 +65,9 @@ export default function SignupPage() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
 
-    const isSuperAdminSignUp = data.email === SUPER_ADMIN_EMAIL;
-    
-    if (isSuperAdminSignUp && data.userType !== 'job-seeker') {
-      toast({
-        variant: 'destructive',
-        title: 'Admin Registration',
-        description: 'Please select "Job Seeker" to register the admin account.',
-      });
-      setIsLoading(false);
-      return;
+    if (data.email === SUPER_ADMIN_EMAIL) {
+        // Just create the admin user, no doc, no special handling here.
+        // The login page will handle the redirect and role.
     }
 
     try {
@@ -92,37 +85,37 @@ export default function SignupPage() {
         displayName: `${data.firstName} ${data.lastName}`,
       });
       
-      if (isSuperAdminSignUp) {
-        // Admin account is created and auto-verified logic is handled on login.
-        // No document is created in Firestore for the admin.
-        toast({
+      // The admin account is a special case handled by login logic, no DB entry needed.
+      if (data.email === SUPER_ADMIN_EMAIL) {
+         toast({
           title: 'Admin Account Created',
           description: 'You can now log in with your admin credentials.',
         });
         router.push('/login');
-      } else {
-        // For regular users, send verification email and create Firestore doc.
-        await sendEmailVerification(user);
-        
-        const userDocData = {
-          id: user.uid,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-        };
-        
-        if (data.userType === 'job-seeker') {
-           await setDoc(doc(firestore, 'jobSeekers', user.uid), userDocData);
-        } else {
-           await setDoc(doc(firestore, 'employers', user.uid), { ...userDocData, companyName: `${data.firstName}'s Company` });
-        }
-
-        toast({
-          title: 'Verification Email Sent',
-          description: 'Please check your email to verify your account and complete registration.',
-        });
-        router.push('/login');
+        return;
       }
+        
+      // For regular users, send verification email and create Firestore doc.
+      await sendEmailVerification(user);
+      
+      const userDocData = {
+        id: user.uid,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+      };
+      
+      if (data.userType === 'job-seeker') {
+          await setDoc(doc(firestore, 'jobSeekers', user.uid), userDocData);
+      } else {
+          await setDoc(doc(firestore, 'employers', user.uid), { ...userDocData, companyName: `${data.firstName}'s Company` });
+      }
+
+      toast({
+        title: 'Verification Email Sent',
+        description: 'Please check your email to verify your account and complete registration.',
+      });
+      router.push('/login');
 
     } catch (error: any) {
       let errorMessage = error.message;
@@ -211,7 +204,7 @@ export default function SignupPage() {
                 name="userType"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>I am an</FormLabel>
+                    <FormLabel>I am a</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}

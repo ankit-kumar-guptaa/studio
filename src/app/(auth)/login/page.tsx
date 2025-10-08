@@ -126,10 +126,8 @@ export default function LoginPage() {
                 errorMessage = 'No account found with this email. Please sign up.';
                 break;
             case 'auth/wrong-password':
-                errorMessage = 'Incorrect password. Please try again.';
-                break;
             case 'auth/invalid-credential':
-                errorMessage = 'Invalid email or password.';
+                errorMessage = 'Incorrect email or password. Please try again.';
                 break;
             default:
                 errorMessage = error.message;
