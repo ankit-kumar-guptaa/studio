@@ -101,7 +101,8 @@ export default function LoginPage() {
       }
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
-      if (!userCredential.user.emailVerified) {
+      // For the super admin, we bypass the email verification check.
+      if (userCredential.user.email !== SUPER_ADMIN_EMAIL && !userCredential.user.emailVerified) {
         toast({
           variant: 'destructive',
           title: 'Email Not Verified',
@@ -121,6 +122,7 @@ export default function LoginPage() {
       if (error.code) {
         switch (error.code) {
             case 'auth/user-not-found':
+            case 'auth/invalid-email':
                 errorMessage = 'No account found with this email. Please sign up.';
                 break;
             case 'auth/wrong-password':
