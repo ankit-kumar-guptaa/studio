@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { Logo } from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Menu, LogOut, User, Briefcase, Star } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -147,11 +153,14 @@ export function Header() {
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
-              <div className="flex h-full flex-col">
-                <div className="border-b p-4">
+            <SheetContent side="right" className="p-0">
+              <SheetHeader className="border-b p-4">
+                <Link href="/">
                   <Logo />
-                </div>
+                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                </Link>
+              </SheetHeader>
+              <div className="flex h-full flex-col">
                 <nav className="flex flex-col gap-4 p-4">
                   {navLinks.map((link) => (
                     <Link
