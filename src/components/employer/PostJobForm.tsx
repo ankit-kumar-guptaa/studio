@@ -115,51 +115,47 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
         return;
     };
 
+    setIsPosting(true);
+    
     const jobData = {
         ...values,
         employerId: user.uid,
         postDate: serverTimestamp(),
         companyName: employerData?.companyName || user.displayName,
         companyLogoUrl: employerData?.companyLogoUrl || '',
-      };
+    };
     
-    setIsPosting(true);
     try {
-      // 1. Add to the employer's subcollection
-      const jobPostsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
-      const docRef = await addDoc(jobPostsCollectionRef, jobData);
-      
-      // 2. Add a copy to the top-level jobPosts collection for global querying
-      const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
-      
-      // Use non-blocking set with proper error handling
-      setDoc(globalJobPostRef, jobData)
-        .then(() => {
-            toast({
-              title: 'Job Posted!',
-              description: 'Your job opening is now live.',
+        const jobPostsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
+        const docRef = await addDoc(jobPostsCollectionRef, jobData);
+        
+        const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
+        
+        setDoc(globalJobPostRef, jobData)
+            .then(() => {
+                toast({
+                    title: 'Job Posted!',
+                    description: 'Your job opening is now live.',
+                });
+                form.reset();
+                onJobPosted();
+            })
+            .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: globalJobPostRef.path,
+                    operation: 'create',
+                    requestResourceData: jobData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
             });
-            form.reset();
-            onJobPosted(); // Callback to refresh the job list
-        })
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: globalJobPostRef.path,
-                operation: 'create',
-                requestResourceData: jobData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-
     } catch (error: any) {
-      // This will catch errors from the `addDoc` call if it fails
-      toast({
-        variant: 'destructive',
-        title: 'Posting Failed',
-        description: error.message || 'Could not post job to employer collection.',
-      });
+        toast({
+            variant: 'destructive',
+            title: 'Posting Failed',
+            description: error.message || 'Could not post job to employer collection.',
+        });
     } finally {
-      setIsPosting(false);
+        setIsPosting(false);
     }
   }
 
