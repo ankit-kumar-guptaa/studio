@@ -105,7 +105,7 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
     }
   };
   
-  async function onSubmit(values: JobPostFormData) {
+async function onSubmit(values: JobPostFormData) {
     if (!user || !firestore) {
         toast({
             variant: 'destructive',
@@ -130,30 +130,31 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
         const docRef = await addDoc(jobPostsCollectionRef, jobData);
         
         const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
-        
-        setDoc(globalJobPostRef, jobData)
-            .then(() => {
-                toast({
-                    title: 'Job Posted!',
-                    description: 'Your job opening is now live.',
-                });
-                form.reset();
-                onJobPosted();
-            })
-            .catch(serverError => {
-                const permissionError = new FirestorePermissionError({
-                    path: globalJobPostRef.path,
-                    operation: 'create',
-                    requestResourceData: jobData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
+        await setDoc(globalJobPostRef, jobData);
+
+        toast({
+            title: 'Job Posted!',
+            description: 'Your job opening is now live.',
+        });
+        form.reset();
+        onJobPosted();
+
     } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Posting Failed',
-            description: error.message || 'Could not post job to employer collection.',
+            description: error.message || 'Could not post job.',
         });
+        
+        if (error.code === 'permission-denied') {
+             const permissionError = new FirestorePermissionError({
+                path: `jobPosts/some-test-id`, // Path is approximate
+                operation: 'create',
+                requestResourceData: jobData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
+
     } finally {
         setIsPosting(false);
     }
