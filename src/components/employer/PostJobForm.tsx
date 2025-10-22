@@ -24,6 +24,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { generateJobDescription } from '@/ai/flows/generate-job-description-flow';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { indianStatesAndCities } from '@/lib/locations';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location,
@@ -129,19 +131,32 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
       
       // 2. Add a copy to the top-level jobPosts collection for global querying
       const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
-      await setDoc(globalJobPostRef, jobData);
       
-      toast({
-        title: 'Job Posted!',
-        description: 'Your job opening is now live.',
-      });
-      form.reset();
-      onJobPosted(); // Callback to refresh the job list
+      // Use non-blocking set with proper error handling
+      setDoc(globalJobPostRef, jobData)
+        .then(() => {
+            toast({
+              title: 'Job Posted!',
+              description: 'Your job opening is now live.',
+            });
+            form.reset();
+            onJobPosted(); // Callback to refresh the job list
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: globalJobPostRef.path,
+                operation: 'create',
+                requestResourceData: jobData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+
     } catch (error: any) {
+      // This will catch errors from the `addDoc` call if it fails
       toast({
         variant: 'destructive',
         title: 'Posting Failed',
-        description: error.message || 'Could not post job.',
+        description: error.message || 'Could not post job to employer collection.',
       });
     } finally {
       setIsPosting(false);
@@ -217,7 +232,7 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
                         <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select experience level" />
-                            </SelectTrigger>
+                            </Trigger>
                         </FormControl>
                         <SelectContent>
                             <SelectItem value="0-1 years">0-1 years</SelectItem>
