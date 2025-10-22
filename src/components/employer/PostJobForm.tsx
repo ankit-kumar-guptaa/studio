@@ -113,7 +113,7 @@ async function onSubmit(values: JobPostFormData) {
             description: 'You must be logged in to post a job.',
         });
         return;
-    };
+    }
 
     setIsPosting(true);
     
@@ -131,7 +131,7 @@ async function onSubmit(values: JobPostFormData) {
         
         const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
         await setDoc(globalJobPostRef, jobData);
-
+        
         toast({
             title: 'Job Posted!',
             description: 'Your job opening is now live.',
@@ -140,12 +140,6 @@ async function onSubmit(values: JobPostFormData) {
         onJobPosted();
 
     } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Posting Failed',
-            description: error.message || 'Could not post job.',
-        });
-        
         if (error.code === 'permission-denied') {
              const permissionError = new FirestorePermissionError({
                 path: `jobPosts/some-test-id`, // Path is approximate
@@ -153,12 +147,17 @@ async function onSubmit(values: JobPostFormData) {
                 requestResourceData: jobData,
             });
             errorEmitter.emit('permission-error', permissionError);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Posting Failed',
+                description: error.message || 'Could not post job.',
+            });
         }
-
     } finally {
         setIsPosting(false);
     }
-  }
+}
 
   return (
     <Form {...form}>
