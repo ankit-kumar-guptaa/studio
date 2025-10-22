@@ -227,7 +227,7 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
                         <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select experience level" />
-                            </Trigger>
+                            </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                             <SelectItem value="0-1 years">0-1 years</SelectItem>
