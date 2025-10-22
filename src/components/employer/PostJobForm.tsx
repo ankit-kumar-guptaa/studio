@@ -116,7 +116,6 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
     }
 
     setIsPosting(true);
-
     const jobData = {
       ...values,
       employerId: user.uid,
