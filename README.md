@@ -1,4 +1,4 @@
-# Firebase Studio
+# Hiring Dekho
 
 This is a NextJS starter in Firebase Studio.
 
