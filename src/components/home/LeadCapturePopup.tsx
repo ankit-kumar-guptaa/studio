@@ -22,12 +22,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, User, Briefcase, Upload, File as FileIcon, X } from 'lucide-react';
+import { Loader2, User, Briefcase, Upload, File as FileIcon, X, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendLeadEmail } from '@/ai/flows/send-lead-email-flow';
 import { Badge } from '../ui/badge';
 import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -45,8 +45,8 @@ const jobSeekerSchema = z.object({
 const employerSchema = z.object({
     role: z.literal('employer'),
     companyName: z.string().min(1, 'Company name is required.'),
-    contactPerson: z.string().optional(),
     employerEmail: z.string().email('Invalid email address.'),
+    contactPerson: z.string().optional(),
     employerPhone: z.string().optional(),
     hiringNeeds: z.string().optional(),
 });
@@ -56,22 +56,18 @@ const leadSchema = z.discriminatedUnion('role', [
     employerSchema
 ]);
 
-
 type LeadFormData = z.infer<typeof leadSchema>;
 
 export function LeadCapturePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'selection' | 'form'>('selection');
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // For development, always show the popup after a delay.
+   useEffect(() => {
     const timer = setTimeout(() => {
-        // Only show if it hasn't been seen before in this session.
-        if (sessionStorage.getItem('hasSeenLeadPopup') !== 'true') {
-            setIsOpen(true);
-        }
+        setIsOpen(true);
     }, 3000); // Show popup after 3 seconds
     
     return () => clearTimeout(timer);
@@ -98,41 +94,10 @@ export function LeadCapturePopup() {
   const selectedRole = form.watch('role');
   const resumeFilename = form.watch('resumeFilename');
 
-  // When role changes, reset the form with appropriate defaults
-  useEffect(() => {
-    if (selectedRole === 'job-seeker') {
-      form.reset({
-        role: 'job-seeker',
-        jobSeekerName: '',
-        jobSeekerEmail: '',
-        jobSeekerPhone: '',
-        jobSeekerSkills: '',
-        resume: '',
-        resumeFilename: '',
-        companyName: '',
-        contactPerson: '',
-        employerEmail: '',
-        employerPhone: '',
-        hiringNeeds: '',
-      });
-    } else if (selectedRole === 'employer') {
-      form.reset({
-        role: 'employer',
-        companyName: '',
-        contactPerson: '',
-        employerEmail: '',
-        employerPhone: '',
-        hiringNeeds: '',
-        jobSeekerName: '',
-        jobSeekerEmail: '',
-        jobSeekerPhone: '',
-        jobSeekerSkills: '',
-        resume: '',
-        resumeFilename: '',
-      });
-    }
-  }, [selectedRole, form]);
-
+  const handleRoleSelect = (role: 'job-seeker' | 'employer') => {
+    form.setValue('role', role);
+    setStep('form');
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -165,7 +130,12 @@ export function LeadCapturePopup() {
 
   const handleClose = () => {
     setIsOpen(false);
-    sessionStorage.setItem('hasSeenLeadPopup', 'true');
+    // sessionStorage.setItem('hasSeenLeadPopup', 'true');
+    // After closing, reset to the first step
+    setTimeout(() => {
+        setStep('selection');
+        form.reset();
+    }, 300);
   };
 
   const onSubmit = async (data: LeadFormData) => {
@@ -177,7 +147,6 @@ export function LeadCapturePopup() {
         description: 'Your information has been submitted successfully. We will get in touch with you shortly.',
       });
       handleClose();
-      form.reset();
     } catch (error) {
       console.error('Failed to send lead email:', error);
       toast({
@@ -192,87 +161,83 @@ export function LeadCapturePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center gap-2"><Briefcase className="h-6 w-6 text-primary" /> Let's Get You Started!</DialogTitle>
-          <DialogDescription>
-            Tell us who you are to personalize your experience on Hiring Dekho.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <FormItem>
-                         <RadioGroupItem value="job-seeker" id="r1" className="sr-only peer" />
-                         <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                            <User className="mb-3 h-6 w-6" />
-                            Job Seeker
-                         </Label>
-                      </FormItem>
-                      <FormItem>
-                         <RadioGroupItem value="employer" id="r2" className="sr-only peer" />
-                         <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                            <Briefcase className="mb-3 h-6 w-6" />
-                            Employer
-                         </Label>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {selectedRole === 'job-seeker' && (
-              <div className="space-y-3 animate-in fade-in-50">
-                <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormItem>
-                  <FormLabel>Resume (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="file" id="resume-upload" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.doc,.docx" />
-                    </FormControl>
-                    {resumeFilename ? (
-                      <Badge variant="secondary" className="flex items-center justify-between">
-                          <span className="truncate max-w-48"><FileIcon className="inline mr-2 h-4 w-4" />{resumeFilename}</span>
-                          <button type="button" onClick={removeFile}><X className="ml-2 h-4 w-4" /></button>
-                      </Badge>
-                    ) : (
-                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload Resume</Button>
-                    )}
-                  <FormMessage />
-                </FormItem>
-              </div>
+      <DialogContent className="sm:max-w-md overflow-hidden p-0" onInteractOutside={(e) => e.preventDefault()}>
+        <div className="relative">
+            {step === 'form' && (
+                <Button variant="ghost" size="icon" className="absolute left-4 top-4" onClick={() => setStep('selection')}>
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
             )}
+            <DialogHeader className="p-6 pb-0 text-center">
+                <DialogTitle className="text-2xl flex items-center justify-center gap-2">
+                    <Briefcase className="h-6 w-6 text-primary" /> Let's Get You Started!
+                </DialogTitle>
+                <DialogDescription>
+                    {step === 'selection' ? 'First, tell us who you are to personalize your experience.' : `Great! Please fill out the details below.`}
+                </DialogDescription>
+            </DialogHeader>
+        </div>
+        
+        <div className={cn("transition-transform duration-300", step === 'form' ? '-translate-x-full' : 'translate-x-0')}>
+            <div className="grid grid-cols-2">
+                <div className={cn("w-full p-6 space-y-4 col-start-1", step === 'form' ? 'invisible' : '')}>
+                    <Button variant="outline" className="w-full h-32 flex-col gap-2 text-lg" onClick={() => handleRoleSelect('job-seeker')}>
+                        <User className="h-8 w-8 text-primary" />
+                        Job Seeker
+                    </Button>
+                    <Button variant="outline" className="w-full h-32 flex-col gap-2 text-lg" onClick={() => handleRoleSelect('employer')}>
+                        <Briefcase className="h-8 w-8 text-accent" />
+                        Employer
+                    </Button>
+                </div>
+                
+                <div className={cn("w-full col-start-2 row-start-1 px-6 pb-6", step === 'selection' ? 'invisible' : '')}>
+                     <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            {selectedRole === 'job-seeker' && (
+                            <div className="space-y-3">
+                                <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormItem>
+                                <FormLabel>Resume (Optional)</FormLabel>
+                                    <FormControl>
+                                    <Input type="file" id="resume-upload" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.doc,.docx" />
+                                    </FormControl>
+                                    {resumeFilename ? (
+                                    <Badge variant="secondary" className="flex items-center justify-between">
+                                        <span className="truncate max-w-48"><FileIcon className="inline mr-2 h-4 w-4" />{resumeFilename}</span>
+                                        <button type="button" onClick={removeFile}><X className="ml-2 h-4 w-4" /></button>
+                                    </Badge>
+                                    ) : (
+                                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload Resume</Button>
+                                    )}
+                                <FormMessage />
+                                </FormItem>
+                            </div>
+                            )}
 
-            {selectedRole === 'employer' && (
-              <div className="space-y-3 animate-in fade-in-50">
-                <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                 <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person (Optional)</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-            )}
-            
-            <DialogFooter>
-              <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                            {selectedRole === 'employer' && (
+                            <div className="space-y-3">
+                                <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person (Optional)</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            )}
+                            
+                            <DialogFooter>
+                            <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Submit
+                            </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </div>
+
+            </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
