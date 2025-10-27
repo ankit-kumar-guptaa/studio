@@ -51,14 +51,12 @@ const sendLeadEmailFlow = ai.defineFlow(
   },
   async (data) => {
     // Use environment variables for SMTP credentials.
-    // Store them in a .env file:
-    // SMTP_HOST=smtp.hostinger.com
-    // SMTP_PORT=587
-    // SMTP_USER=your_email@example.com
-    // SMTP_PASS=your_password
+    // In production, these must be set in your hosting environment (e.g., Firebase App Hosting secrets).
+    // The .env file is only for local development.
     if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
         console.error('SMTP credentials are not set in environment variables (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).');
-        throw new Error('Email service is not configured. Please set credentials in .env file.');
+        // This clear error message will help debug production issues.
+        throw new Error('Email service is not configured. Please set SMTP credentials in your hosting environment.');
     }
     
     const transporter = nodemailer.createTransport({
