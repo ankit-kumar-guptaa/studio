@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,38 +23,35 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Loader2, User, Briefcase, Upload, File as FileIcon, X, ArrowLeft } from 'lucide-react';
+import { Loader2, Upload, File as FileIcon, X, Briefcase, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendLeadEmail } from '@/ai/flows/send-lead-email-flow';
 import { Badge } from '../ui/badge';
-import { Label } from '../ui/label';
-import { cn } from '@/lib/utils';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
+// Define separate schemas for each role
 const jobSeekerSchema = z.object({
-    role: z.literal('job-seeker'),
-    jobSeekerName: z.string().min(1, 'Name is required.'),
-    jobSeekerEmail: z.string().email('Invalid email address.'),
-    jobSeekerPhone: z.string().optional(),
-    jobSeekerSkills: z.string().optional(),
-    resume: z.string().optional(),
-    resumeFilename: z.string().optional(),
+  role: z.literal('job-seeker'),
+  jobSeekerName: z.string().min(1, 'Name is required.'),
+  jobSeekerEmail: z.string().email('Invalid email address.'),
+  jobSeekerSkills: z.string().optional(),
+  resume: z.string().optional(),
+  resumeFilename: z.string().optional(),
 });
 
 const employerSchema = z.object({
-    role: z.literal('employer'),
-    companyName: z.string().min(1, 'Company name is required.'),
-    employerEmail: z.string().email('Invalid email address.'),
-    contactPerson: z.string().optional(),
-    employerPhone: z.string().optional(),
-    hiringNeeds: z.string().optional(),
+  role: z.literal('employer'),
+  companyName: z.string().min(1, 'Company name is required.'),
+  employerEmail: z.string().email('Invalid email address.'),
+  hiringNeeds: z.string().optional(),
 });
 
+// Create a discriminated union
 const leadSchema = z.discriminatedUnion('role', [
-    jobSeekerSchema,
-    employerSchema
+  jobSeekerSchema,
+  employerSchema,
 ]);
 
 type LeadFormData = z.infer<typeof leadSchema>;
@@ -61,11 +59,10 @@ type LeadFormData = z.infer<typeof leadSchema>;
 export function LeadCapturePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'selection' | 'form'>('selection');
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-   useEffect(() => {
+  
+  useEffect(() => {
     const timer = setTimeout(() => {
         setIsOpen(true);
     }, 3000); // Show popup after 3 seconds
@@ -79,25 +76,17 @@ export function LeadCapturePopup() {
       role: 'job-seeker',
       jobSeekerName: '',
       jobSeekerEmail: '',
-      jobSeekerPhone: '',
       jobSeekerSkills: '',
       resume: '',
       resumeFilename: '',
       companyName: '',
-      contactPerson: '',
       employerEmail: '',
-      employerPhone: '',
       hiringNeeds: '',
     },
   });
 
   const selectedRole = form.watch('role');
   const resumeFilename = form.watch('resumeFilename');
-
-  const handleRoleSelect = (role: 'job-seeker' | 'employer') => {
-    form.setValue('role', role);
-    setStep('form');
-  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -127,15 +116,9 @@ export function LeadCapturePopup() {
     }
   }
 
-
   const handleClose = () => {
     setIsOpen(false);
     // sessionStorage.setItem('hasSeenLeadPopup', 'true');
-    // After closing, reset to the first step
-    setTimeout(() => {
-        setStep('selection');
-        form.reset();
-    }, 300);
   };
 
   const onSubmit = async (data: LeadFormData) => {
@@ -161,83 +144,66 @@ export function LeadCapturePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-md overflow-hidden p-0" onInteractOutside={(e) => e.preventDefault()}>
-        <div className="relative">
-            {step === 'form' && (
-                <Button variant="ghost" size="icon" className="absolute left-4 top-4" onClick={() => setStep('selection')}>
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-            )}
-            <DialogHeader className="p-6 pb-0 text-center">
-                <DialogTitle className="text-2xl flex items-center justify-center gap-2">
-                    <Briefcase className="h-6 w-6 text-primary" /> Let's Get You Started!
-                </DialogTitle>
-                <DialogDescription>
-                    {step === 'selection' ? 'First, tell us who you are to personalize your experience.' : `Great! Please fill out the details below.`}
-                </DialogDescription>
-            </DialogHeader>
-        </div>
+      <DialogContent className="sm:max-w-md p-0">
+        <DialogHeader className="p-6 pb-2 text-center">
+            <DialogTitle className="text-2xl">Let's Get You Started!</DialogTitle>
+            <DialogDescription>
+                Tell us who you are to get personalized service.
+            </DialogDescription>
+        </DialogHeader>
         
-        <div className={cn("transition-transform duration-300", step === 'form' ? '-translate-x-full' : 'translate-x-0')}>
-            <div className="grid grid-cols-2">
-                <div className={cn("w-full p-6 space-y-4 col-start-1", step === 'form' ? 'invisible' : '')}>
-                    <Button variant="outline" className="w-full h-32 flex-col gap-2 text-lg" onClick={() => handleRoleSelect('job-seeker')}>
-                        <User className="h-8 w-8 text-primary" />
-                        Job Seeker
-                    </Button>
-                    <Button variant="outline" className="w-full h-32 flex-col gap-2 text-lg" onClick={() => handleRoleSelect('employer')}>
-                        <Briefcase className="h-8 w-8 text-accent" />
-                        Employer
-                    </Button>
-                </div>
-                
-                <div className={cn("w-full col-start-2 row-start-1 px-6 pb-6", step === 'selection' ? 'invisible' : '')}>
-                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            {selectedRole === 'job-seeker' && (
-                            <div className="space-y-3">
-                                <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormItem>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <Tabs 
+                    value={selectedRole}
+                    onValueChange={(value) => form.setValue('role', value as 'job-seeker' | 'employer')}
+                    className="w-full"
+                >
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="job-seeker"><User className="mr-2 h-4 w-4"/>Job Seeker</TabsTrigger>
+                        <TabsTrigger value="employer"><Briefcase className="mr-2 h-4 w-4"/>Employer</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="job-seeker" className="p-6 pt-4">
+                        <div className="space-y-4">
+                            <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormItem>
                                 <FormLabel>Resume (Optional)</FormLabel>
-                                    <FormControl>
+                                <FormControl>
                                     <Input type="file" id="resume-upload" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.doc,.docx" />
-                                    </FormControl>
-                                    {resumeFilename ? (
+                                </FormControl>
+                                {resumeFilename ? (
                                     <Badge variant="secondary" className="flex items-center justify-between">
                                         <span className="truncate max-w-48"><FileIcon className="inline mr-2 h-4 w-4" />{resumeFilename}</span>
                                         <button type="button" onClick={removeFile}><X className="ml-2 h-4 w-4" /></button>
                                     </Badge>
-                                    ) : (
-                                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload Resume</Button>
-                                    )}
+                                ) : (
+                                    <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload Resume</Button>
+                                )}
                                 <FormMessage />
-                                </FormItem>
-                            </div>
-                            )}
+                            </FormItem>
+                        </div>
+                    </TabsContent>
 
-                            {selectedRole === 'employer' && (
-                            <div className="space-y-3">
-                                <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person (Optional)</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            </div>
-                            )}
-                            
-                            <DialogFooter>
-                            <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Submit
-                            </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </div>
-
-            </div>
-        </div>
+                    <TabsContent value="employer" className="p-6 pt-4">
+                        <div className="space-y-4">
+                            <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        </div>
+                    </TabsContent>
+                </Tabs>
+                
+                <DialogFooter className="px-6 pb-6 pt-2">
+                    <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Submit
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
