@@ -18,6 +18,8 @@ const LeadDataSchema = z.object({
   jobSeekerEmail: z.string().email().optional(),
   jobSeekerPhone: z.string().optional(),
   jobSeekerSkills: z.string().optional(),
+  resume: z.string().optional(), // Base64 data URI
+  resumeFilename: z.string().optional(),
   // Employer fields
   companyName: z.string().optional(),
   contactPerson: z.string().optional(),
@@ -47,6 +49,11 @@ const sendLeadEmailFlow = ai.defineFlow(
     // Store them in a .env.local file:
     // GMAIL_USER=your_email@gmail.com
     // GMAIL_APP_PASSWORD=your_16_character_app_password
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+        console.error('Gmail credentials are not set in environment variables.');
+        throw new Error('Email service is not configured.');
+    }
+    
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -59,6 +66,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     const subject = `New Lead from Hiring Dekho: ${data.role === 'job-seeker' ? 'Job Seeker' : 'Employer'}`;
 
     let htmlContent = `<h1>New Lead Submission</h1><p>A new lead has been captured from the website popup form.</p>`;
+    let attachments = [];
 
     if (data.role === 'job-seeker') {
       htmlContent += `
@@ -70,6 +78,14 @@ const sendLeadEmailFlow = ai.defineFlow(
           <li><strong>Skills/Interests:</strong> ${data.jobSeekerSkills || 'N/A'}</li>
         </ul>
       `;
+      if (data.resume && data.resumeFilename) {
+          attachments.push({
+              filename: data.resumeFilename,
+              content: data.resume.split('base64,')[1],
+              encoding: 'base64',
+              contentType: data.resume.substring(data.resume.indexOf(':') + 1, data.resume.indexOf(';')),
+          });
+      }
     } else {
       htmlContent += `
         <h2>Employer Details:</h2>
@@ -83,11 +99,12 @@ const sendLeadEmailFlow = ai.defineFlow(
       `;
     }
 
-    const mailOptions = {
+    const mailOptions: nodemailer.SendMailOptions = {
       from: `"Hiring Dekho Leads" <${process.env.GMAIL_USER}>`,
       to: toEmail,
       subject: subject,
       html: htmlContent,
+      attachments: attachments,
     };
 
     try {

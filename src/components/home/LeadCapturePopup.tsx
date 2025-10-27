@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,9 +23,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2 } from 'lucide-react';
+import { Loader2, User, Briefcase, Upload, File as FileIcon, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendLeadEmail } from '@/ai/flows/send-lead-email-flow';
+import { Badge } from '../ui/badge';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
 const leadSchema = z.object({
   role: z.enum(['job-seeker', 'employer'], {
@@ -36,6 +40,8 @@ const leadSchema = z.object({
   jobSeekerEmail: z.string().email('Invalid email address').optional(),
   jobSeekerPhone: z.string().optional(),
   jobSeekerSkills: z.string().optional(),
+  resume: z.string().optional(), // Will store the base64 data URI
+  resumeFilename: z.string().optional(),
   // Employer fields
   companyName: z.string().optional(),
   contactPerson: z.string().optional(),
@@ -59,6 +65,7 @@ export function LeadCapturePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const hasSeenPopup = localStorage.getItem('hasSeenLeadPopup');
@@ -74,10 +81,51 @@ export function LeadCapturePopup() {
     resolver: zodResolver(leadSchema),
     defaultValues: {
       role: undefined,
+      jobSeekerName: '',
+      jobSeekerEmail: '',
+      jobSeekerPhone: '',
+      jobSeekerSkills: '',
+      resume: '',
+      resumeFilename: '',
+      companyName: '',
+      contactPerson: '',
+      employerEmail: '',
+      employerPhone: '',
+      hiringNeeds: '',
     },
   });
 
   const selectedRole = form.watch('role');
+  const resumeFilename = form.watch('resumeFilename');
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ variant: 'destructive', title: 'File too large', description: 'Please upload a file smaller than 5MB.' });
+        return;
+      }
+      if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+        toast({ variant: 'destructive', title: 'Invalid file type', description: 'Please upload a PDF or Word document.' });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        form.setValue('resume', e.target?.result as string);
+        form.setValue('resumeFilename', file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeFile = () => {
+    form.setValue('resume', '');
+    form.setValue('resumeFilename', '');
+    if(fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  }
+
 
   const handleClose = () => {
     setIsOpen(false);
@@ -93,12 +141,13 @@ export function LeadCapturePopup() {
         description: 'Your information has been submitted successfully. We will get in touch with you shortly.',
       });
       handleClose();
+      form.reset();
     } catch (error) {
       console.error('Failed to send lead email:', error);
       toast({
         variant: 'destructive',
         title: 'Submission Failed',
-        description: 'Something went wrong. Please try again.',
+        description: 'Something went wrong. Please check your details and try again.',
       });
     } finally {
       setIsLoading(false);
@@ -107,34 +156,39 @@ export function LeadCapturePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Welcome to Hiring Dekho!</DialogTitle>
+          <DialogTitle className="text-2xl flex items-center gap-2"><Briefcase className="h-6 w-6 text-primary" /> Let's Get You Started!</DialogTitle>
           <DialogDescription>
-            Let's get you started. Tell us who you are to personalize your experience.
+            Tell us who you are to personalize your experience on Hiring Dekho.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="role"
               render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>You are a...</FormLabel>
+                <FormItem>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      className="flex gap-4"
+                      className="grid grid-cols-2 gap-4"
                     >
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl><RadioGroupItem value="job-seeker" /></FormControl>
-                        <FormLabel className="font-normal">Job Seeker</FormLabel>
+                      <FormItem>
+                         <RadioGroupItem value="job-seeker" id="r1" className="sr-only peer" />
+                         <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            <User className="mb-3 h-6 w-6" />
+                            Job Seeker
+                         </Label>
                       </FormItem>
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl><RadioGroupItem value="employer" /></FormControl>
-                        <FormLabel className="font-normal">Employer</FormLabel>
+                      <FormItem>
+                         <RadioGroupItem value="employer" id="r2" className="sr-only peer" />
+                         <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            <Briefcase className="mb-3 h-6 w-6" />
+                            Employer
+                         </Label>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -144,22 +198,34 @@ export function LeadCapturePopup() {
             />
 
             {selectedRole === 'job-seeker' && (
-              <>
+              <div className="space-y-3 animate-in fade-in-50">
                 <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="jobSeekerPhone" render={({ field }) => (<FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input placeholder="+91 98765 43210" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </>
+                <FormItem>
+                  <FormLabel>Resume (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="file" id="resume-upload" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.doc,.docx" />
+                    </FormControl>
+                    {resumeFilename ? (
+                      <Badge variant="secondary" className="flex items-center justify-between">
+                          <span className="truncate max-w-48"><FileIcon className="inline mr-2 h-4 w-4" />{resumeFilename}</span>
+                          <button type="button" onClick={removeFile}><X className="ml-2 h-4 w-4" /></button>
+                      </Badge>
+                    ) : (
+                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload Resume</Button>
+                    )}
+                  <FormMessage />
+                </FormItem>
+              </div>
             )}
 
             {selectedRole === 'employer' && (
-              <>
+              <div className="space-y-3 animate-in fade-in-50">
                 <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="employerPhone" render={({ field }) => (<FormItem><FormLabel>Work Phone (Optional)</FormLabel><FormControl><Input placeholder="+91 98765 12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </>
+              </div>
             )}
             
             <DialogFooter>
