@@ -32,32 +32,29 @@ import { Label } from '../ui/label';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
-const leadSchema = z.object({
-  role: z.enum(['job-seeker', 'employer'], {
-    required_error: 'Please select your role.',
-  }),
-  // Job Seeker fields
-  jobSeekerName: z.string().optional(),
-  jobSeekerEmail: z.string().email('Invalid email address').optional(),
-  jobSeekerPhone: z.string().optional(),
-  jobSeekerSkills: z.string().optional(),
-  resume: z.string().optional(), // Will store the base64 data URI
-  resumeFilename: z.string().optional(),
-  // Employer fields
-  companyName: z.string().optional(),
-  contactPerson: z.string().optional(),
-  employerEmail: z.string().email('Invalid email address').optional(),
-  employerPhone: z.string().optional(),
-  hiringNeeds: z.string().optional(),
-}).superRefine((data, ctx) => {
-    if (data.role === 'job-seeker') {
-        if (!data.jobSeekerName) ctx.addIssue({ code: 'custom', message: 'Name is required.', path: ['jobSeekerName'] });
-        if (!data.jobSeekerEmail) ctx.addIssue({ code: 'custom', message: 'Email is required.', path: ['jobSeekerEmail'] });
-    } else if (data.role === 'employer') {
-        if (!data.companyName) ctx.addIssue({ code: 'custom', message: 'Company name is required.', path: ['companyName'] });
-        if (!data.employerEmail) ctx.addIssue({ code: 'custom', message: 'Email is required.', path: ['employerEmail'] });
-    }
+const jobSeekerSchema = z.object({
+    role: z.literal('job-seeker'),
+    jobSeekerName: z.string().min(1, 'Name is required.'),
+    jobSeekerEmail: z.string().email('Invalid email address.'),
+    jobSeekerPhone: z.string().optional(),
+    jobSeekerSkills: z.string().optional(),
+    resume: z.string().optional(),
+    resumeFilename: z.string().optional(),
 });
+
+const employerSchema = z.object({
+    role: z.literal('employer'),
+    companyName: z.string().min(1, 'Company name is required.'),
+    contactPerson: z.string().optional(),
+    employerEmail: z.string().email('Invalid email address.'),
+    employerPhone: z.string().optional(),
+    hiringNeeds: z.string().optional(),
+});
+
+const leadSchema = z.discriminatedUnion('role', [
+    jobSeekerSchema,
+    employerSchema
+]);
 
 
 type LeadFormData = z.infer<typeof leadSchema>;
@@ -70,9 +67,11 @@ export function LeadCapturePopup() {
 
   useEffect(() => {
     // For development, always show the popup after a delay.
-    // In production, you might want to bring back the localStorage check.
     const timer = setTimeout(() => {
-      setIsOpen(true);
+        // Only show if it hasn't been seen before in this session/storage.
+        if (sessionStorage.getItem('hasSeenLeadPopup') !== 'true') {
+            setIsOpen(true);
+        }
     }, 3000); // Show popup after 3 seconds
     
     return () => clearTimeout(timer);
@@ -81,23 +80,43 @@ export function LeadCapturePopup() {
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
     defaultValues: {
-      role: undefined,
+      role: 'job-seeker', // Default to one role to avoid undefined state
       jobSeekerName: '',
       jobSeekerEmail: '',
       jobSeekerPhone: '',
       jobSeekerSkills: '',
       resume: '',
       resumeFilename: '',
-      companyName: '',
-      contactPerson: '',
-      employerEmail: '',
-      employerPhone: '',
-      hiringNeeds: '',
     },
   });
 
   const selectedRole = form.watch('role');
   const resumeFilename = form.watch('resumeFilename');
+
+  // When role changes, reset the form with appropriate defaults
+  useEffect(() => {
+    if (selectedRole === 'job-seeker') {
+      form.reset({
+        role: 'job-seeker',
+        jobSeekerName: '',
+        jobSeekerEmail: '',
+        jobSeekerPhone: '',
+        jobSeekerSkills: '',
+        resume: '',
+        resumeFilename: '',
+      });
+    } else if (selectedRole === 'employer') {
+      form.reset({
+        role: 'employer',
+        companyName: '',
+        contactPerson: '',
+        employerEmail: '',
+        employerPhone: '',
+        hiringNeeds: '',
+      });
+    }
+  }, [selectedRole, form]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -130,8 +149,7 @@ export function LeadCapturePopup() {
 
   const handleClose = () => {
     setIsOpen(false);
-    // You can re-enable this if you want the "only show once" behavior
-    // localStorage.setItem('hasSeenLeadPopup', 'true');
+    sessionStorage.setItem('hasSeenLeadPopup', 'true');
   };
 
   const onSubmit = async (data: LeadFormData) => {
@@ -231,7 +249,7 @@ export function LeadCapturePopup() {
             )}
             
             <DialogFooter>
-              <Button type="submit" className="w-full gradient-saffron" disabled={isLoading || !selectedRole}>
+              <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Submit
               </Button>

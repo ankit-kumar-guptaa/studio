@@ -3,7 +3,6 @@
  * @fileOverview A Genkit flow to send an email with lead capture data.
  *
  * - sendLeadEmail - A function that takes form data and sends it via email.
- * - LeadDataSchema - The Zod schema for the input data.
  */
 
 import { ai } from '@/ai/genkit';
@@ -11,22 +10,30 @@ import { z } from 'genkit';
 import * as nodemailer from 'nodemailer';
 
 // Define the schema for the input data
-const LeadDataSchema = z.object({
-  role: z.enum(['job-seeker', 'employer']),
-  // Job Seeker fields
-  jobSeekerName: z.string().optional(),
-  jobSeekerEmail: z.string().email().optional(),
-  jobSeekerPhone: z.string().optional(),
-  jobSeekerSkills: z.string().optional(),
-  resume: z.string().optional(), // Base64 data URI
-  resumeFilename: z.string().optional(),
-  // Employer fields
-  companyName: z.string().optional(),
-  contactPerson: z.string().optional(),
-  employerEmail: z.string().email().optional(),
-  employerPhone: z.string().optional(),
-  hiringNeeds: z.string().optional(),
+const jobSeekerSchema = z.object({
+    role: z.literal('job-seeker'),
+    jobSeekerName: z.string().min(1, 'Name is required.'),
+    jobSeekerEmail: z.string().email('Invalid email address.'),
+    jobSeekerPhone: z.string().optional(),
+    jobSeekerSkills: z.string().optional(),
+    resume: z.string().optional(),
+    resumeFilename: z.string().optional(),
 });
+
+const employerSchema = z.object({
+    role: z.literal('employer'),
+    companyName: z.string().min(1, 'Company name is required.'),
+    contactPerson: z.string().optional(),
+    employerEmail: z.string().email('Invalid email address.'),
+    employerPhone: z.string().optional(),
+    hiringNeeds: z.string().optional(),
+});
+
+const LeadDataSchema = z.discriminatedUnion('role', [
+    jobSeekerSchema,
+    employerSchema
+]);
+
 
 type LeadData = z.infer<typeof LeadDataSchema>;
 
@@ -50,8 +57,8 @@ const sendLeadEmailFlow = ai.defineFlow(
     // GMAIL_USER=your_email@gmail.com
     // GMAIL_APP_PASSWORD=your_16_character_app_password
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.error('Gmail credentials are not set in environment variables.');
-        throw new Error('Email service is not configured.');
+        console.error('Gmail credentials are not set in environment variables (GMAIL_USER, GMAIL_APP_PASSWORD).');
+        throw new Error('Email service is not configured. Please set credentials in .env file.');
     }
     
     const transporter = nodemailer.createTransport({
@@ -66,7 +73,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     const subject = `New Lead from Hiring Dekho: ${data.role === 'job-seeker' ? 'Job Seeker' : 'Employer'}`;
 
     let htmlContent = `<h1>New Lead Submission</h1><p>A new lead has been captured from the website popup form.</p>`;
-    let attachments = [];
+    let attachments: nodemailer.Attachment[] = [];
 
     if (data.role === 'job-seeker') {
       htmlContent += `
