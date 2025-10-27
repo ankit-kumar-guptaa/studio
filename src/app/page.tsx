@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { HomePageClient } from '@/components/home/HomePageClient';
+import { LeadCapturePopup } from '@/components/home/LeadCapturePopup';
 
 export default function Home() {
 
@@ -14,6 +15,7 @@ export default function Home() {
         <Suspense>
             <HomePageClient />
         </Suspense>
+        <LeadCapturePopup />
       </main>
       <Footer />
     </div>
