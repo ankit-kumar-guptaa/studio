@@ -11,7 +11,7 @@ import { z } from 'genkit';
 import * as nodemailer from 'nodemailer';
 
 // Define the schema for the input data
-export const LeadDataSchema = z.object({
+const LeadDataSchema = z.object({
   role: z.enum(['job-seeker', 'employer']),
   // Job Seeker fields
   jobSeekerName: z.string().optional(),
