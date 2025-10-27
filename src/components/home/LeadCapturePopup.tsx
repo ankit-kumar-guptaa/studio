@@ -68,7 +68,7 @@ export function LeadCapturePopup() {
   useEffect(() => {
     // For development, always show the popup after a delay.
     const timer = setTimeout(() => {
-        // Only show if it hasn't been seen before in this session/storage.
+        // Only show if it hasn't been seen before in this session.
         if (sessionStorage.getItem('hasSeenLeadPopup') !== 'true') {
             setIsOpen(true);
         }
@@ -80,13 +80,18 @@ export function LeadCapturePopup() {
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
     defaultValues: {
-      role: 'job-seeker', // Default to one role to avoid undefined state
+      role: 'job-seeker',
       jobSeekerName: '',
       jobSeekerEmail: '',
       jobSeekerPhone: '',
       jobSeekerSkills: '',
       resume: '',
       resumeFilename: '',
+      companyName: '',
+      contactPerson: '',
+      employerEmail: '',
+      employerPhone: '',
+      hiringNeeds: '',
     },
   });
 
@@ -104,6 +109,11 @@ export function LeadCapturePopup() {
         jobSeekerSkills: '',
         resume: '',
         resumeFilename: '',
+        companyName: '',
+        contactPerson: '',
+        employerEmail: '',
+        employerPhone: '',
+        hiringNeeds: '',
       });
     } else if (selectedRole === 'employer') {
       form.reset({
@@ -113,6 +123,12 @@ export function LeadCapturePopup() {
         employerEmail: '',
         employerPhone: '',
         hiringNeeds: '',
+        jobSeekerName: '',
+        jobSeekerEmail: '',
+        jobSeekerPhone: '',
+        jobSeekerSkills: '',
+        resume: '',
+        resumeFilename: '',
       });
     }
   }, [selectedRole, form]);
@@ -131,16 +147,16 @@ export function LeadCapturePopup() {
       }
       const reader = new FileReader();
       reader.onload = (e) => {
-        form.setValue('resume', e.target?.result as string);
-        form.setValue('resumeFilename', file.name);
+        form.setValue('resume', e.target?.result as string, { shouldValidate: true });
+        form.setValue('resumeFilename', file.name, { shouldValidate: true });
       };
       reader.readAsDataURL(file);
     }
   };
 
   const removeFile = () => {
-    form.setValue('resume', '');
-    form.setValue('resumeFilename', '');
+    form.setValue('resume', '', { shouldValidate: true });
+    form.setValue('resumeFilename', '', { shouldValidate: true });
     if(fileInputRef.current) {
         fileInputRef.current.value = '';
     }
@@ -245,6 +261,7 @@ export function LeadCapturePopup() {
                 <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person (Optional)</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
             )}
             
