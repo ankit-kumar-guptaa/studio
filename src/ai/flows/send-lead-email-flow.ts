@@ -6,7 +6,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import * as nodemailer from 'nodemailer';
 
 // Define the schema for the input data
@@ -50,22 +50,24 @@ const sendLeadEmailFlow = ai.defineFlow(
     outputSchema: z.object({ success: z.boolean() }),
   },
   async (data) => {
-    // IMPORTANT: Use environment variables for credentials in a real app
-    // For this example, we'll use Gmail with App Password.
-    // Ensure you have enabled 2-Step Verification and created an App Password for your Google account.
-    // Store them in a .env.local file:
-    // GMAIL_USER=your_email@gmail.com
-    // GMAIL_APP_PASSWORD=your_16_character_app_password
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.error('Gmail credentials are not set in environment variables (GMAIL_USER, GMAIL_APP_PASSWORD).');
+    // Use environment variables for SMTP credentials.
+    // Store them in a .env file:
+    // SMTP_HOST=smtp.hostinger.com
+    // SMTP_PORT=587
+    // SMTP_USER=your_email@example.com
+    // SMTP_PASS=your_password
+    if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.error('SMTP credentials are not set in environment variables (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).');
         throw new Error('Email service is not configured. Please set credentials in .env file.');
     }
     
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
@@ -107,7 +109,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     }
 
     const mailOptions: nodemailer.SendMailOptions = {
-      from: `"Hiring Dekho Leads" <${process.env.GMAIL_USER}>`,
+      from: `"Hiring Dekho Leads" <${process.env.SMTP_USER}>`,
       to: toEmail,
       subject: subject,
       html: htmlContent,
