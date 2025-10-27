@@ -27,6 +27,7 @@ import { Loader2, User, Briefcase, Upload, File as FileIcon, X } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 import { sendLeadEmail } from '@/ai/flows/send-lead-email-flow';
 import { Badge } from '../ui/badge';
+import { Label } from '../ui/label';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -68,13 +69,13 @@ export function LeadCapturePopup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const hasSeenPopup = localStorage.getItem('hasSeenLeadPopup');
-    if (!hasSeenPopup) {
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 3000); // Show popup after 3 seconds
-      return () => clearTimeout(timer);
-    }
+    // For development, always show the popup after a delay.
+    // In production, you might want to bring back the localStorage check.
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+    }, 3000); // Show popup after 3 seconds
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const form = useForm<LeadFormData>({
@@ -129,7 +130,8 @@ export function LeadCapturePopup() {
 
   const handleClose = () => {
     setIsOpen(false);
-    localStorage.setItem('hasSeenLeadPopup', 'true');
+    // You can re-enable this if you want the "only show once" behavior
+    // localStorage.setItem('hasSeenLeadPopup', 'true');
   };
 
   const onSubmit = async (data: LeadFormData) => {
@@ -178,14 +180,14 @@ export function LeadCapturePopup() {
                     >
                       <FormItem>
                          <RadioGroupItem value="job-seeker" id="r1" className="sr-only peer" />
-                         <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                         <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
                             <User className="mb-3 h-6 w-6" />
                             Job Seeker
                          </Label>
                       </FormItem>
                       <FormItem>
                          <RadioGroupItem value="employer" id="r2" className="sr-only peer" />
-                         <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                         <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
                             <Briefcase className="mb-3 h-6 w-6" />
                             Employer
                          </Label>
