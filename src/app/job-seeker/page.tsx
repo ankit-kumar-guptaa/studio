@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, Suspense } from 'react';
@@ -10,26 +11,35 @@ import { Loader2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 
 function JobSeekerPageContent() {
-  const { user, isUserLoading } = useFirebase();
+  const { isUserLoading } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
+    if (!isUserLoading && !isRoleLoading) {
+      if (userRole !== 'job-seeker') {
+        router.push('/login');
+      }
     }
-     if (!isRoleLoading && userRole !== 'job-seeker') {
-        router.push('/');
-    }
-  }, [user, isUserLoading, router, userRole, isRoleLoading]);
+  }, [isUserLoading, isRoleLoading, userRole, router]);
 
-  if (isUserLoading || isRoleLoading || userRole !== 'job-seeker') {
+  if (isUserLoading || isRoleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
+  
+  if (userRole !== 'job-seeker') {
+    // This state is temporary while redirecting
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex min-h-screen flex-col">

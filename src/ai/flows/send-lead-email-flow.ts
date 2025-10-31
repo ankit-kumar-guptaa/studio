@@ -70,7 +70,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     });
 
     const toEmail = 'theankitkumarg@gmail.com';
-    const subject = `New Lead from Hiring Dekho: ${data.role === 'job-seeker' ? 'Job Seeker' : 'Employer'}`;
+    const subject = `New Lead from Hiring Dekho: ${data.role === 'job-seeker' ? data.jobSeekerName : data.companyName}`;
 
     let htmlContent = `<h1>New Lead Submission</h1><p>A new lead has been captured from the website popup form.</p>`;
     let attachments: nodemailer.Attachment[] = [];

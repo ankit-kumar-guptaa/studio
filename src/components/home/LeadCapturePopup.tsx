@@ -36,6 +36,7 @@ const jobSeekerSchema = z.object({
   role: z.literal('job-seeker'),
   jobSeekerName: z.string().min(1, 'Name is required.'),
   jobSeekerEmail: z.string().email('Invalid email address.'),
+  jobSeekerPhone: z.string().optional(),
   jobSeekerSkills: z.string().optional(),
   resume: z.string().optional(),
   resumeFilename: z.string().optional(),
@@ -44,7 +45,9 @@ const jobSeekerSchema = z.object({
 const employerSchema = z.object({
   role: z.literal('employer'),
   companyName: z.string().min(1, 'Company name is required.'),
+  contactPerson: z.string().optional(),
   employerEmail: z.string().email('Invalid email address.'),
+  employerPhone: z.string().optional(),
   hiringNeeds: z.string().optional(),
 });
 
@@ -76,11 +79,14 @@ export function LeadCapturePopup() {
       role: 'job-seeker',
       jobSeekerName: '',
       jobSeekerEmail: '',
+      jobSeekerPhone: '',
       jobSeekerSkills: '',
       resume: '',
       resumeFilename: '',
       companyName: '',
+      contactPerson: '',
       employerEmail: '',
+      employerPhone: '',
       hiringNeeds: '',
     },
   });
@@ -118,6 +124,7 @@ export function LeadCapturePopup() {
 
   const handleClose = () => {
     setIsOpen(false);
+    // You could set a flag in sessionStorage here if you only want to show it once per session
     // sessionStorage.setItem('hasSeenLeadPopup', 'true');
   };
 
@@ -135,7 +142,7 @@ export function LeadCapturePopup() {
       toast({
         variant: 'destructive',
         title: 'Submission Failed',
-        description: 'Something went wrong. Please check your details and try again.',
+        description: 'Something went wrong. Please check your details and try again. If the problem persists, ensure server environment variables are set.',
       });
     } finally {
       setIsLoading(false);
@@ -168,6 +175,7 @@ export function LeadCapturePopup() {
                         <div className="space-y-4">
                             <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="jobSeekerPhone" render={({ field }) => (<FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+91 98765 43210" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormItem>
                                 <FormLabel>Resume (Optional)</FormLabel>
@@ -190,7 +198,9 @@ export function LeadCapturePopup() {
                     <TabsContent value="employer" className="p-6 pt-4">
                         <div className="space-y-4">
                             <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person (Optional)</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="employerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+91 99887 76655" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </TabsContent>

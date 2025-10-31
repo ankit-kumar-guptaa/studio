@@ -27,12 +27,10 @@ export default function AdminPage() {
     useEffect(() => {
         // This effect ensures that only a real, authenticated admin can access this page.
         // It waits until the role loading is complete before making a decision.
-        if (!isRoleLoading) {
-            if (userRole !== 'admin' || !user) {
-                router.push('/login');
-            }
+        if (!isRoleLoading && userRole !== 'admin') {
+            router.push('/login');
         }
-    }, [userRole, isRoleLoading, router, user]);
+    }, [userRole, isRoleLoading, router]);
 
     // Fetch all collections
     const jobSeekersQuery = useMemoFirebase(() => {
@@ -180,5 +178,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    

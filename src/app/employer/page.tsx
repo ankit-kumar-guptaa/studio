@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -10,20 +11,28 @@ import { EmployerDashboard } from '@/components/employer/EmployerDashboard';
 import { useUserRole } from '@/hooks/useUserRole';
 
 export default function EmployerPage() {
-  const { user, isUserLoading } = useFirebase();
+  const { isUserLoading } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
+    if (!isUserLoading && !isRoleLoading) {
+      if (userRole !== 'employer') {
+        router.push('/login');
+      }
     }
-    if (!isRoleLoading && userRole !== 'employer') {
-        router.push('/');
-    }
-  }, [user, isUserLoading, router, userRole, isRoleLoading]);
+  }, [isUserLoading, isRoleLoading, userRole, router]);
 
-  if (isUserLoading || isRoleLoading || userRole !== 'employer') {
+  if (isUserLoading || isRoleLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (userRole !== 'employer') {
+    // This state is temporary while redirecting
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
