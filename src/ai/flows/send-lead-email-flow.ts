@@ -62,14 +62,11 @@ const sendLeadEmailFlow = ai.defineFlow(
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
+      secure: false, // true for 465, false for other ports like 587
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      tls: {
-        ciphers:'SSLv3',
-        rejectUnauthorized: false
-      }
     });
 
     const toEmail = 'theankitkumarg@gmail.com';
@@ -110,7 +107,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     }
 
     const mailOptions: nodemailer.SendMailOptions = {
-      from: `"Hiring Dekho Leads" <leads@hiringdekho.com>`,
+      from: `"Hiring Dekho Leads" <${process.env.SMTP_USER}>`,
       to: toEmail,
       subject: subject,
       html: htmlContent,
