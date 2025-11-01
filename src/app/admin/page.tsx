@@ -79,7 +79,7 @@ export default function AdminPage() {
     };
 
     // Show a loader while verifying the role or if the user is not an admin yet.
-    if (isLoading || userRole !== 'admin') {
+    if (isRoleLoading || (userRole !== 'admin' && typeof window !== 'undefined')) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -105,7 +105,7 @@ export default function AdminPage() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{allUsers.length}</div>
+                        <div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : allUsers.length}</div>
                     </CardContent>
                 </Card>
                  <Card>
@@ -114,7 +114,7 @@ export default function AdminPage() {
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{jobPosts?.length || 0}</div>
+                        <div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : (jobPosts?.length || 0)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -123,7 +123,7 @@ export default function AdminPage() {
                         <UserCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{jobSeekers?.length || 0}</div>
+                        <div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : (jobSeekers?.length || 0)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -132,7 +132,7 @@ export default function AdminPage() {
                         <Building className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{employers?.length || 0}</div>
+                        <div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : (employers?.length || 0)}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -153,22 +153,36 @@ export default function AdminPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {allUsers.map(user => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">{getDisplayName(user)}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={user.role === 'Employer' ? 'secondary' : 'outline'}>
-                                            {user.role}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={getProfileLink(user)}>View Profile</Link>
-                                        </Button>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : allUsers.length > 0 ? (
+                                allUsers.map(user => (
+                                    <TableRow key={user.id}>
+                                        <TableCell className="font-medium">{getDisplayName(user)}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={user.role === 'Employer' ? 'secondary' : 'outline'}>
+                                                {user.role}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button asChild variant="outline" size="sm">
+                                                <Link href={getProfileLink(user)}>View Profile</Link>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    No users found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
