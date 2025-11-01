@@ -10,86 +10,71 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
-    // Super admin check: This is a placeholder for more robust security.
-    // For now, we allow reads from known admin panels but require auth for writes.
-    // A real implementation should use custom claims.
-    function isSuperAdmin() {
-      // WARNING: This is insecure for production writes. It allows any client
-      // to claim they are an admin for read purposes.
-      // This is a temporary measure for development.
-      return true;
-    }
 
     /**
-     * @description Allows a job seeker to manage their own profile and nested data.
-     * Authenticated users and super admins can read profiles.
+     * @description Public read access for job seekers, but write access is restricted.
      */
     match /jobSeekers/{jobSeekerId}/{documents=**} {
-      allow get, list: if isSignedIn() || isSuperAdmin();
+      allow read: if true;
       allow write: if isOwner(jobSeekerId);
     }
 
     /**
-     * @description Allows an employer to manage their own profile. Admins have full access.
+     * @description Public read access for employers, write access is restricted.
      */
     match /employers/{employerId} {
        function isExistingOwner() {
             return isOwner(employerId) && resource.data != null;
         }
-      allow get: if isOwner(employerId) || isSuperAdmin();
-      allow list: if isSuperAdmin(); // Allow admin to list all employers
+      allow read: if true;
       allow create: if isOwner(employerId);
-      allow update: if isExistingOwner() || isSuperAdmin();
-      allow delete: if isExistingOwner() || isSuperAdmin();
+      allow update: if isExistingOwner();
+      allow delete: if isExistingOwner();
     }
 
     /**
-     * @description Allows an employer to manage their job posts. Admins have full access.
+     * @description Employer's own job posts. Write restricted to owner.
      */
     match /employers/{employerId}/jobPosts/{jobPostId} {
-      // Allow owner or super admin to manage their job posts
-      allow read, write: if isOwner(employerId) || isSuperAdmin();
+      allow read, write: if isOwner(employerId);
     }
 
     /**
-     * @description Allows an employer to manage job applications. Admins have read access.
+     * @description Applications for a specific job post.
      */
     match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
       function isJobSeekerOwner() {
           return isSignedIn() && request.auth.uid == request.resource.data.jobSeekerId;
       }
-      // Employer or admin can read/manage applications.
-      // Job seeker can create an application.
-      allow get, list, update, delete: if isOwner(employerId) || isSuperAdmin();
+      allow read, update, delete: if isOwner(employerId);
       allow create: if isJobSeekerOwner();
     }
 
 
     /**
-     * @description Public read for jobs. Write access is restricted to owners or admins.
+     * @description Public read for all jobs. Write access is restricted to owners.
      */
     match /jobPosts/{jobPostId} {
         allow read: if true;
-        allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || isSuperAdmin();
-        allow update, delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();
+        allow create: if isSignedIn() && request.resource.data.employerId == request.auth.uid;
+        allow update, delete: if isSignedIn() && resource.data.employerId == request.auth.uid;
     }
 
     /**
-     * @description Public read for blogs. Write access for admins.
+     * @description Public read for blogs. No public writes.
      */
     match /blogs/{blogId} {
       allow read: if true;
-      allow create, update, delete: if isSuperAdmin();
+      allow write: if false; // Can be changed to allow admins
     }
 
     /**
-     * @description Public read for reviews. Logged-in users or admins can create.
+     * @description Public read for reviews. Logged-in users can create.
      */
     match /companyReviews/{companyReviewId} {
       allow read: if true;
-      allow create: if isSignedIn() || isSuperAdmin();
-      allow update, delete: if isSuperAdmin();
+      allow create: if isSignedIn();
+      allow write: if false; // Can be changed to allow admins/owners
     }
   }
 }

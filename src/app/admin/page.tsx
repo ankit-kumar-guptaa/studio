@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Briefcase, UserCheck, Building } from 'lucide-react';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { JobSeeker, Employer, JobPost } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -25,28 +25,27 @@ export default function AdminPage() {
     const router = useRouter();
 
     useEffect(() => {
-        // This effect ensures that only a real, authenticated admin can access this page.
-        // It waits until the role loading is complete before making a decision.
         if (!isRoleLoading && userRole !== 'admin') {
             router.push('/super-admin/login');
         }
     }, [userRole, isRoleLoading, router]);
 
-    // Fetch all collections only if the user is a verified admin
+    const shouldFetchData = userRole === 'admin' && !isRoleLoading;
+
     const jobSeekersQuery = useMemoFirebase(() => {
-        if (!firestore || userRole !== 'admin') return null;
+        if (!firestore || !shouldFetchData) return null;
         return query(collection(firestore, 'jobSeekers'));
-    }, [firestore, userRole]);
+    }, [firestore, shouldFetchData]);
 
     const employersQuery = useMemoFirebase(() => {
-        if (!firestore || userRole !== 'admin') return null;
+        if (!firestore || !shouldFetchData) return null;
         return query(collection(firestore, 'employers'));
-    }, [firestore, userRole]);
+    }, [firestore, shouldFetchData]);
     
     const jobPostsQuery = useMemoFirebase(() => {
-        if (!firestore || userRole !== 'admin') return null;
+        if (!firestore || !shouldFetchData) return null;
         return query(collection(firestore, 'jobPosts'));
-    }, [firestore, userRole]);
+    }, [firestore, shouldFetchData]);
 
 
     const { data: jobSeekers, isLoading: loadingSeekers, error: seekersError } = useCollection<JobSeeker>(jobSeekersQuery);
@@ -57,11 +56,11 @@ export default function AdminPage() {
     const anyError = seekersError || employersError || jobsError;
 
     const allUsers: CombinedUser[] = useMemo(() => {
-        if (userRole !== 'admin') return [];
+        if (!shouldFetchData) return [];
         const seekers: CombinedUser[] = jobSeekers ? jobSeekers.map(u => ({ ...u, role: 'Job Seeker' })) : [];
         const employerUsers: CombinedUser[] = employers ? employers.map(u => ({ ...u, role: 'Employer' })) : [];
         return [...seekers, ...employerUsers];
-    }, [jobSeekers, employers, userRole]);
+    }, [jobSeekers, employers, shouldFetchData]);
 
     const getDisplayName = (user: CombinedUser) => {
         if (user.role === 'Employer') {
@@ -72,14 +71,11 @@ export default function AdminPage() {
     
     const getProfileLink = (user: CombinedUser) => {
         if (user.role === 'Employer') {
-            // Assuming we will create an admin view for employer profiles
             return `/admin/user/${user.id}`; 
         }
-        // Link to the public applicant view page
         return `/employer/applicant/${user.id}`;
     };
 
-    // Show a loader while verifying the role or if the user is not an admin yet.
     if (isRoleLoading || userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -89,7 +85,6 @@ export default function AdminPage() {
     }
     
     if (anyError) {
-        // This is a fallback error display in case something still goes wrong
         return (
              <div className="flex min-h-screen flex-col">
                 <Header />
