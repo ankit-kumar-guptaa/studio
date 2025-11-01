@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -232,7 +231,7 @@ export function JobCard({ job, employerId: propEmployerId }: JobCardProps) {
         </div>
         <Button 
           size="sm" 
-          className="gradient-saffron shadow-md hover:shadow-primary/40 disabled:opacity-70"
+          className="gradient-professional shadow-md hover:shadow-primary/40 disabled:opacity-70"
           onClick={handleApply}
           disabled={isApplying || hasApplied || isUserLoading}
         >

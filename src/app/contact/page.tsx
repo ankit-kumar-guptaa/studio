@@ -61,7 +61,7 @@ export default function ContactPage() {
                     <Label htmlFor="message">Message</Label>
                     <Textarea id="message" placeholder="Your message..." rows={5} required />
                   </div>
-                  <Button type="submit" className="w-full gradient-saffron">Send Message</Button>
+                  <Button type="submit" className="w-full gradient-professional">Send Message</Button>
                 </form>
               </CardContent>
             </Card>
@@ -101,5 +101,3 @@ export default function ContactPage() {
     </div>
   );
 }
-
-    

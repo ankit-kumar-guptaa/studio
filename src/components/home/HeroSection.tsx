@@ -65,7 +65,7 @@ export function HeroSection() {
               searchPlaceholder="Search location..."
               emptyPlaceholder="Location not found."
             />
-            <Button type="submit" className="w-full gradient-saffron shadow-lg hover:shadow-primary/50 md:col-span-1 sm:col-span-2">
+            <Button type="submit" className="w-full gradient-professional shadow-lg hover:shadow-primary/50 md:col-span-1 sm:col-span-2">
               <Search className="mr-2 h-5 w-5" />
               Search Jobs
             </Button>

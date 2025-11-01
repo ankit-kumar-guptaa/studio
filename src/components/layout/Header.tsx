@@ -149,7 +149,7 @@ export function Header() {
                 <Button variant="ghost" asChild>
                   <Link href="/login">Log In</Link>
                 </Button>
-                <Button className="gradient-saffron shadow-lg hover:shadow-primary/50" asChild>
+                <Button className="gradient-professional shadow-lg hover:shadow-primary/50" asChild>
                   <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
@@ -192,7 +192,7 @@ export function Header() {
                       <Button variant="outline" asChild>
                         <Link href={getDashboardLink()}>My Dashboard</Link>
                       </Button>
-                      <Button className="gradient-saffron" onClick={handleLogout}>
+                      <Button className="gradient-professional" onClick={handleLogout}>
                         Log Out
                       </Button>
                     </>
@@ -201,7 +201,7 @@ export function Header() {
                       <Button variant="outline" asChild>
                         <Link href="/login">Log In</Link>
                       </Button>
-                      <Button className="gradient-saffron" asChild>
+                      <Button className="gradient-professional" asChild>
                         <Link href="/signup">Sign Up</Link>
                       </Button>
                     </>

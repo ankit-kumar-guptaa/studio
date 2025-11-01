@@ -47,7 +47,7 @@ export async function FeaturedJobs() {
           </div>
         )}
         <div className="mt-12 text-center">
-          <Button asChild size="lg" className="gradient-indigo">
+          <Button asChild size="lg" className="gradient-accent">
             <Link href="/find-jobs">
               Explore All Jobs <ArrowRight className="ml-2 h-4 w-4" />
             </Link>

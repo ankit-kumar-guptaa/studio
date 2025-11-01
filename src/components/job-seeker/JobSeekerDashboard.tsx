@@ -63,7 +63,7 @@ function JobSeekerDashboardContent() {
             </CardHeader>
             <CardContent className="text-center py-16">
               <p className="mb-4">You are now in the dashboard. Use the main job search page to find new opportunities.</p>
-              <Button asChild className="gradient-saffron">
+              <Button asChild className="gradient-professional">
                   <Link href="/find-jobs">
                       Go to Job Search Page <ExternalLink className="ml-2 h-4 w-4"/>
                   </Link>

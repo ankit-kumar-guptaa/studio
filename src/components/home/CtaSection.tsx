@@ -12,7 +12,7 @@ export function CtaSection() {
             <p className="mt-2 text-muted-foreground">
               Find your dream job from thousands of openings. We'll help you get there.
             </p>
-            <Button asChild size="lg" className="mt-6 gradient-saffron shadow-md hover:shadow-primary/40">
+            <Button asChild size="lg" className="mt-6 gradient-professional shadow-md hover:shadow-primary/40">
               <Link href="/job-seeker">
                 Start Your Search <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -23,7 +23,7 @@ export function CtaSection() {
             <p className="mt-2 text-muted-foreground">
               Post a job and find the best talent for your team. It's fast and easy.
             </p>
-            <Button asChild size="lg" className="mt-6 gradient-indigo shadow-md hover:shadow-indigo-500/40">
+            <Button asChild size="lg" className="mt-6 gradient-accent shadow-md hover:shadow-accent/40">
               <Link href="/employer">
                 Post a Job <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

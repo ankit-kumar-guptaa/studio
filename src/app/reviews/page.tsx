@@ -103,7 +103,7 @@ export default function CompanyReviewsPage() {
                         <CardDescription>Help others by anonymously reviewing your current or past employer.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button className="w-full gradient-indigo">Write a Review</Button>
+                        <Button className="w-full gradient-accent">Write a Review</Button>
                     </CardContent>
                 </Card>
             </div>

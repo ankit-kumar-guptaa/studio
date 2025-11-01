@@ -214,7 +214,7 @@ export function LeadCapturePopup() {
                 </Tabs>
                 
                 <DialogFooter className="px-6 pb-6 pt-6">
-                    <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
+                    <Button type="submit" className="w-full gradient-professional" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit
                     </Button>

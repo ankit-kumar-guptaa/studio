@@ -255,7 +255,7 @@ export function ResumeBuilder() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" className="gradient-saffron" disabled={isSaving || isGenerating}>
+          <Button type="submit" className="gradient-professional" disabled={isSaving || isGenerating}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Resume
           </Button>

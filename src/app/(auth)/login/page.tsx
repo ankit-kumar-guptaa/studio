@@ -257,7 +257,7 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
+                <Button type="submit" className="w-full gradient-professional" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Login
                 </Button>

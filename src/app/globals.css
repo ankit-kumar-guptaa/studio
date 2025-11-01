@@ -4,28 +4,28 @@
 
 @layer base {
   :root {
-    --background: 30 100% 95%; /* Very light saffron */
+    --background: 220 40% 98%; /* Very light cool grey */
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 36 100% 60%; /* Saffron */
-    --primary-foreground: 224 71.4% 4.1%;
-    --secondary: 30 100% 90%;
-    --secondary-foreground: 36 100% 60%;
-    --muted: 30 20% 85%;
+    --primary: 236 100% 66%; /* Professional Blue: #535fff */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 236 100% 60%;
+    --muted: 220 20% 90%;
     --muted-foreground: 225 8.9% 46.1%;
-    --accent: 275 100% 25%; /* Indigo */
+    --accent: 13 94% 56%; /* Vibrant Orange: rgb(246, 79, 40) */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 100% 88%;
-    --input: 30 100% 92%;
-    --ring: 36 100% 60%;
+    --border: 220 20% 92%;
+    --input: 220 30% 96%;
+    --ring: 236 100% 66%;
     --radius: 0.75rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
+    --chart-1: 236 100% 66%;
+    --chart-2: 13 94% 56%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
@@ -38,21 +38,21 @@
     --card-foreground: 0 0% 98%;
     --popover: 222 47% 11%;
     --popover-foreground: 0 0% 98%;
-    --primary: 36 100% 60%;
+    --primary: 236 100% 70%;
     --primary-foreground: 224 71.4% 4.1%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 0 0% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
-    --accent: 275 80% 70%;
+    --accent: 13 94% 60%;
     --accent-foreground: 222 47% 11%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 36 100% 60%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
+    --ring: 236 100% 70%;
+    --chart-1: 236 70% 60%;
+    --chart-2: 13 80% 55%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
@@ -72,10 +72,10 @@
 }
 
 @layer components {
-  .gradient-saffron {
-    @apply bg-gradient-to-r from-primary to-orange-400 text-primary-foreground;
+  .gradient-professional {
+    @apply bg-gradient-to-r from-primary to-blue-400 text-primary-foreground;
   }
-  .gradient-indigo {
-    @apply bg-gradient-to-r from-accent to-purple-500 text-accent-foreground;
+  .gradient-accent {
+    @apply bg-gradient-to-r from-accent to-orange-500 text-accent-foreground;
   }
 }

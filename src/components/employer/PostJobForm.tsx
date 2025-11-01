@@ -281,7 +281,7 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
         </div>
 
         <div className="flex justify-end">
-            <Button type="submit" className="w-full md:w-auto gradient-saffron" disabled={isPosting || isGenerating}>
+            <Button type="submit" className="w-full md:w-auto gradient-professional" disabled={isPosting || isGenerating}>
             {isPosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Post Job
             </Button>

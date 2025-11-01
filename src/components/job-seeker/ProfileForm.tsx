@@ -219,7 +219,7 @@ export function ProfileForm() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" className="gradient-saffron" disabled={isSaving}>
+          <Button type="submit" className="gradient-professional" disabled={isSaving}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
           </Button>

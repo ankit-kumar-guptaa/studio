@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Input } from "@/components/ui/input";
@@ -164,7 +163,7 @@ export function JobSearch() {
               <SelectItem value="Finance">Finance</SelectItem>
             </SelectContent>
           </Select>
-          <Button type="submit" className="w-full gradient-saffron lg:col-span-1">
+          <Button type="submit" className="w-full gradient-professional lg:col-span-1">
             <Search className="mr-2 h-4 w-4" />
             Search
           </Button>
