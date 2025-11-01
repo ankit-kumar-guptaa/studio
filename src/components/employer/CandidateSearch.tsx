@@ -122,7 +122,7 @@ export function CandidateSearch() {
                             <SelectItem value="10-100">10+ years (Exp.)</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="submit" className="w-full gradient-saffron">
+                    <Button type="submit" className="w-full gradient-professional">
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                         Search Candidates
                     </Button>

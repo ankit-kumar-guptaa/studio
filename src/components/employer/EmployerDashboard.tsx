@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle, Briefcase, Users, Building, Trash2, LineChart, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import type { JobPost } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -42,9 +42,9 @@ export function EmployerDashboard() {
 
   const jobPostsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, `employers/${user.uid}/jobPosts`);
+    return query(collection(firestore, `employers/${user.uid}/jobPosts`), orderBy('postDate', 'desc'));
   }, [firestore, user]);
-
+  
   const { data: employerData } = useDoc(useMemoFirebase(() => user && firestore ? doc(firestore, 'employers', user.uid) : null, [user, firestore]));
 
   const fetchJobsAndCounts = async () => {
@@ -56,23 +56,13 @@ export function EmployerDashboard() {
       
       let applicantsCount = 0;
       const jobsWithCounts = await Promise.all(jobsData.map(async (job) => {
-        const applicationsRef = collection(jobPostsCollectionRef, job.id, 'applications');
+        const applicationsRef = collection(jobPostsCollectionRef.firestore, `employers/${user?.uid}/jobPosts/${job.id}/applications`);
         const applicationsSnapshot = await getDocs(applicationsRef);
         applicantsCount += applicationsSnapshot.size;
         return { ...job, applicantCount: applicationsSnapshot.size };
       }));
 
-      setJobPostsWithCounts(
-        jobsWithCounts.sort((a, b) => {
-          const getMillis = (date: any) => {
-            if (date && typeof date.toMillis === 'function') return date.toMillis();
-            if (date instanceof Date) return date.getTime();
-            if (typeof date === 'string') return new Date(date).getTime();
-            return 0;
-          };
-          return getMillis(b.postDate) - getMillis(a.postDate);
-        })
-      );
+      setJobPostsWithCounts(jobsWithCounts);
       setTotalApplicants(applicantsCount);
     } catch (error) {
       console.error("Error fetching jobs and counts: ", error);
@@ -84,12 +74,13 @@ export function EmployerDashboard() {
   const handleDeleteJob = async (jobId: string) => {
     if (!firestore || !user) return;
     
-    const jobDocRef = doc(firestore, `employers/${user.uid}/jobPosts`, jobId);
+    // Also delete from the global collection
+    const globalJobDocRef = doc(firestore, 'jobPosts', jobId);
+    const employerJobDocRef = doc(firestore, `employers/${user.uid}/jobPosts`, jobId);
 
-    // Note: This doesn't delete subcollections (applications) on the client.
-    // A Firebase Function would be needed for that, but for now this removes the job post.
     try {
-      await deleteDoc(jobDocRef);
+      await deleteDoc(globalJobDocRef);
+      await deleteDoc(employerJobDocRef);
       toast({
         title: "Job Deleted",
         description: "The job posting has been successfully removed.",
