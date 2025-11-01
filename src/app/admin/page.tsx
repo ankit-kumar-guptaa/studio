@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useFirebase } from '@/firebase';
+import { useEffect, useMemo, useState } from 'react';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Loader2, Users, UserPlus, PlusCircle, LineChart, LayoutDashboard } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -14,11 +14,15 @@ import { PostJobForm } from '@/components/admin/PostJobForm';
 import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { BlogManagement } from '@/components/admin/BlogManagement';
+import { Suspense } from 'react';
 
-export default function AdminPage() {
+function AdminPageContent() {
     const { isUserLoading } = useFirebase();
     const { userRole, isRoleLoading } = useUserRole();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const defaultTab = searchParams.get('tab') || "management";
 
     useEffect(() => {
         if (!isUserLoading && !isRoleLoading) {
@@ -46,7 +50,7 @@ export default function AdminPage() {
                 <p className="text-muted-foreground">Oversee site activity and manage all platform content.</p>
             </div>
             
-            <Tabs defaultValue="management">
+            <Tabs defaultValue={defaultTab}>
                 <TabsList className="grid w-full grid-cols-1 md:grid-cols-5 h-auto">
                     <TabsTrigger value="management"><Users className="mr-2 h-4 w-4" /> User & Job Management</TabsTrigger>
                      <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Platform Analytics</TabsTrigger>
@@ -100,4 +104,13 @@ export default function AdminPage() {
       <Footer />
     </div>
   );
+}
+
+
+export default function AdminPage() {
+    return (
+        <Suspense>
+            <AdminPageContent />
+        </Suspense>
+    )
 }
