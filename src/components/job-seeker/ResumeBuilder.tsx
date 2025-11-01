@@ -230,7 +230,7 @@ export function ResumeBuilder() {
                 <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeWork(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
             ))}
-            <Button type="button" variant="outline" onClick={() => appendWork({ title: '', company: '', startDate: '' })}><PlusCircle className="mr-2 h-4 w-4" /> Add Experience</Button>
+            <Button type="button" variant="outline" onClick={() => appendWork({ title: '', company: '', startDate: '', endDate: '', description: '' })}><PlusCircle className="mr-2 h-4 w-4" /> Add Experience</Button>
           </div>
         </div>
 
@@ -264,5 +264,3 @@ export function ResumeBuilder() {
     </Form>
   );
 }
-
-    
