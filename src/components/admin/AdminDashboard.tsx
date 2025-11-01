@@ -182,7 +182,12 @@ export function AdminDashboard() {
                                         : "Just now"}
                                  </TableCell>
                                  <TableCell className="text-right space-x-2">
-                                     <Button asChild variant="outline" size="sm"><Link href={`/employer/job/${job.id}`}>View Applicants</Link></Button>
+                                     {job.employerId === 'SUPER_ADMIN' ? (
+                                        <Button asChild variant="outline" size="sm"><Link href={`/admin/job/${job.id}`}>View Applicants</Link></Button>
+                                     ) : (
+                                        <Button asChild variant="outline" size="sm"><Link href={`/employer/job/${job.id}`}>View Applicants</Link></Button>
+                                     )}
+
                                      {job.employerId === 'SUPER_ADMIN' && <Button variant="outline" size="sm" disabled><Edit className="mr-2 h-4 w-4"/>Edit</Button>}
                                      <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                         <AlertDialogContent>

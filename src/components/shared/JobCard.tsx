@@ -99,7 +99,14 @@ export function JobCard({ job, employerId: propEmployerId }: JobCardProps) {
       companyName: job.companyName,
       jobPostId: job.id,
     };
-    const applicationsRef = collection(firestore, `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`);
+    
+    // Determine the correct path for the application
+    const applicationsPath = effectiveEmployerId === 'SUPER_ADMIN'
+        ? `jobPosts/${job.id}/applications`
+        : `employers/${effectiveEmployerId}/jobPosts/${job.id}/applications`;
+
+    const applicationsRef = collection(firestore, applicationsPath);
+
 
     addDoc(applicationsRef, applicationData)
       .then((docRef) => {

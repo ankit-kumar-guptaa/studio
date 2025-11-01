@@ -48,13 +48,14 @@ service cloud.firestore {
 
     /**
      * @description Applications for a specific job post.
+     * Regular employers can read/update/delete.
+     * Job seekers can only create.
      */
     match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
       function isJobSeekerOwner() {
           return isSignedIn() && request.auth.uid == request.resource.data.jobSeekerId;
       }
-      allow read: if isOwner(employerId) || request.auth == null;
-      allow update, delete: if isOwner(employerId);
+      allow read, update, delete: if isOwner(employerId);
       allow create: if isJobSeekerOwner();
     }
 
@@ -69,6 +70,20 @@ service cloud.firestore {
         // Allow update/delete for owner or super admin
         allow update, delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || request.auth == null;
     }
+    
+    /**
+     * @description Applications for SUPER_ADMIN job posts.
+     * Super admin can read/update/delete.
+     * Job seekers can only create.
+     */
+    match /jobPosts/{jobPostId}/applications/{applicationId} {
+        function isJobSeekerOwner() {
+          return isSignedIn() && request.auth.uid == request.resource.data.jobSeekerId;
+        }
+       allow read, update, delete: if request.auth == null; // Allows super admin full control
+       allow create: if isJobSeekerOwner(); // Job seekers can apply
+    }
+
 
     /**
      * @description Public read for blogs. No public writes.
