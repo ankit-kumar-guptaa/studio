@@ -3,18 +3,25 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from './useAuth.tsx';
 
 type UserRole = 'admin' | 'employer' | 'job-seeker' | 'none';
 
-const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-
 export function useUserRole() {
   const { user, firestore, isUserLoading } = useFirebase();
+  const { isAdmin } = useAuth();
   const [userRole, setUserRole] = useState<UserRole>('none');
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
+      // Check 1: Is the user a super admin via our custom auth hook?
+      if (isAdmin) {
+          setUserRole('admin');
+          setIsRoleLoading(false);
+          return;
+      }
+      
       // Don't do anything until Firebase auth state is resolved.
       if (isUserLoading) {
         return;
@@ -29,13 +36,6 @@ export function useUserRole() {
 
       // Start the role checking process.
       setIsRoleLoading(true);
-
-      // Check 1: Is the user the super admin by email?
-      if (user.email === SUPER_ADMIN_EMAIL) {
-          setUserRole('admin');
-          setIsRoleLoading(false);
-          return;
-      }
 
       // Check 2: Is the user in the 'employers' collection?
       try {
@@ -72,9 +72,7 @@ export function useUserRole() {
     };
 
     fetchUserRole();
-  }, [user, firestore, isUserLoading]);
+  }, [user, firestore, isUserLoading, isAdmin]);
 
   return { userRole, isRoleLoading };
 }
-
-    

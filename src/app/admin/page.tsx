@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation';
 type CombinedUser = (JobSeeker | Employer) & { role: 'Job Seeker' | 'Employer' };
 
 export default function AdminPage() {
-    const { firestore, user } = useFirebase();
+    const { firestore } = useFirebase();
     const { userRole, isRoleLoading } = useUserRole();
     const router = useRouter();
 
@@ -28,7 +28,7 @@ export default function AdminPage() {
         // This effect ensures that only a real, authenticated admin can access this page.
         // It waits until the role loading is complete before making a decision.
         if (!isRoleLoading && userRole !== 'admin') {
-            router.push('/login');
+            router.push('/super-admin/login');
         }
     }, [userRole, isRoleLoading, router]);
 

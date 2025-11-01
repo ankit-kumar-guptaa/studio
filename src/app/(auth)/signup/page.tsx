@@ -43,8 +43,6 @@ const signupSchema = z.object({
 
 type FormData = z.infer<typeof signupSchema>;
 
-const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -81,19 +79,6 @@ export default function SignupPage() {
         displayName: `${data.firstName} ${data.lastName}`,
       });
       
-      // The admin account is a special case.
-      // We don't create a DB record for it, and we skip email verification.
-      if (data.email === SUPER_ADMIN_EMAIL) {
-         toast({
-          title: 'Admin Account Created',
-          description: 'You can now log in with your admin credentials.',
-        });
-        router.push('/login');
-        setIsLoading(false);
-        return;
-      }
-        
-      // For regular users, send verification email and create Firestore doc.
       await sendEmailVerification(user);
       
       const userDocData = {
