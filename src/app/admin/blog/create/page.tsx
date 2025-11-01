@@ -10,19 +10,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useState, Suspense } from 'react';
-import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
+import { useState, Suspense, useRef } from 'react';
+import { Loader2, ArrowLeft, Sparkles, Upload } from 'lucide-react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateBlogPost } from '@/ai/flows/generate-blog-post-flow';
+import Image from 'next/image';
+
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MAX_IMAGE_SIZE = 4; // in MB
 
 const blogSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   keywords: z.string().min(1, 'Keywords are required to generate content.'),
   author: z.string().min(1, 'Author is required.'),
   content: z.string().min(50, 'Content should be at least 50 characters long.'),
+  imageUrl: z.string().optional(),
 });
 
 type BlogFormData = z.infer<typeof blogSchema>;
@@ -33,6 +38,7 @@ function CreateBlogPageContent() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<BlogFormData>({
     resolver: zodResolver(blogSchema),
@@ -41,8 +47,40 @@ function CreateBlogPageContent() {
       keywords: '',
       author: 'Hiring Dekho Team',
       content: '',
+      imageUrl: '',
     },
   });
+
+  const imageUrl = form.watch("imageUrl");
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_IMAGE_SIZE * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Image too large",
+        description: `Please select an image smaller than ${MAX_IMAGE_SIZE}MB.`,
+      });
+      return;
+    }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+       toast({
+        variant: "destructive",
+        title: "Invalid image type",
+        description: "Please select a JPG, PNG, or WebP image.",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      form.setValue('imageUrl', reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   async function handleGenerateContent() {
     const { title, keywords } = form.getValues();
@@ -80,9 +118,7 @@ function CreateBlogPageContent() {
     try {
       const collectionRef = collection(firestore, 'blogs');
       await addDoc(collectionRef, {
-        title: values.title,
-        author: values.author,
-        content: values.content,
+        ...values,
         publicationDate: serverTimestamp(),
       });
       toast({ title: 'Blog Post Published!', description: 'Your new post is now live.' });
@@ -122,6 +158,29 @@ function CreateBlogPageContent() {
                   </div>
                   <FormField control={form.control} name="author" render={({ field }) => ( <FormItem><FormLabel>Author</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                   
+                  <FormItem>
+                    <FormLabel>Featured Image</FormLabel>
+                     <FormControl>
+                        <Input type="file" className="hidden" ref={imageInputRef} onChange={handleImageUpload} accept={ACCEPTED_IMAGE_TYPES.join(',')} />
+                    </FormControl>
+                    <div className="border border-dashed rounded-lg p-6 text-center">
+                      {imageUrl ? (
+                        <div className="relative aspect-video">
+                           <Image src={imageUrl} alt="Uploaded preview" fill className="object-contain rounded-md"/>
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground">
+                            <p>No image uploaded</p>
+                             <p className="text-xs">Max {MAX_IMAGE_SIZE}MB, PNG, JPG, WebP</p>
+                        </div>
+                      )}
+                      <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => imageInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        {imageUrl ? 'Change Image' : 'Upload Image'}
+                      </Button>
+                    </div>
+                  </FormItem>
+
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                         <FormLabel>Content (HTML)</FormLabel>

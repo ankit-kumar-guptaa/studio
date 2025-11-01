@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { Blog } from '@/lib/types';
+import Image from 'next/image';
 
 
 export default function BlogPage() {
@@ -46,8 +47,17 @@ export default function BlogPage() {
 
                 return (
                   <Card key={post.id} className="flex flex-col overflow-hidden">
+                    <div className="relative aspect-video">
+                        <Image 
+                            src={post.imageUrl || 'https://picsum.photos/seed/placeholder/600/400'} 
+                            alt={post.title} 
+                            fill
+                            className="object-cover"
+                            data-ai-hint={post.imageHint || 'abstract'}
+                        />
+                    </div>
                     <CardHeader>
-                      <CardTitle>{post.title}</CardTitle>
+                      <CardTitle className="line-clamp-2">{post.title}</CardTitle>
                       <CardDescription>{format(postDate, 'PPP')} by {post.author}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow">

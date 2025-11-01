@@ -86,11 +86,11 @@ service cloud.firestore {
 
 
     /**
-     * @description Public read for blogs. No public writes.
+     * @description Public read for blogs. Write access for admins only.
      */
     match /blogs/{blogId} {
       allow read: if true;
-      allow write: if false; // Can be changed to allow admins
+      allow create, update, delete: if request.auth == null; // Allow admins to write
     }
 
     /**

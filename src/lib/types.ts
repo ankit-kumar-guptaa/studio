@@ -59,6 +59,8 @@ export interface Blog {
   content: string;
   author: string;
   publicationDate: Timestamp | string;
+  imageUrl?: string;
+  imageHint?: string;
 }
 
 

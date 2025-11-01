@@ -9,6 +9,7 @@ import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Blog } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function BlogDetailPage() {
   const params = useParams();
@@ -45,6 +46,18 @@ export default function BlogDetailPage() {
       <main className="py-16 sm:py-24 bg-secondary">
         <div className="container mx-auto max-w-4xl px-4">
             <Card>
+                {post.imageUrl && (
+                    <div className="relative aspect-[16/9] w-full">
+                        <Image 
+                            src={post.imageUrl} 
+                            alt={post.title} 
+                            fill 
+                            className="object-cover rounded-t-lg"
+                            data-ai-hint={post.imageHint || "abstract"}
+                            priority
+                        />
+                    </div>
+                )}
                 <article className="p-6 md:p-8">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
