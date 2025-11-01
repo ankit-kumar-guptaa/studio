@@ -28,7 +28,7 @@ const statusOptions: JobApplication['status'][] = ['Applied', 'Reviewed', 'Inter
 
 
 function AdminJobApplicantsPageContent() {
-  const { isUserLoading, firestore } = useFirebase();
+  const { firestore } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
   const router = useRouter();
   const params = useParams();
@@ -36,10 +36,10 @@ function AdminJobApplicantsPageContent() {
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!isUserLoading && !isRoleLoading && userRole !== 'admin') {
+    if (!isRoleLoading && userRole !== 'admin') {
       router.push('/super-admin/login');
     }
-  }, [isUserLoading, isRoleLoading, userRole, router]);
+  }, [isRoleLoading, userRole, router]);
 
   const applicationsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !jobId) return null;
@@ -79,7 +79,7 @@ function AdminJobApplicantsPageContent() {
   };
 
 
-  if (isUserLoading || isRoleLoading || userRole !== 'admin') {
+  if (isRoleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
