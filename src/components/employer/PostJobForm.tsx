@@ -105,72 +105,75 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
     }
   };
 
+  async function onSubmit(values: JobPostFormData) {
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to post a job.',
+      });
+      return;
+    }
+
+    setIsPosting(true);
+    
+    const jobData = {
+      ...values,
+      employerId: user.uid,
+      postDate: serverTimestamp(),
+      companyName: employerData?.companyName || user.displayName,
+      companyLogoUrl: employerData?.companyLogoUrl || '',
+    };
+    
+    try {
+      const employerJobsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
+      const docRef = await addDoc(employerJobsCollectionRef, jobData);
+      
+      const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
+      
+      setDoc(globalJobPostRef, {...jobData, id: docRef.id}).catch((serverError) => {
+        console.error("Error writing to global jobPosts collection:", serverError);
+        const permissionError = new FirestorePermissionError({
+          path: globalJobPostRef.path,
+          operation: 'create',
+          requestResourceData: jobData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+      toast({
+        title: 'Job Posted!',
+        description: 'Your job opening is now live.',
+      });
+      form.reset();
+      if(onJobPosted) onJobPosted();
+
+    } catch (error: any) {
+        console.error("Error adding document to employer's subcollection:", error);
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: `employers/${user.uid}/jobPosts`,
+                operation: 'create',
+                requestResourceData: jobData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Posting Failed',
+                description: error.message || 'Could not post job.',
+            });
+        }
+    } finally {
+        setIsPosting(false);
+    }
+  }
+
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(async (values: JobPostFormData) => {
-          if (!user || !firestore) {
-            toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: 'You must be logged in to post a job.',
-            });
-            return;
-          }
-
-          setIsPosting(true);
-          
-          const jobData = {
-            ...values,
-            employerId: user.uid,
-            postDate: serverTimestamp(),
-            companyName: employerData?.companyName || user.displayName,
-            companyLogoUrl: employerData?.companyLogoUrl || '',
-          };
-          
-          try {
-            const jobPostsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
-            const docRef = await addDoc(jobPostsCollectionRef, jobData);
-            
-            const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
-            
-            setDoc(globalJobPostRef, jobData).catch((serverError) => {
-              console.error("Error writing to global jobPosts collection:", serverError);
-              const permissionError = new FirestorePermissionError({
-                path: globalJobPostRef.path,
-                operation: 'create',
-                requestResourceData: jobData,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-            });
-
-            toast({
-              title: 'Job Posted!',
-              description: 'Your job opening is now live.',
-            });
-            form.reset();
-            onJobPosted();
-
-          } catch (error: any) {
-              console.error("Error adding document to employer's subcollection:", error);
-              if (error.code === 'permission-denied') {
-                  const permissionError = new FirestorePermissionError({
-                      path: `employers/${user.uid}/jobPosts/new-job-id`,
-                      operation: 'create',
-                      requestResourceData: jobData,
-                  });
-                  errorEmitter.emit('permission-error', permissionError);
-              } else {
-                  toast({
-                      variant: 'destructive',
-                      title: 'Posting Failed',
-                      description: error.message || 'Could not post job.',
-                  });
-              }
-          } finally {
-              setIsPosting(false);
-          }
-        })}
+        onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

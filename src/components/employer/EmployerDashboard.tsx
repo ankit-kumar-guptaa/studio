@@ -22,7 +22,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
@@ -56,7 +55,8 @@ export function EmployerDashboard() {
       
       let applicantsCount = 0;
       const jobsWithCounts = await Promise.all(jobsData.map(async (job) => {
-        const applicationsRef = collection(jobPostsCollectionRef.firestore, `employers/${user?.uid}/jobPosts/${job.id}/applications`);
+        if (!user?.uid) return { ...job, applicantCount: 0 };
+        const applicationsRef = collection(jobPostsCollectionRef.firestore, `employers/${user.uid}/jobPosts/${job.id}/applications`);
         const applicationsSnapshot = await getDocs(applicationsRef);
         applicantsCount += applicationsSnapshot.size;
         return { ...job, applicantCount: applicationsSnapshot.size };

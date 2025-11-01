@@ -62,5 +62,3 @@ const summarizeResumeFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    

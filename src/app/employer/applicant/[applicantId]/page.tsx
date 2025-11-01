@@ -3,7 +3,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import type { JobSeeker } from '@/lib/types';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -12,29 +12,73 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useEffect, useState } from 'react';
 
 function ApplicantProfilePage() {
-    const { user, isUserLoading, firestore } = useFirebase();
+    const { firestore } = useFirebase();
+    const { userRole, isRoleLoading } = useUserRole();
     const router = useRouter();
     const params = useParams();
     const applicantId = params.applicantId as string;
+    const [applicant, setApplicant] = useState<JobSeeker | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const applicantRef = useMemoFirebase(() => {
-        if (!firestore || !applicantId || !user) return null;
-        return doc(firestore, 'jobSeekers', applicantId);
-    }, [firestore, applicantId, user]);
+    useEffect(() => {
+        const fetchApplicantData = async () => {
+            if (!firestore || !applicantId) {
+                setIsLoading(false);
+                return;
+            };
 
-    const { data: applicant, isLoading: isApplicantLoading } = useDoc<JobSeeker>(applicantRef);
+            setIsLoading(true);
+            try {
+                // First, try to get from jobSeekers collection
+                let docRef = doc(firestore, 'jobSeekers', applicantId);
+                let docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    setApplicant({ ...docSnap.data() as JobSeeker, id: docSnap.id });
+                    setIsLoading(false);
+                    return;
+                }
 
-    if (isUserLoading || !user) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            </div>
-        );
-    }
-    
-    if (isApplicantLoading) {
+                // If not found, try to get from employers collection (for admin view)
+                docRef = doc(firestore, 'employers', applicantId);
+                docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    // Adapt employer data to look like a JobSeeker for display
+                    const employerData = docSnap.data();
+                    setApplicant({
+                        id: docSnap.id,
+                        firstName: employerData.companyName,
+                        lastName: '(Employer)',
+                        email: employerData.email,
+                        profilePictureUrl: employerData.companyLogoUrl,
+                        summary: employerData.companyDescription,
+                        phone: employerData.phone,
+                    });
+                } else {
+                    setApplicant(null);
+                }
+
+            } catch (error) {
+                console.error("Error fetching applicant data:", error);
+                setApplicant(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (!isRoleLoading) {
+            fetchApplicantData();
+        }
+
+    }, [firestore, applicantId, isRoleLoading]);
+
+
+    if (isLoading || isRoleLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -60,7 +104,7 @@ function ApplicantProfilePage() {
 
     const getInitials = (name: string) => {
         const names = name.split(' ');
-        if (names.length > 1) {
+        if (names.length > 1 && names[1]) {
           return `${names[0][0]}${names[names.length - 1][0]}`;
         }
         return name[0];
@@ -79,12 +123,12 @@ function ApplicantProfilePage() {
                             </Avatar>
                             <div className="space-y-1">
                                 <CardTitle className="text-3xl">{applicant.firstName} {applicant.lastName}</CardTitle>
-                                <CardDescription className="text-base text-muted-foreground capitalize flex items-center gap-2">
+                                {applicant.experienceLevel && <CardDescription className="text-base text-muted-foreground capitalize flex items-center gap-2">
                                    <Briefcase className="h-4 w-4" /> {applicant.experienceLevel || 'Experience not specified'}
-                                </CardDescription>
-                                <CardDescription className="text-base text-muted-foreground flex items-center gap-2">
+                                </CardDescription>}
+                                {applicant.location && <CardDescription className="text-base text-muted-foreground flex items-center gap-2">
                                     <MapPin className="h-4 w-4" /> {applicant.location || 'Location not specified'}
-                                </CardDescription>
+                                </CardDescription>}
                             </div>
                              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                                 <a href={`mailto:${applicant.email}`} className="inline-flex items-center text-sm gap-2 text-muted-foreground hover:text-primary"><Mail className="h-4 w-4" /> {applicant.email}</a>

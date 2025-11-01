@@ -31,9 +31,9 @@ function JobSeekerDashboardContent() {
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
           <TabsTrigger value="profile" className="py-2"><User className="mr-2 h-4 w-4"/>Profile</TabsTrigger>
+          <TabsTrigger value="resume" className="py-2"><FileText className="mr-2 h-4 w-4"/>Resume Builder</TabsTrigger>
           <TabsTrigger value="search" className="py-2"><Search className="mr-2 h-4 w-4"/>Search Jobs</TabsTrigger>
           <TabsTrigger value="applications" className="py-2"><List className="mr-2 h-4 w-4" />My Applications</TabsTrigger>
-          <TabsTrigger value="resume" className="py-2"><FileText className="mr-2 h-4 w-4"/>Resume Builder</TabsTrigger>
           <TabsTrigger value="saved" className="py-2"><Bookmark className="mr-2 h-4 w-4"/>Saved Jobs</TabsTrigger>
           <TabsTrigger value="recommendations" className="py-2"><Sparkles className="mr-2 h-4 w-4"/>AI Recommendations</TabsTrigger>
         </TabsList>
@@ -85,7 +85,7 @@ function JobSeekerDashboardContent() {
         <TabsContent value="resume">
            <Card>
             <CardHeader>
-              <CardTitle>Resume Builder</CardTitle>
+              <CardTitle>AI-Powered Resume Builder</CardTitle>
               <CardDescription>Build and maintain a professional resume to stand out.</CardDescription>
             </CardHeader>
             <CardContent>
