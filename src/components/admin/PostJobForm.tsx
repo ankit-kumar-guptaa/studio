@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { collection, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { generateJobDescription } from '@/ai/flows/generate-job-description-flow';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -26,6 +26,8 @@ import { indianStatesAndCities } from '@/lib/locations';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { v4 as uuidv4 } from 'uuid'; 
+import type { JobPost } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location,
@@ -46,15 +48,21 @@ const jobPostSchema = z.object({
 
 type JobPostFormData = z.infer<typeof jobPostSchema>;
 
-export function PostJobForm() {
+interface PostJobFormProps {
+    existingJob?: JobPost;
+}
+
+
+export function PostJobForm({ existingJob }: PostJobFormProps) {
   const { firestore } = useFirebase();
   const { toast } = useToast();
+  const router = useRouter();
   const [isPosting, setIsPosting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
   const form = useForm<JobPostFormData>({
     resolver: zodResolver(jobPostSchema),
-    defaultValues: {
+    defaultValues: existingJob || {
       title: '',
       companyName: '',
       companyLogoUrl: '',
@@ -66,6 +74,12 @@ export function PostJobForm() {
       requirements: '',
     },
   });
+
+  useEffect(() => {
+    if (existingJob) {
+      form.reset(existingJob);
+    }
+  }, [existingJob, form]);
 
   const handleGenerateDescription = async () => {
     const { title, experience } = form.getValues();
@@ -100,41 +114,40 @@ export function PostJobForm() {
 
   async function onSubmit(values: JobPostFormData) {
     if (!firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Firestore is not available.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Firestore is not available.' });
       return;
     }
-
     setIsPosting(true);
-    const newJobId = uuidv4();
-    const jobData = {
-      ...values,
-      id: newJobId,
-      employerId: 'SUPER_ADMIN', 
-      postDate: serverTimestamp(),
-    };
-    
-    const globalJobPostRef = doc(firestore, 'jobPosts', newJobId);
     
     try {
-      // For Super Admin, we only need to write to the global `jobPosts` collection
-      await setDoc(globalJobPostRef, jobData);
-
-      toast({
-        title: 'Job Posted!',
-        description: 'The job opening is now live for all users.',
-      });
-      form.reset();
-
+        if (existingJob) {
+            // Update existing job
+            const jobRef = doc(firestore, 'jobPosts', existingJob.id);
+            await updateDoc(jobRef, values);
+            toast({ title: 'Job Updated!', description: 'The job posting has been successfully updated.' });
+            router.push('/admin'); // Redirect back to dashboard after update
+        } else {
+            // Create new job
+            const newJobId = uuidv4();
+            const jobData = {
+                ...values,
+                id: newJobId,
+                employerId: 'SUPER_ADMIN', 
+                postDate: serverTimestamp(),
+            };
+            
+            const globalJobPostRef = doc(firestore, 'jobPosts', newJobId);
+            await setDoc(globalJobPostRef, jobData);
+            
+            toast({ title: 'Job Posted!', description: 'The job opening is now live for all users.' });
+            form.reset();
+        }
     } catch (error: any) {
-        console.error("Error adding document to global jobPosts collection:", error);
+        console.error("Error submitting job form:", error);
         const permissionError = new FirestorePermissionError({
-            path: globalJobPostRef.path,
-            operation: 'create',
-            requestResourceData: jobData,
+            path: existingJob ? `jobPosts/${existingJob.id}` : 'jobPosts',
+            operation: existingJob ? 'update' : 'create',
+            requestResourceData: values,
         });
         errorEmitter.emit('permission-error', permissionError);
     } finally {
@@ -277,7 +290,7 @@ export function PostJobForm() {
         <div className="flex justify-end">
             <Button type="submit" className="w-full md:w-auto gradient-professional" disabled={isPosting || isGenerating}>
             {isPosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Post Job
+            {existingJob ? 'Update Job' : 'Post Job'}
             </Button>
         </div>
       </form>

@@ -182,13 +182,10 @@ export function AdminDashboard() {
                                         : "Just now"}
                                  </TableCell>
                                  <TableCell className="text-right space-x-2">
-                                     {job.employerId === 'SUPER_ADMIN' ? (
+                                     {job.employerId === 'SUPER_ADMIN' && (
                                         <Button asChild variant="outline" size="sm"><Link href={`/admin/job/${job.id}`}>View Applicants</Link></Button>
-                                     ) : (
-                                        <Button asChild variant="outline" size="sm"><Link href={`/employer/job/${job.id}`}>View Applicants</Link></Button>
                                      )}
-
-                                     {job.employerId === 'SUPER_ADMIN' && <Button variant="outline" size="sm" disabled><Edit className="mr-2 h-4 w-4"/>Edit</Button>}
+                                     {job.employerId === 'SUPER_ADMIN' && <Button asChild variant="outline" size="sm"><Link href={`/admin/job/${job.id}/edit`}><Edit className="mr-2 h-4 w-4"/>Edit</Link></Button>}
                                      <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the job post. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>

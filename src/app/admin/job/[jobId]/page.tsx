@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
@@ -29,11 +29,17 @@ const statusOptions: JobApplication['status'][] = ['Applied', 'Reviewed', 'Inter
 
 function AdminJobApplicantsPageContent() {
   const { isUserLoading, firestore } = useFirebase();
-  const { userRole } = useUserRole();
+  const { userRole, isRoleLoading } = useUserRole();
   const router = useRouter();
   const params = useParams();
   const jobId = params.jobId as string;
   const { toast } = useToast();
+  
+  useEffect(() => {
+    if (!isUserLoading && !isRoleLoading && userRole !== 'admin') {
+      router.push('/super-admin/login');
+    }
+  }, [isUserLoading, isRoleLoading, userRole, router]);
 
   const applicationsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !jobId) return null;
@@ -43,10 +49,6 @@ function AdminJobApplicantsPageContent() {
 
   const { data: applications, isLoading: isLoadingApplications, setData: setApplications } = useCollection<JobApplication>(applicationsCollectionRef);
 
-  if (!isUserLoading && userRole !== 'admin') {
-    router.push('/super-admin/login');
-    return null;
-  }
 
   const handleStatusChange = async (applicationId: string, newStatus: JobApplication['status']) => {
     if (!firestore || !jobId) return;
@@ -77,7 +79,7 @@ function AdminJobApplicantsPageContent() {
   };
 
 
-  if (isUserLoading || userRole !== 'admin') {
+  if (isUserLoading || isRoleLoading || userRole !== 'admin') {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
