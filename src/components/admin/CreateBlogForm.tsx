@@ -18,8 +18,6 @@ import { DialogFooter, DialogClose } from '../ui/dialog';
 const blogSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   author: z.string().min(1, 'Author is required.'),
-  imageUrl: z.string().url('Must be a valid URL.').optional().or(z.literal('')),
-  imageHint: z.string().optional(),
   content: z.string().min(50, 'Content should be at least 50 characters long.'),
 });
 
@@ -40,21 +38,21 @@ export function CreateBlogForm({ existingPost, onSuccess }: CreateBlogFormProps)
     defaultValues: {
       title: '',
       author: 'Hiring Dekho Team',
-      imageUrl: '',
-      imageHint: '',
       content: '<p>Start writing your blog post here...</p>',
     },
   });
 
   useEffect(() => {
     if (existingPost) {
-      form.reset(existingPost);
+      form.reset({
+        title: existingPost.title,
+        author: existingPost.author,
+        content: existingPost.content,
+      });
     } else {
         form.reset({
             title: '',
             author: 'Hiring Dekho Team',
-            imageUrl: '',
-            imageHint: '',
             content: '<p>Start writing your blog post here...</p>',
         });
     }
@@ -98,12 +96,10 @@ export function CreateBlogForm({ existingPost, onSuccess }: CreateBlogFormProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="Blog Post Title" {...field} /></FormControl><FormMessage /></FormItem> )}/>
           <FormField control={form.control} name="author" render={({ field }) => ( <FormItem><FormLabel>Author</FormLabel><FormControl><Input placeholder="Author's Name" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-          <FormField control={form.control} name="imageUrl" render={({ field }) => ( <FormItem><FormLabel>Image URL (Optional)</FormLabel><FormControl><Input placeholder="https://picsum.photos/1200/600" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-          <FormField control={form.control} name="imageHint" render={({ field }) => ( <FormItem><FormLabel>Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g. 'office work'" {...field} /></FormControl><FormMessage /></FormItem> )}/>
         </div>
         <FormField control={form.control} name="content" render={({ field }) => (
             <FormItem>
-              <FormLabel>Content</FormLabel>
+              <FormLabel>Content (HTML)</FormLabel>
               <FormControl>
                 <Textarea placeholder="Write your blog content here. You can use HTML tags like <p> and <h3>." {...field} rows={15} />
               </FormControl>

@@ -16,7 +16,7 @@ import {
   Legend,
   Line,
 } from 'recharts';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays, startOfDay, isValid } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import Link from 'next/link';
 
@@ -61,11 +61,14 @@ export function AnalyticsDashboard() {
         }));
 
         allApplications.forEach(app => {
-          if (app.applicationDate) {
-              const appDate = startOfDay(app.applicationDate.toDate());
-              const dayIndex = last7Days.findIndex(day => startOfDay(day).getTime() === appDate.getTime());
-              if (dayIndex !== -1) {
-                  dailyCounts[dayIndex].count++;
+          if (app.applicationDate && typeof app.applicationDate.toDate === 'function') {
+              const appDateObj = app.applicationDate.toDate();
+              if (isValid(appDateObj)) {
+                const appDate = startOfDay(appDateObj);
+                const dayIndex = last7Days.findIndex(day => startOfDay(day).getTime() === appDate.getTime());
+                if (dayIndex !== -1) {
+                    dailyCounts[dayIndex].count++;
+                }
               }
           }
         });

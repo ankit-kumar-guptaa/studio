@@ -3,7 +3,6 @@
 import { useParams, notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import Image from 'next/image';
 import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
@@ -35,9 +34,10 @@ export default function BlogDetailPage() {
     notFound();
   }
 
-  const postDate = typeof post.publicationDate === 'string' 
-    ? new Date(post.publicationDate) 
-    : (post.publicationDate as any).toDate();
+  const postDate = post.publicationDate && typeof (post.publicationDate as any).toDate === 'function' 
+    ? (post.publicationDate as any).toDate()
+    : new Date(post.publicationDate as string);
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -54,18 +54,6 @@ export default function BlogDetailPage() {
                         Posted by {post.author} on {format(postDate, 'PPP')}
                         </p>
                     </div>
-                    {post.imageUrl && (
-                        <div className="aspect-video w-full overflow-hidden rounded-lg border mb-8">
-                            <Image
-                                src={post.imageUrl}
-                                alt={post.title}
-                                width={1200}
-                                height={600}
-                                className="h-full w-full object-cover"
-                                data-ai-hint={post.imageHint || 'blog post'}
-                            />
-                        </div>
-                    )}
                     <div
                         className="prose max-w-none dark:prose-invert"
                         dangerouslySetInnerHTML={{ __html: post.content }}

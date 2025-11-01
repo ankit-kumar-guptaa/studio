@@ -4,7 +4,6 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Loader2 } from 'lucide-react';
@@ -41,22 +40,12 @@ export default function BlogPage() {
           ) : blogPosts && blogPosts.length > 0 ? (
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {blogPosts.map((post) => {
-                const postDate = typeof post.publicationDate === 'string' 
-                    ? new Date(post.publicationDate) 
-                    : (post.publicationDate as any).toDate();
+                const postDate = post.publicationDate && typeof (post.publicationDate as any).toDate === 'function' 
+                    ? (post.publicationDate as any).toDate()
+                    : new Date(post.publicationDate as string);
 
                 return (
                   <Card key={post.id} className="flex flex-col overflow-hidden">
-                    {post.imageUrl && (
-                      <Image
-                        src={post.imageUrl}
-                        alt={post.title}
-                        width={600}
-                        height={400}
-                        className="h-48 w-full object-cover"
-                        data-ai-hint={post.imageHint || 'blog post'}
-                      />
-                    )}
                     <CardHeader>
                       <CardTitle>{post.title}</CardTitle>
                       <CardDescription>{format(postDate, 'PPP')} by {post.author}</CardDescription>
