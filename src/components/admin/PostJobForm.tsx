@@ -18,13 +18,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { generateJobDescription } from '@/ai/flows/generate-job-description-flow';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { indianStatesAndCities } from '@/lib/locations';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { v4 as uuidv4 } from 'uuid'; 
 
 const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => ({
     value: location,
@@ -108,21 +109,19 @@ export function PostJobForm() {
     }
 
     setIsPosting(true);
-    
-    // Admin is posting, so there's no real employerId. We can use a placeholder.
+    const newJobId = uuidv4();
     const jobData = {
       ...values,
+      id: newJobId,
       employerId: 'SUPER_ADMIN', 
       postDate: serverTimestamp(),
     };
     
+    const globalJobPostRef = doc(firestore, 'jobPosts', newJobId);
+    
     try {
-      // We only need to write to the global `jobPosts` collection
-      const globalJobPostsRef = collection(firestore, 'jobPosts');
-      const docRef = await addDoc(globalJobPostsRef, jobData);
-      
-      // Update the document with its own ID
-      await setDoc(doc(firestore, 'jobPosts', docRef.id), { id: docRef.id }, { merge: true });
+      // For Super Admin, we only need to write to the global `jobPosts` collection
+      await setDoc(globalJobPostRef, jobData);
 
       toast({
         title: 'Job Posted!',
@@ -133,7 +132,7 @@ export function PostJobForm() {
     } catch (error: any) {
         console.error("Error adding document to global jobPosts collection:", error);
         const permissionError = new FirestorePermissionError({
-            path: 'jobPosts',
+            path: globalJobPostRef.path,
             operation: 'create',
             requestResourceData: jobData,
         });

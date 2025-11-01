@@ -17,7 +17,7 @@ import {
 import { Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { summarizeResume } from '@/ai/flows/summarize-resume-flow';
@@ -26,6 +26,9 @@ import { Badge } from '../ui/badge';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { v4 as uuidv4 } from 'uuid'; 
+import { Label } from '../ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+
 
 const baseProfileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -33,6 +36,7 @@ const baseProfileSchema = z.object({
   email: z.string().email('A valid email is required'),
   phone: z.string().optional(),
   location: z.string().optional(),
+  profilePictureUrl: z.string().optional(),
 });
 
 const workExperienceSchema = z.object({
@@ -65,11 +69,13 @@ export function ResumeBuilder() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [skillInput, setSkillInput] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeSchema),
     defaultValues: {
-      profile: { firstName: '', lastName: '', email: '', phone: '', location: '' },
+      profile: { firstName: '', lastName: '', email: '', phone: '', location: '', profilePictureUrl: '' },
       summary: '',
       skills: [],
       workExperience: [],
@@ -91,6 +97,27 @@ export function ResumeBuilder() {
     control: form.control,
     name: "skills",
   });
+
+  const profilePictureUrl = form.watch('profile.profilePictureUrl');
+
+  const handlePictureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Please select an image smaller than 2MB.",
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue('profile.profilePictureUrl', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   async function handleGenerateSummary() {
     const { workExperience, education } = form.getValues();
@@ -176,12 +203,39 @@ export function ResumeBuilder() {
         
         <div>
           <h3 className="text-lg font-semibold mb-4">Candidate Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-             <FormField control={form.control} name="profile.firstName" render={({ field }) => ( <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} placeholder="Candidate's first name" /></FormControl><FormMessage /></FormItem> )} />
-             <FormField control={form.control} name="profile.lastName" render={({ field }) => ( <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} placeholder="Candidate's last name" /></FormControl><FormMessage /></FormItem> )} />
-             <FormField control={form.control} name="profile.email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} type="email" placeholder="candidate@example.com" /></FormControl><FormMessage /></FormItem> )} />
-             <FormField control={form.control} name="profile.phone" render={({ field }) => ( <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} placeholder="+91..." /></FormControl><FormMessage /></FormItem> )} />
-             <FormField control={form.control} name="profile.location" render={({ field }) => ( <FormItem><FormLabel>Location (Optional)</FormLabel><FormControl><Input {...field} placeholder="e.g., Bangalore, KA" /></FormControl><FormMessage /></FormItem> )} />
+          <div className="p-4 border rounded-lg space-y-6">
+
+             <div className='flex items-center gap-6'>
+                <Avatar className="h-24 w-24">
+                    <AvatarImage src={profilePictureUrl || undefined} alt="Profile Picture" />
+                    <AvatarFallback className='text-3xl'>
+                        {form.getValues('profile.firstName')?.[0]}
+                        {form.getValues('profile.lastName')?.[0]}
+                    </AvatarFallback>
+                </Avatar>
+                <div className='flex-grow'>
+                    <Label>Profile Picture (Optional)</Label>
+                    <Input 
+                        type="file" 
+                        className="hidden"
+                        ref={fileInputRef}
+                        accept="image/png, image/jpeg"
+                        onChange={handlePictureChange}
+                    />
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                        Upload Photo
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-2">PNG or JPG, up to 2MB.</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="profile.firstName" render={({ field }) => ( <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} placeholder="Candidate's first name" /></FormControl><FormMessage /></FormItem> )} />
+              <FormField control={form.control} name="profile.lastName" render={({ field }) => ( <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} placeholder="Candidate's last name" /></FormControl><FormMessage /></FormItem> )} />
+              <FormField control={form.control} name="profile.email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} type="email" placeholder="candidate@example.com" /></FormControl><FormMessage /></FormItem> )} />
+              <FormField control={form.control} name="profile.phone" render={({ field }) => ( <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} placeholder="+91..." /></FormControl><FormMessage /></FormItem> )} />
+              <FormField control={form.control} name="profile.location" render={({ field }) => ( <FormItem><FormLabel>Location (Optional)</FormLabel><FormControl><Input {...field} placeholder="e.g., Bangalore, KA" /></FormControl><FormMessage /></FormItem> )} />
+            </div>
           </div>
         </div>
 

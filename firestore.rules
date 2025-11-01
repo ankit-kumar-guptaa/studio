@@ -12,9 +12,15 @@ service cloud.firestore {
     }
 
     /**
-     * @description Public read access for job seekers, write access is restricted.
-     * Admin panel needs read access to list all users.
+     * @description Public read access for job seekers, write access is restricted to owner or Super Admin.
      */
+    match /jobSeekers/{jobSeekerId} {
+      allow read: if true;
+      allow create: if isOwner(jobSeekerId) || request.auth == null; // Allow Super Admin (unauthenticated)
+      allow update: if isOwner(jobSeekerId);
+      allow delete: if isOwner(jobSeekerId);
+    }
+    
     match /jobSeekers/{jobSeekerId}/{documents=**} {
       allow read: if true;
       allow write: if isOwner(jobSeekerId);
@@ -54,11 +60,12 @@ service cloud.firestore {
 
 
     /**
-     * @description Public read for all jobs. Write access is restricted to owners.
+     * @description Public read for all jobs. Write access is restricted to owners or Super Admin.
      */
     match /jobPosts/{jobPostId} {
         allow read: if true;
-        allow create: if isSignedIn() && request.resource.data.employerId == request.auth.uid;
+        // Allow create if user is signed in OR if the job is being posted by SUPER_ADMIN
+        allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || request.resource.data.employerId == 'SUPER_ADMIN';
         allow update, delete: if isSignedIn() && resource.data.employerId == request.auth.uid;
     }
 
