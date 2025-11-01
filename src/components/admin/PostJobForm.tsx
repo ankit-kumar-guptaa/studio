@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, serverTimestamp, doc, setDoc } from 'firebase/firestore';
-import type { Employer } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { generateJobDescription } from '@/ai/flows/generate-job-description-flow';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -34,6 +33,8 @@ const locationOptions: ComboboxOption[] = indianStatesAndCities.map(location => 
 
 const jobPostSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
+  companyName: z.string().min(1, 'Company Name is required'),
+  companyLogoUrl: z.string().url().optional().or(z.literal('')),
   location: z.string().min(1, 'Location is required'),
   category: z.string().min(1, 'Category is required'),
   salary: z.string().min(1, 'Salary is required'),
@@ -44,27 +45,18 @@ const jobPostSchema = z.object({
 
 type JobPostFormData = z.infer<typeof jobPostSchema>;
 
-interface PostJobFormProps {
-    onJobPosted: () => void;
-}
-
-export function PostJobForm({ onJobPosted }: PostJobFormProps) {
-  const { user, firestore } = useFirebase();
+export function PostJobForm() {
+  const { firestore } = useFirebase();
   const { toast } = useToast();
   const [isPosting, setIsPosting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  const employerRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'employers', user.uid);
-  }, [firestore, user]);
-
-  const { data: employerData } = useDoc<Employer>(employerRef);
-
   const form = useForm<JobPostFormData>({
     resolver: zodResolver(jobPostSchema),
     defaultValues: {
       title: '',
+      companyName: '',
+      companyLogoUrl: '',
       location: '',
       category: 'Technology',
       salary: '',
@@ -106,64 +98,46 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
   };
 
   async function onSubmit(values: JobPostFormData) {
-    if (!user || !firestore) {
+    if (!firestore) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'You must be logged in to post a job.',
+        description: 'Firestore is not available.',
       });
       return;
     }
 
     setIsPosting(true);
     
+    // Admin is posting, so there's no real employerId. We can use a placeholder.
     const jobData = {
       ...values,
-      employerId: user.uid,
+      employerId: 'SUPER_ADMIN', 
       postDate: serverTimestamp(),
-      companyName: employerData?.companyName || user.displayName,
-      companyLogoUrl: employerData?.companyLogoUrl || '',
     };
     
     try {
-      const employerJobsCollectionRef = collection(firestore, `employers/${user.uid}/jobPosts`);
-      const docRef = await addDoc(employerJobsCollectionRef, jobData);
+      // We only need to write to the global `jobPosts` collection
+      const globalJobPostsRef = collection(firestore, 'jobPosts');
+      const docRef = await addDoc(globalJobPostsRef, jobData);
       
-      const globalJobPostRef = doc(firestore, 'jobPosts', docRef.id);
-      
-      setDoc(globalJobPostRef, {...jobData, id: docRef.id}).catch((serverError) => {
-        console.error("Error writing to global jobPosts collection:", serverError);
-        const permissionError = new FirestorePermissionError({
-          path: globalJobPostRef.path,
-          operation: 'create',
-          requestResourceData: jobData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+      // Update the document with its own ID
+      await setDoc(doc(firestore, 'jobPosts', docRef.id), { id: docRef.id }, { merge: true });
 
       toast({
         title: 'Job Posted!',
-        description: 'Your job opening is now live.',
+        description: 'The job opening is now live for all users.',
       });
       form.reset();
-      if(onJobPosted) onJobPosted();
 
     } catch (error: any) {
-        console.error("Error adding document to employer's subcollection:", error);
-        if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: `employers/${user.uid}/jobPosts`,
-                operation: 'create',
-                requestResourceData: jobData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Posting Failed',
-                description: error.message || 'Could not post job.',
-            });
-        }
+        console.error("Error adding document to global jobPosts collection:", error);
+        const permissionError = new FirestorePermissionError({
+            path: 'jobPosts',
+            operation: 'create',
+            requestResourceData: jobData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
     } finally {
         setIsPosting(false);
     }
@@ -177,6 +151,24 @@ export function PostJobForm({ onJobPosted }: PostJobFormProps) {
         className="space-y-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <FormField control={form.control} name="companyName" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Name</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., InnovateTech" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+           <FormField control={form.control} name="companyLogoUrl" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Logo URL (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="https://example.com/logo.png" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
           <FormField control={form.control} name="title" render={({ field }) => (
             <FormItem>
               <FormLabel>Job Title</FormLabel>

@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, LogOut, User, Briefcase, Star, Shield } from 'lucide-react';
+import { Menu, LogOut, User, Briefcase, Shield } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
@@ -27,6 +27,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { JobSeeker, Employer } from '@/lib/types';
+import { useAuth } from '@/hooks/useAuth.tsx';
 
 
 const defaultNavLinks = [
@@ -39,6 +40,7 @@ const defaultNavLinks = [
 export function Header() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
+  const { isAdmin, logout: adminLogout } = useAuth();
   const router = useRouter();
   
   const userDocRef = useMemoFirebase(() => {
@@ -52,15 +54,19 @@ export function Header() {
   const profilePictureUrl = (userData as Employer)?.companyLogoUrl || (userData as JobSeeker)?.profilePictureUrl || user?.photoURL;
   
   const handleLogout = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    router.push('/');
+    if (isAdmin) {
+      adminLogout();
+      router.push('/super-admin/login');
+    } else if (auth) {
+      await signOut(auth);
+      router.push('/');
+    }
   };
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
     const names = name.split(' ');
-    if (names.length > 1) {
+    if (names.length > 1 && names[1]) {
       return `${names[0][0]}${names[names.length - 1][0]}`;
     }
     return name[0];
@@ -111,23 +117,29 @@ export function Header() {
           <div className="hidden items-center space-x-2 md:flex">
             {isUserLoading || isRoleLoading ? (
               <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
-            ) : user ? (
+            ) : user || isAdmin ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={profilePictureUrl || ''} alt={user.displayName || 'User'} />
-                      <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                      {isAdmin ? (
+                        <AvatarFallback><Shield /></AvatarFallback>
+                      ) : (
+                        <>
+                          <AvatarImage src={profilePictureUrl || ''} alt={user?.displayName || 'User'} />
+                          <AvatarFallback>{getInitials(isAdmin ? 'Admin' : user?.displayName)}</AvatarFallback>
+                        </>
+                      )}
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
+                      <p className="text-sm font-medium leading-none">{isAdmin ? 'Super Admin' : user?.displayName}</p>
+                      {user?.email && <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
-                      </p>
+                      </p>}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -187,7 +199,7 @@ export function Header() {
                   )}
                 </nav>
                 <div className="mt-auto flex flex-col gap-2 border-t p-4">
-                  {user ? (
+                  {user || isAdmin ? (
                     <>
                       <Button variant="outline" asChild>
                         <Link href={getDashboardLink()}>My Dashboard</Link>

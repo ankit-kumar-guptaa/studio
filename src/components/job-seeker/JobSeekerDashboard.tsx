@@ -3,9 +3,8 @@
 import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { User, Search, Bookmark, Sparkles, FileText, Loader2, List, ExternalLink, Edit } from 'lucide-react';
+import { User, Search, Bookmark, Sparkles, List, ExternalLink, Edit } from 'lucide-react';
 import { RecommendedJobs } from "./RecommendedJobs";
-import { ResumeBuilder } from "./ResumeBuilder";
 import { SavedJobs } from "./SavedJobs";
 import { useSearchParams } from "next/navigation";
 import { MyApplications } from './MyApplications';
@@ -13,6 +12,7 @@ import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ProfileCompleteness } from './ProfileCompleteness';
 import { ViewProfile } from './ViewProfile';
+import { Loader2 } from 'lucide-react';
 
 
 function JobSeekerDashboardContent() {
@@ -29,9 +29,8 @@ function JobSeekerDashboardContent() {
         <ProfileCompleteness />
       </div>
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
           <TabsTrigger value="profile" className="py-2"><User className="mr-2 h-4 w-4"/>Profile</TabsTrigger>
-          <TabsTrigger value="resume" className="py-2"><FileText className="mr-2 h-4 w-4"/>Resume Builder</TabsTrigger>
           <TabsTrigger value="search" className="py-2"><Search className="mr-2 h-4 w-4"/>Search Jobs</TabsTrigger>
           <TabsTrigger value="applications" className="py-2"><List className="mr-2 h-4 w-4" />My Applications</TabsTrigger>
           <TabsTrigger value="saved" className="py-2"><Bookmark className="mr-2 h-4 w-4"/>Saved Jobs</TabsTrigger>
@@ -79,17 +78,6 @@ function JobSeekerDashboardContent() {
             </CardHeader>
             <CardContent>
               <MyApplications />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="resume">
-           <Card>
-            <CardHeader>
-              <CardTitle>AI-Powered Resume Builder</CardTitle>
-              <CardDescription>Build and maintain a professional resume to stand out.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResumeBuilder />
             </CardContent>
           </Card>
         </TabsContent>

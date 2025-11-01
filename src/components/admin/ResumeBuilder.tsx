@@ -14,16 +14,26 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Loader2, PlusCircle, Sparkles, Trash2 } from 'lucide-react';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { summarizeResume } from '@/ai/flows/summarize-resume-flow';
 import type { JobSeeker } from '@/lib/types';
 import { Badge } from '../ui/badge';
-import { X } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { v4 as uuidv4 } from 'uuid'; 
+
+const baseProfileSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('A valid email is required'),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+});
 
 const workExperienceSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -40,6 +50,7 @@ const educationSchema = z.object({
 });
 
 const resumeSchema = z.object({
+  profile: baseProfileSchema,
   summary: z.string().optional(),
   skills: z.array(z.object({ value: z.string() })).optional(),
   workExperience: z.array(workExperienceSchema).optional(),
@@ -49,22 +60,16 @@ const resumeSchema = z.object({
 type ResumeFormData = z.infer<typeof resumeSchema>;
 
 export function ResumeBuilder() {
-  const { user, firestore } = useFirebase();
+  const { firestore } = useFirebase();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [skillInput, setSkillInput] = useState('');
 
-  const jobSeekerRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'jobSeekers', user.uid);
-  }, [firestore, user]);
-
-  const { data: jobSeekerData, isLoading } = useDoc<JobSeeker>(jobSeekerRef);
-
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeSchema),
     defaultValues: {
+      profile: { firstName: '', lastName: '', email: '', phone: '', location: '' },
       summary: '',
       skills: [],
       workExperience: [],
@@ -86,17 +91,6 @@ export function ResumeBuilder() {
     control: form.control,
     name: "skills",
   });
-
-  useEffect(() => {
-    if (jobSeekerData) {
-      form.reset({
-        summary: jobSeekerData.summary || '',
-        skills: jobSeekerData.skills || [],
-        workExperience: jobSeekerData.workExperience || [],
-        education: jobSeekerData.education || [],
-      });
-    }
-  }, [jobSeekerData, form]);
 
   async function handleGenerateSummary() {
     const { workExperience, education } = form.getValues();
@@ -140,33 +134,59 @@ export function ResumeBuilder() {
   };
 
   async function onSubmit(values: ResumeFormData) {
-    if (!jobSeekerRef) return;
+    if (!firestore) return;
     setIsSaving(true);
+    
+    const candidateId = uuidv4();
+    
+    const jobSeekerData: JobSeeker = {
+      id: candidateId,
+      ...values.profile,
+      summary: values.summary,
+      skills: values.skills,
+      workExperience: values.workExperience,
+      education: values.education,
+    };
+    
+    const jobSeekerRef = doc(firestore, 'jobSeekers', candidateId);
+
     try {
-      await updateDoc(jobSeekerRef, values);
+      await setDoc(jobSeekerRef, jobSeekerData);
       toast({
-        title: 'Resume Updated',
-        description: 'Your resume information has been saved successfully.',
+        title: 'Candidate Profile Created',
+        description: 'The new job seeker profile has been saved successfully.',
       });
+      form.reset(); 
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: error.message || 'Could not update your resume.',
-      });
+        console.error("Error creating candidate profile:", error);
+        const permissionError = new FirestorePermissionError({
+            path: jobSeekerRef.path,
+            operation: 'create',
+            requestResourceData: jobSeekerData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
     } finally {
       setIsSaving(false);
     }
   }
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Professional Summary */}
+        
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Candidate Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+             <FormField control={form.control} name="profile.firstName" render={({ field }) => ( <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} placeholder="Candidate's first name" /></FormControl><FormMessage /></FormItem> )} />
+             <FormField control={form.control} name="profile.lastName" render={({ field }) => ( <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} placeholder="Candidate's last name" /></FormControl><FormMessage /></FormItem> )} />
+             <FormField control={form.control} name="profile.email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} type="email" placeholder="candidate@example.com" /></FormControl><FormMessage /></FormItem> )} />
+             <FormField control={form.control} name="profile.phone" render={({ field }) => ( <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} placeholder="+91..." /></FormControl><FormMessage /></FormItem> )} />
+             <FormField control={form.control} name="profile.location" render={({ field }) => ( <FormItem><FormLabel>Location (Optional)</FormLabel><FormControl><Input {...field} placeholder="e.g., Bangalore, KA" /></FormControl><FormMessage /></FormItem> )} />
+          </div>
+        </div>
+
+        <Separator />
+
         <FormField
           control={form.control}
           name="summary"
@@ -180,7 +200,7 @@ export function ResumeBuilder() {
                 </Button>
               </div>
               <FormControl>
-                <Textarea placeholder="Write a brief summary about your professional background or generate one with AI." {...field} rows={4}/>
+                <Textarea placeholder="Write a brief summary about the candidate or generate one with AI." {...field} rows={4}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -189,7 +209,6 @@ export function ResumeBuilder() {
 
         <Separator />
 
-         {/* Skills */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Skills</h3>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -212,7 +231,6 @@ export function ResumeBuilder() {
 
         <Separator />
 
-        {/* Work Experience */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Work Experience</h3>
           <div className="space-y-6">
@@ -236,7 +254,6 @@ export function ResumeBuilder() {
 
         <Separator />
         
-        {/* Education */}
         <div>
            <h3 className="text-lg font-semibold mb-4">Education</h3>
             <div className="space-y-6">
@@ -257,7 +274,7 @@ export function ResumeBuilder() {
         <div className="flex justify-end">
           <Button type="submit" className="gradient-professional" disabled={isSaving || isGenerating}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Resume
+            Create Candidate Profile
           </Button>
         </div>
       </form>

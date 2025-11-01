@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { JobSeeker } from '@/lib/types';
 import { Header } from '@/components/layout/Header';
@@ -39,28 +39,27 @@ function ApplicantProfilePage() {
                 
                 if (docSnap.exists()) {
                     setApplicant({ ...docSnap.data() as JobSeeker, id: docSnap.id });
-                    setIsLoading(false);
-                    return;
-                }
-
-                // If not found, try to get from employers collection (for admin view)
-                docRef = doc(firestore, 'employers', applicantId);
-                docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    // Adapt employer data to look like a JobSeeker for display
-                    const employerData = docSnap.data();
-                    setApplicant({
-                        id: docSnap.id,
-                        firstName: employerData.companyName,
-                        lastName: '(Employer)',
-                        email: employerData.email,
-                        profilePictureUrl: employerData.companyLogoUrl,
-                        summary: employerData.companyDescription,
-                        phone: employerData.phone,
-                    });
                 } else {
-                    setApplicant(null);
+                    // If not found, try to get from employers collection (for admin view of employer profile)
+                    docRef = doc(firestore, 'employers', applicantId);
+                    docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        // Adapt employer data to look like a JobSeeker for display
+                        const employerData = docSnap.data();
+                        setApplicant({
+                            id: docSnap.id,
+                            firstName: employerData.companyName,
+                            lastName: '(Employer)',
+                            email: employerData.email,
+                            profilePictureUrl: employerData.companyLogoUrl,
+                            summary: employerData.companyDescription,
+                            phone: employerData.phone,
+                            location: 'N/A'
+                        });
+                    } else {
+                        setApplicant(null);
+                    }
                 }
 
             } catch (error) {
@@ -102,12 +101,9 @@ function ApplicantProfilePage() {
         )
     }
 
-    const getInitials = (name: string) => {
-        const names = name.split(' ');
-        if (names.length > 1 && names[1]) {
-          return `${names[0][0]}${names[names.length - 1][0]}`;
-        }
-        return name[0];
+    const getInitials = (firstName: string, lastName: string) => {
+        if (lastName === '(Employer)') return `${firstName?.[0] || ''}${firstName?.[1] || ''}`.toUpperCase();
+        return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
     };
 
     return (
@@ -119,7 +115,7 @@ function ApplicantProfilePage() {
                         <CardHeader className="flex flex-col items-center justify-center space-y-4 text-center border-b p-8">
                              <Avatar className="h-24 w-24 border-4 border-primary">
                                 <AvatarImage src={applicant.profilePictureUrl} /> 
-                                <AvatarFallback className="text-3xl">{getInitials(`${applicant.firstName} ${applicant.lastName}`)}</AvatarFallback>
+                                <AvatarFallback className="text-3xl">{getInitials(applicant.firstName, applicant.lastName)}</AvatarFallback>
                             </Avatar>
                             <div className="space-y-1">
                                 <CardTitle className="text-3xl">{applicant.firstName} {applicant.lastName}</CardTitle>
