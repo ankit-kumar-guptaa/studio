@@ -1,77 +1,91 @@
 import type { Job, Company, Testimonial, JobPost, Blog } from './types';
 import { Timestamp } from 'firebase/firestore';
 
+// THIS FILE IS NOW DEPRECATED FOR LIVE DATA.
+// It is kept for reference or potential fallback, but the app now uses Firestore.
 
 // This data is now used for the FeaturedJobs component on the home page.
 export const featuredJobs: (Omit<JobPost, 'postDate'> & { postDate: Timestamp })[] = [
   {
     id: 'job-1',
+    employerId: 'dummy-employer-1',
     title: 'Senior Frontend Developer',
     companyName: 'InnovateTech',
     companyLogoUrl: 'https://images.unsplash.com/photo-1496200186974-4293800e2c20?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NTk3MjQ2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     location: 'Bangalore, KA',
     category: 'Technology',
     salary: '₹18-25 LPA',
+    experience: '5+ years',
     description: 'Developing and maintaining user-facing features for our web applications.',
     requirements: '5+ years of experience with React, TypeScript, and modern frontend frameworks.',
     postDate: Timestamp.fromDate(new Date('2024-07-28T10:00:00Z')),
   },
   {
     id: 'job-2',
+    employerId: 'dummy-employer-2',
     title: 'Product Manager',
     companyName: 'BharatSolutions',
     companyLogoUrl: 'https://images.unsplash.com/photo-1687523327554-fa9f50423489?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NTk3MjQ2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     location: 'Mumbai, MH',
     category: 'Product',
     salary: '₹20-30 LPA',
+    experience: '3-5 years',
     description: 'Define product vision, strategy, and roadmap. Work with cross-functional teams.',
     requirements: 'Proven experience in product management for a B2B SaaS product. Strong analytical skills.',
     postDate: Timestamp.fromDate(new Date('2024-07-27T14:30:00Z')),
   },
   {
     id: 'job-3',
+    employerId: 'dummy-employer-3',
     title: 'UX/UI Designer',
     companyName: 'DesiDesigns',
     companyLogoUrl: 'https://images.unsplash.com/photo-1529612700005-e35377bf1415?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NTk3MjQ2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     location: 'Pune, MH (Remote)',
     category: 'Design',
     salary: '₹12-15 LPA',
+    experience: '1-3 years',
     description: 'Create compelling and user-friendly designs for our mobile and web platforms.',
     requirements: 'A strong portfolio showcasing your design skills. Proficiency in Figma, Sketch, or Adobe XD.',
     postDate: Timestamp.fromDate(new Date('2024-07-26T11:00:00Z')),
   },
    {
     id: 'job-4',
+    employerId: 'dummy-employer-4',
     title: 'Backend Engineer (Go)',
     companyName: 'Digital India Corp',
     companyLogoUrl: 'https://images.unsplash.com/photo-1496200186974-4293800e2c20?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NTk3MjQ2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     location: 'Hyderabad, TS',
     category: 'Technology',
     salary: '₹15-22 LPA',
+    experience: '3-5 years',
     description: 'Design, build, and maintain scalable and reliable backend services and APIs.',
     requirements: 'Strong proficiency in Golang, experience with microservices architecture and AWS.',
     postDate: Timestamp.fromDate(new Date('2024-07-25T09:00:00Z')),
   },
    {
     id: 'job-5',
+    employerId: 'dummy-employer-5',
     title: 'Digital Marketing Lead',
     companyName: 'AgriFuture',
     companyLogoUrl: 'https://images.unsplash.com/photo-1622465911368-72162f8da3e2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NTk3MjQ2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     location: 'Noida, UP',
     category: 'Marketing',
     salary: '₹10-14 LPA',
+    experience: '5+ years',
     description: 'Lead our digital marketing campaigns across all channels to drive growth.',
     requirements: '5+ years in digital marketing, with expertise in SEO, SEM, and social media marketing.',
     postDate: Timestamp.fromDate(new Date('2024-07-24T16:00:00Z')),
   },
   {
     id: 'job-6',
+    employerId: 'dummy-employer-6',
     title: 'HR Business Partner',
     companyName: 'InfraConnect',
     companyLogoUrl: 'https://images.unsplash.com/photo-1619551734325-81aaf323686c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NTk3MjQ2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     location: 'Gurgaon, HR',
     category: 'Human Resources',
     salary: '₹12-18 LPA',
+    experience: '5-10 years',
     description: 'Partner with business leaders to develop and implement HR strategies.',
     requirements: 'Experience as an HRBP in a fast-paced environment. Strong understanding of HR policies.',
     postDate: Timestamp.fromDate(new Date('2024-07-23T12:00:00Z')),
@@ -112,6 +126,7 @@ export const testimonials: Testimonial[] = [
   },
 ];
 
+// This data is deprecated and will be removed once Firestore is fully integrated.
 export const blogPosts: Blog[] = [
   {
     id: '1',

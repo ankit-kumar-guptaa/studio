@@ -58,9 +58,9 @@ export interface Blog {
   title: string;
   content: string;
   author: string;
-  publicationDate: string;
-  imageUrl: string;
-  imageHint: string;
+  publicationDate: Timestamp | string;
+  imageUrl?: string;
+  imageHint?: string;
 }
 
 
