@@ -31,15 +31,14 @@ import { Badge } from '../ui/badge';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
-// Define separate schemas for each role
 const jobSeekerSchema = z.object({
-  role: z.literal('job-seeker'),
-  jobSeekerName: z.string().min(1, 'Name is required.'),
-  jobSeekerEmail: z.string().email('Invalid email address.'),
-  jobSeekerPhone: z.string().optional(),
-  jobSeekerSkills: z.string().optional(),
-  resume: z.string().optional(),
-  resumeFilename: z.string().optional(),
+    role: z.literal('job-seeker'),
+    jobSeekerName: z.string().min(1, 'Name is required.'),
+    jobSeekerEmail: z.string().email('Invalid email address.'),
+    jobSeekerPhone: z.string().optional(),
+    jobSeekerSkills: z.string().optional(),
+    resume: z.string().optional(),
+    resumeFilename: z.string().optional(),
 });
 
 const employerSchema = z.object({
@@ -51,7 +50,6 @@ const employerSchema = z.object({
     hiringNeeds: z.string().optional(),
 });
 
-// Create a discriminated union
 const leadSchema = z.discriminatedUnion('role', [
   jobSeekerSchema,
   employerSchema,
@@ -66,13 +64,9 @@ export function LeadCapturePopup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    // Prevent popup from showing on every reload in development
-    if (sessionStorage.getItem('hasSeenLeadPopup')) {
-        return;
-    }
     const timer = setTimeout(() => {
         setIsOpen(true);
-    }, 3000); // Show popup after 3 seconds
+    }, 3000); 
     
     return () => clearTimeout(timer);
   }, []);
@@ -128,7 +122,6 @@ export function LeadCapturePopup() {
 
   const handleClose = () => {
     setIsOpen(false);
-    sessionStorage.setItem('hasSeenLeadPopup', 'true');
   };
 
   const onSubmit = async (data: LeadFormData) => {
@@ -155,7 +148,7 @@ export function LeadCapturePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-md p-0">
+      <DialogContent className="sm:max-w-lg p-0">
         <DialogHeader className="p-6 pb-2 text-center">
             <DialogTitle className="text-xl">Let's Get You Started!</DialogTitle>
             <DialogDescription>
@@ -178,11 +171,15 @@ export function LeadCapturePopup() {
                     </div>
 
                     <TabsContent value="job-seeker" className="px-6 pt-4">
-                        <div className="space-y-3">
-                            <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="jobSeekerPhone" render={({ field }) => (<FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+91 98765 43210" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interested Field</FormLabel><FormControl><Input placeholder="e.g., React, Node.js, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="jobSeekerPhone" render={({ field }) => (<FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+91 98765 43210" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="jobSeekerSkills" render={({ field }) => (<FormItem><FormLabel>Skills / Interests</FormLabel><FormControl><Input placeholder="e.g., React, Marketing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
                             <FormItem>
                                 <FormLabel>Resume (Optional)</FormLabel>
                                 <FormControl>
@@ -202,17 +199,21 @@ export function LeadCapturePopup() {
                     </TabsContent>
 
                     <TabsContent value="employer" className="px-6 pt-4">
-                        <div className="space-y-3">
-                            <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="employerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" placeholder="+91 99887 76655" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="employerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" placeholder="+91 99887 76655" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
                             <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </TabsContent>
                 </Tabs>
                 
-                <DialogFooter className="px-6 pb-6 pt-4">
+                <DialogFooter className="px-6 pb-6 pt-6">
                     <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit
