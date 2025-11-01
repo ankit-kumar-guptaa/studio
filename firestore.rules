@@ -66,9 +66,9 @@ service cloud.firestore {
     match /jobPosts/{jobPostId} {
         allow read: if true;
         // Allow create if user is signed in OR if the job is being posted by SUPER_ADMIN
-        allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || request.resource.data.employerId == 'SUPER_ADMIN';
+        allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || request.auth.token.isSuperAdmin == true;
         // Allow update/delete for owner or super admin
-        allow update, delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || request.auth == null;
+        allow update, delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || request.auth.token.isSuperAdmin == true;
     }
     
     /**
@@ -80,7 +80,7 @@ service cloud.firestore {
         function isJobSeekerOwner() {
           return isSignedIn() && request.auth.uid == request.resource.data.jobSeekerId;
         }
-       allow read, update, delete: if request.auth == null; // Allows super admin full control
+       allow read, update, delete: if request.auth.token.isSuperAdmin == true; // Allows super admin full control
        allow create: if isJobSeekerOwner(); // Job seekers can apply
     }
 
@@ -90,7 +90,7 @@ service cloud.firestore {
      */
     match /blogs/{blogId} {
       allow read: if true;
-      allow create, update, delete: if request.auth == null; // Allow admins to write
+      allow create, update, delete: if request.auth.token.isSuperAdmin == true; // Allow admins to write
     }
 
     /**
