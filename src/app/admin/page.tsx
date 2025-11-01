@@ -32,7 +32,7 @@ export default function AdminPage() {
         }
     }, [userRole, isRoleLoading, router]);
 
-    // Fetch all collections only if the user is an admin
+    // Fetch all collections only if the user is a verified admin
     const jobSeekersQuery = useMemoFirebase(() => {
         if (!firestore || userRole !== 'admin') return null;
         return query(collection(firestore, 'jobSeekers'));
@@ -49,11 +49,12 @@ export default function AdminPage() {
     }, [firestore, userRole]);
 
 
-    const { data: jobSeekers, isLoading: loadingSeekers } = useCollection<JobSeeker>(jobSeekersQuery);
-    const { data: employers, isLoading: loadingEmployers } = useCollection<Employer>(employersQuery);
-    const { data: jobPosts, isLoading: loadingJobs } = useCollection<JobPost>(jobPostsQuery);
+    const { data: jobSeekers, isLoading: loadingSeekers, error: seekersError } = useCollection<JobSeeker>(jobSeekersQuery);
+    const { data: employers, isLoading: loadingEmployers, error: employersError } = useCollection<Employer>(employersQuery);
+    const { data: jobPosts, isLoading: loadingJobs, error: jobsError } = useCollection<JobPost>(jobPostsQuery);
 
     const isLoading = loadingSeekers || loadingEmployers || loadingJobs || isRoleLoading;
+    const anyError = seekersError || employersError || jobsError;
 
     const allUsers: CombinedUser[] = useMemo(() => {
         if (userRole !== 'admin') return [];
@@ -79,12 +80,35 @@ export default function AdminPage() {
     };
 
     // Show a loader while verifying the role or if the user is not an admin yet.
-    if (isRoleLoading || (userRole !== 'admin' && typeof window !== 'undefined')) {
+    if (isRoleLoading || userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
         );
+    }
+    
+    if (anyError) {
+        // This is a fallback error display in case something still goes wrong
+        return (
+             <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className='container mx-auto max-w-lg my-16'>
+                    <Card className="border-destructive">
+                        <CardHeader>
+                            <CardTitle>Error Fetching Data</CardTitle>
+                            <CardDescription>There was a problem accessing Firestore. Please check your security rules.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <pre className="text-xs bg-muted p-2 rounded-md overflow-auto">
+                                <code>{anyError.message}</code>
+                            </pre>
+                        </CardContent>
+                    </Card>
+                </main>
+                <Footer />
+            </div>
+        )
     }
 
 

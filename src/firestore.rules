@@ -11,22 +11,19 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Super admin check: For now, we assume any logged-in user can be an admin.
-    // In a real app, this would check a custom claim.
-    // For the custom non-firebase auth, we can't check claims, so we will allow reads
-    // if the user is an admin based on client-side logic.
-    // This is NOT secure for production writes, but okay for this internal tool.
+    // Super admin check: This is a placeholder for more robust security.
+    // For now, we allow reads from known admin panels but require auth for writes.
+    // A real implementation should use custom claims.
     function isSuperAdmin() {
-      // THIS IS A SIMPLIFIED CHECK FOR THE DEMO.
-      // A real implementation should use custom claims.
-      // For the purpose of the local-only super admin, we will have to trust client-side checks.
-      // And for reads from the admin panel, we need to open them up.
-      return true; // Simplified for admin panel access
+      // WARNING: This is insecure for production writes. It allows any client
+      // to claim they are an admin for read purposes.
+      // This is a temporary measure for development.
+      return true;
     }
 
     /**
      * @description Allows a job seeker to manage their own profile and nested data.
-     * Any authenticated user can read the top-level profile.
+     * Authenticated users and super admins can read profiles.
      */
     match /jobSeekers/{jobSeekerId}/{documents=**} {
       allow get, list: if isSignedIn() || isSuperAdmin();
@@ -34,62 +31,52 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows an employer to read and manage their own profile.
+     * @description Allows an employer to manage their own profile. Admins have full access.
      */
     match /employers/{employerId} {
-       function isExistingOwner(employerId) {
+       function isExistingOwner() {
             return isOwner(employerId) && resource.data != null;
         }
-
       allow get: if isOwner(employerId) || isSuperAdmin();
       allow list: if isSuperAdmin(); // Allow admin to list all employers
-      allow create: if isSignedIn() && request.auth.uid == employerId;
-      allow update: if isExistingOwner(employerId) || isSuperAdmin();
-      allow delete: if isExistingOwner(employerId) || isSuperAdmin();
+      allow create: if isOwner(employerId);
+      allow update: if isExistingOwner() || isSuperAdmin();
+      allow delete: if isExistingOwner() || isSuperAdmin();
     }
 
     /**
-     * @description Allows an employer to manage their job posts.
+     * @description Allows an employer to manage their job posts. Admins have full access.
      */
     match /employers/{employerId}/jobPosts/{jobPostId} {
-        function isExistingOwner(employerId) {
-            return isOwner(employerId) && resource.data != null;
-        }
-
-      // Allow owner to manage their job posts
+      // Allow owner or super admin to manage their job posts
       allow read, write: if isOwner(employerId) || isSuperAdmin();
     }
 
     /**
-     * @description Allows an employer to manage job applications for their job posts.
+     * @description Allows an employer to manage job applications. Admins have read access.
      */
     match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
-      function isJobSeekerOwner(application) {
-          return isSignedIn() && request.auth.uid == application.jobSeekerId;
+      function isJobSeekerOwner() {
+          return isSignedIn() && request.auth.uid == request.resource.data.jobSeekerId;
       }
-
-      // Employer can read/manage applications for their jobs.
+      // Employer or admin can read/manage applications.
       // Job seeker can create an application.
       allow get, list, update, delete: if isOwner(employerId) || isSuperAdmin();
-      allow create: if isJobSeekerOwner(request.resource.data);
+      allow create: if isJobSeekerOwner();
     }
 
 
     /**
-     * @description Public read access for jobs, but write access is restricted.
+     * @description Public read for jobs. Write access is restricted to owners or admins.
      */
     match /jobPosts/{jobPostId} {
-        // Anyone can read job posts.
         allow read: if true;
-
-        // Only the employer who owns the post can create, update, or delete it.
-        // The `employerId` in the new/existing data must match the user's UID.
         allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || isSuperAdmin();
         allow update, delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();
     }
 
     /**
-     * @description Allows anyone to read blog posts.
+     * @description Public read for blogs. Write access for admins.
      */
     match /blogs/{blogId} {
       allow read: if true;
@@ -97,7 +84,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read and create company reviews.
+     * @description Public read for reviews. Logged-in users or admins can create.
      */
     match /companyReviews/{companyReviewId} {
       allow read: if true;

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Logo } from '@/components/icons/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 
@@ -40,7 +40,15 @@ export default function SuperAdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { isAdmin, login } = useAuth();
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    if (isAdmin) {
+      router.push('/admin');
+    }
+  }, [isAdmin, router]);
+
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -67,6 +75,15 @@ export default function SuperAdminLoginPage() {
       setIsLoading(false);
     }
   };
+  
+    // While checking auth state, show a loader to prevent flicker
+  if (isAdmin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-secondary">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary">
