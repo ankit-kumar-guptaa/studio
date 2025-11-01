@@ -45,6 +45,7 @@ export default function BlogPage() {
                     ? (post.publicationDate as any).toDate()
                     : new Date(post.publicationDate as string);
                 
+                // Fallback for old posts without a slug
                 const href = post.slug ? `/blog/${post.slug}` : `/blog/${post.id}`;
 
                 return (

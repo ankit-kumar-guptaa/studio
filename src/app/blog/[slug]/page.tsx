@@ -6,7 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, doc, getDoc } from 'firebase/firestore';
 import type { Blog } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -14,29 +14,46 @@ import { useEffect, useState } from 'react';
 
 export default function BlogDetailPage() {
   const params = useParams();
-  const slug = params.slug as string;
+  const slug = params.slug as string; // This can be a slug or an ID for old posts
   const { firestore } = useFirebase();
   const [post, setPost] = useState<Blog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const blogQuery = useMemoFirebase(() => {
-    if (!firestore || !slug) return null;
-    // Query by slug
-    return query(collection(firestore, 'blogs'), where('slug', '==', slug), limit(1));
-  }, [firestore, slug]);
-  
-  const { data: posts, isLoading: isQueryLoading } = useCollection<Blog>(blogQuery);
-
   useEffect(() => {
-    if (!isQueryLoading) {
-      if (posts && posts.length > 0) {
-        setPost(posts[0]);
-      } else {
-        setPost(null); // Explicitly set to null if not found
+    const fetchPost = async () => {
+      if (!firestore || !slug) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
-    }
-  }, [posts, isQueryLoading]);
+      setIsLoading(true);
+
+      try {
+        // Try fetching by slug first
+        const slugQuery = query(collection(firestore, 'blogs'), where('slug', '==', slug), limit(1));
+        const slugSnapshot = await getDoc(slugQuery);
+        
+        if (!slugSnapshot.empty) {
+          setPost(slugSnapshot.docs[0].data() as Blog);
+        } else {
+          // If not found by slug, try fetching by ID (for backward compatibility)
+          const idRef = doc(firestore, 'blogs', slug);
+          const idSnapshot = await getDoc(idRef);
+          if (idSnapshot.exists()) {
+            setPost(idSnapshot.data() as Blog);
+          } else {
+            setPost(null); // Not found by slug or ID
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching blog post:", error);
+        setPost(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [firestore, slug]);
 
 
   if (isLoading) {
