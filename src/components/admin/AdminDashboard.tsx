@@ -5,8 +5,8 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Briefcase, UserCheck, Building, Trash2, Edit } from 'lucide-react';
-import { collection, query, doc, deleteDoc, getDocs, where } from 'firebase/firestore';
+import { Loader2, Users, Briefcase, UserCheck, Building, Trash2, Edit, UserPlus } from 'lucide-react';
+import { collection, query, doc, deleteDoc, getDocs, where, getDoc } from 'firebase/firestore';
 import type { JobSeeker, Employer, JobPost } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -77,17 +77,25 @@ export function AdminDashboard() {
         if (!firestore) return;
         
         const globalJobDocRef = doc(firestore, 'jobPosts', jobId);
-        
+        const jobSnapshot = await getDoc(globalJobDocRef);
+        const jobData = jobSnapshot.data();
+
+        if (!jobData) {
+            toast({ variant: "destructive", title: "Job not found" });
+            return;
+        }
+
+        const employerId = jobData.employerId;
+
         try {
-            // Find the employer's subcollection job to delete it as well
-            const jobDocSnap = await getDocs(query(collection(firestore, 'employers'), where('id', '==', 'SUPER_ADMIN')));
-            if(!jobDocSnap.empty){
-                const employerId = jobDocSnap.docs[0].id;
+            // Delete from the global collection
+            await deleteDoc(globalJobDocRef);
+
+            // If it's not a SUPER_ADMIN post, delete from the employer's subcollection too
+            if (employerId !== 'SUPER_ADMIN') {
                 const employerJobDocRef = doc(firestore, `employers/${employerId}/jobPosts`, jobId);
                 await deleteDoc(employerJobDocRef);
             }
-
-            await deleteDoc(globalJobDocRef);
 
             toast({ title: "Job Deleted", description: "The job posting has been removed." });
             setJobPosts(prev => prev?.filter(j => j.id !== jobId) || null);
@@ -132,12 +140,15 @@ export function AdminDashboard() {
                         {isLoading ? <TableRow><TableCell colSpan={4} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
                         : allUsers.length > 0 ? allUsers.map(user => (
                             <TableRow key={user.id}>
-                                <TableCell className="font-medium">{getDisplayName(user)}</TableCell>
+                                <TableCell className="font-medium">
+                                    <Link href={`/employer/applicant/${user.id}`} className="hover:underline text-primary">
+                                        {getDisplayName(user)}
+                                    </Link>
+                                </TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell><Badge variant={user.role === 'Employer' ? 'secondary' : 'outline'}>{user.role}</Badge></TableCell>
                                 <TableCell className="text-right space-x-2">
-                                    <Button asChild variant="outline" size="sm"><Link href={`/employer/applicant/${user.id}`}>View Profile</Link></Button>
-                                    <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm">Delete</Button></AlertDialogTrigger>
+                                    <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the user and all their associated data. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteUser(user)}>Delete User</AlertDialogAction></AlertDialogFooter>
@@ -165,11 +176,15 @@ export function AdminDashboard() {
                              <TableRow key={job.id}>
                                  <TableCell className="font-medium">{job.title}</TableCell>
                                  <TableCell>{job.companyName}</TableCell>
-                                 <TableCell>{job.postDate ? formatDistanceToNow(new Date(job.postDate.toString()), { addSuffix: true }) : 'N/A'}</TableCell>
+                                 <TableCell>
+                                     {job.postDate && (job.postDate as any).toDate
+                                        ? formatDistanceToNow((job.postDate as any).toDate(), { addSuffix: true })
+                                        : "Just now"}
+                                 </TableCell>
                                  <TableCell className="text-right space-x-2">
                                      <Button asChild variant="outline" size="sm"><Link href={`/employer/job/${job.id}`}>View Applicants</Link></Button>
                                      {job.employerId === 'SUPER_ADMIN' && <Button variant="outline" size="sm" disabled><Edit className="mr-2 h-4 w-4"/>Edit</Button>}
-                                     <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm">Delete</Button></AlertDialogTrigger>
+                                     <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the job post. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteJob(job.id)}>Delete Job</AlertDialogAction></AlertDialogFooter>
