@@ -10,16 +10,6 @@ import { Loader2, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { CreateBlogForm } from './CreateBlogForm';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -31,11 +21,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export function BlogManagement() {
   const { firestore } = useFirebase();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<Blog | null>(null);
   const { toast } = useToast();
 
   const blogsQuery = useMemoFirebase(() => {
@@ -44,21 +33,6 @@ export function BlogManagement() {
   }, [firestore]);
 
   const { data: blogPosts, isLoading, setData: setBlogPosts } = useCollection<Blog>(blogsQuery);
-  
-  const handleEditClick = (post: Blog) => {
-    setEditingPost(post);
-    setIsDialogOpen(true);
-  };
-  
-  const handleCreateClick = () => {
-    setEditingPost(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleFormSuccess = () => {
-    setIsDialogOpen(false);
-    setEditingPost(null);
-  };
   
   const handleDeletePost = async (postId: string) => {
     if (!firestore) return;
@@ -71,7 +45,6 @@ export function BlogManagement() {
     }
   };
 
-
   return (
     <Card>
       <CardHeader className="flex flex-row justify-between items-center">
@@ -79,17 +52,11 @@ export function BlogManagement() {
           <CardTitle>Blog Management</CardTitle>
           <CardDescription>Create, edit, and manage all blog posts on the platform.</CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleCreateClick}><PlusCircle className="mr-2 h-4 w-4"/> Create New Post</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>{editingPost ? 'Edit Blog Post' : 'Create New Blog Post'}</DialogTitle>
-            </DialogHeader>
-            <CreateBlogForm existingPost={editingPost} onSuccess={handleFormSuccess} />
-          </DialogContent>
-        </Dialog>
+        <Button asChild>
+          <Link href="/admin/blog/create">
+            <PlusCircle className="mr-2 h-4 w-4"/> Create New Post
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent>
         <Table>
@@ -120,8 +87,10 @@ export function BlogManagement() {
                     <TableCell>{post.author}</TableCell>
                     <TableCell>{format(postDate, 'PPP')}</TableCell>
                     <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditClick(post)}>
-                            <Edit className="mr-2 h-4 w-4"/> Edit
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={`/admin/blog/${post.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4"/> Edit
+                            </Link>
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>

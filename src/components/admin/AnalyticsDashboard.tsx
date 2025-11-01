@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
-import { collection, getDocs, query, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, query, collectionGroup, where } from 'firebase/firestore';
 import type { JobApplication, JobPost, Employer } from '@/lib/types';
 import {
   ResponsiveContainer,
@@ -43,16 +43,25 @@ export function AnalyticsDashboard() {
 
       setIsLoading(true);
       try {
-        // 1. Fetch all job applications from all subcollections using a collectionGroup query
-        const applicationsQuery = query(collectionGroup(firestore, 'applications'));
-        const applicationsSnapshot = await getDocs(applicationsQuery);
-        const allApplications = applicationsSnapshot.docs.map(doc => doc.data() as JobApplication);
-        
-        // 2. Fetch all job posts to get titles
-        const jobPostsQuery = query(collection(firestore, 'jobPosts'));
-        const jobPostsSnapshot = await getDocs(jobPostsQuery);
-        const allJobPosts = jobPostsSnapshot.docs.map(doc => doc.data() as JobPost);
+        // 1. Fetch only SUPER_ADMIN job posts
+        const adminJobPostsQuery = query(collection(firestore, 'jobPosts'), where("employerId", "==", "SUPER_ADMIN"));
+        const adminJobPostsSnapshot = await getDocs(adminJobPostsQuery);
+        const adminJobPosts = adminJobPostsSnapshot.docs.map(doc => doc.data() as JobPost);
+        const adminJobPostIds = adminJobPosts.map(job => job.id);
 
+        let allApplications: JobApplication[] = [];
+
+        // 2. Fetch applications only for those SUPER_ADMIN job posts
+        if (adminJobPostIds.length > 0) {
+          for (const jobId of adminJobPostIds) {
+            const appsQuery = collection(firestore, `jobPosts/${jobId}/applications`);
+            const appsSnapshot = await getDocs(appsQuery);
+            appsSnapshot.forEach(doc => {
+              allApplications.push(doc.data() as JobApplication);
+            });
+          }
+        }
+        
         // 3. Process data for the line chart (applications in last 7 days)
         const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), i)).reverse();
         const dailyCounts = last7Days.map(day => ({
@@ -61,8 +70,8 @@ export function AnalyticsDashboard() {
         }));
 
         allApplications.forEach(app => {
-          if (app.applicationDate && typeof app.applicationDate.toDate === 'function') {
-              const appDateObj = app.applicationDate.toDate();
+          if (app.applicationDate && typeof (app.applicationDate as any).toDate === 'function') {
+              const appDateObj = (app.applicationDate as any).toDate();
               if (isValid(appDateObj)) {
                 const appDate = startOfDay(appDateObj);
                 const dayIndex = last7Days.findIndex(day => startOfDay(day).getTime() === appDate.getTime());
@@ -84,7 +93,7 @@ export function AnalyticsDashboard() {
         
         const topJobsData: TopJobData[] = Object.entries(applicationsByJob)
           .map(([jobId, count]) => {
-              const job = allJobPosts.find(j => j.id === jobId);
+              const job = adminJobPosts.find(j => j.id === jobId);
               return {
                   id: jobId,
                   title: job?.title || 'Unknown Job',
@@ -121,7 +130,7 @@ export function AnalyticsDashboard() {
         <Card>
             <CardHeader>
             <CardTitle>Applications in Last 7 Days</CardTitle>
-            <CardDescription>Track daily application volume across the platform.</CardDescription>
+            <CardDescription>Track daily application volume for SUPER_ADMIN job posts.</CardDescription>
             </CardHeader>
             <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -138,8 +147,8 @@ export function AnalyticsDashboard() {
         </Card>
          <Card>
             <CardHeader>
-            <CardTitle>Top 5 Most Popular Jobs</CardTitle>
-            <CardDescription>The most sought-after job openings by applicant count.</CardDescription>
+            <CardTitle>Top 5 Most Popular Admin Jobs</CardTitle>
+            <CardDescription>Your most sought-after job openings by applicant count.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Loader2, Users, UserPlus, PlusCircle, LineChart, LayoutDashboard, Sparkles } from 'lucide-react';
+import { Loader2, Users, UserPlus, PlusCircle, LineChart, LayoutDashboard } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter } from 'next/navigation';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
@@ -14,7 +14,6 @@ import { PostJobForm } from '@/components/admin/PostJobForm';
 import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { BlogManagement } from '@/components/admin/BlogManagement';
-import { AIBlogGenerator } from '@/components/admin/AIBlogGenerator';
 
 export default function AdminPage() {
     const { isUserLoading } = useFirebase();
@@ -48,11 +47,10 @@ export default function AdminPage() {
             </div>
             
             <Tabs defaultValue="management">
-                <TabsList className="grid w-full grid-cols-1 md:grid-cols-6 h-auto">
+                <TabsList className="grid w-full grid-cols-1 md:grid-cols-5 h-auto">
                     <TabsTrigger value="management"><Users className="mr-2 h-4 w-4" /> User & Job Management</TabsTrigger>
                      <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Platform Analytics</TabsTrigger>
                      <TabsTrigger value="blog-management"><LayoutDashboard className="mr-2 h-4 w-4" /> Blog Management</TabsTrigger>
-                     <TabsTrigger value="ai-blog"><Sparkles className="mr-2 h-4 w-4" /> AI Generate Blog</TabsTrigger>
                     <TabsTrigger value="create-candidate"><UserPlus className="mr-2 h-4 w-4" /> Create Candidate Profile</TabsTrigger>
                     <TabsTrigger value="post-job"><PlusCircle className="mr-2 h-4 w-4" /> Post a Job</TabsTrigger>
                 </TabsList>
@@ -67,10 +65,6 @@ export default function AdminPage() {
                 
                  <TabsContent value="blog-management">
                     <BlogManagement />
-                </TabsContent>
-
-                 <TabsContent value="ai-blog">
-                    <AIBlogGenerator />
                 </TabsContent>
 
                 <TabsContent value="create-candidate">
