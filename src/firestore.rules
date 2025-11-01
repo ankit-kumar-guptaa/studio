@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows a job seeker to manage their own profile and nested data.
+     * Any authenticated user can read the top-level profile.
+     * @path /jobSeekers/{jobSeekerId}
+     */
+    match /jobSeekers/{jobSeekerId}/{documents=**} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(jobSeekerId) {
+        return isSignedIn() && request.auth.uid == jobSeekerId;
+      }
+
+      // Allow any authenticated user to read the main profile document and its subcollections.
+      allow get, list: if isSignedIn();
+      // Only the owner can create, update, or delete their own profile and sub-collection data.
+      allow write: if isOwner(jobSeekerId);
+    }
+
+    /**
+     * @description Allows an employer to read and manage their own profile.
+     * @path /employers/{employerId}
+     */
+    match /employers/{employerId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(employerId) {
+        return isSignedIn() && request.auth.uid == employerId;
+      }
+
+       function isExistingOwner(employerId) {
+            return isOwner(employerId) && resource.data != null;
+        }
+
+      allow get: if isOwner(employerId);
+      allow list: if false; // Generally, don't allow listing all employers
+      allow create: if isSignedIn() && request.auth.uid == employerId;
+      allow update: if isExistingOwner(employerId);
+      allow delete: if isExistingOwner(employerId);
+    }
+
+    /**
+     * @description Allows an employer to manage their job posts.
+     * @path /employers/{employerId}/jobPosts/{jobPostId}
+     */
+    match /employers/{employerId}/jobPosts/{jobPostId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(employerId) {
+        return isSignedIn() && request.auth.uid == employerId;
+      }
+
+        function isExistingOwner(employerId) {
+            return isOwner(employerId) && resource.data != null;
+        }
+
+      // Allow owner to manage their job posts
+      allow read, write: if isOwner(employerId);
+    }
+
+    /**
+     * @description Allows an employer to manage job applications for their job posts.
+     * @path /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId}
+     */
+    match /employers/{employerId}/jobPosts/{jobPostId}/applications/{applicationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(employerId) {
+        return isSignedIn() && request.auth.uid == employerId;
+      }
+
+      function isJobSeekerOwner(application) {
+          return isSignedIn() && request.auth.uid == application.jobSeekerId;
+      }
+
+      // Employer can read/manage applications for their jobs.
+      // Job seeker can create an application.
+      allow get, list, update, delete: if isOwner(employerId);
+      allow create: if isJobSeekerOwner(request.resource.data);
+    }
+
+
+    /**
+     * @description Public read access for jobs, but write access is restricted.
+     * @path /jobPosts/{jobPostId}
+     */
+    match /jobPosts/{jobPostId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+        
+        // Anyone can read job posts.
+        allow read: if true;
+
+        // Only the employer who owns the post can create, update, or delete it.
+        // The `employerId` in the new/existing data must match the user's UID.
+        allow create: if isSignedIn() && request.resource.data.employerId == request.auth.uid;
+        allow update, delete: if isSignedIn() && resource.data.employerId == request.auth.uid;
+    }
+
+    /**
+     * @description Allows anyone to read blog posts.
+     * @path /blogs/{blogId}
+     */
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow create, update, delete: if false; // Managed by admin
+    }
+
+    /**
+     * @description Allows anyone to read and create company reviews.
+     * @path /companyReviews/{companyReviewId}
+     */
+    match /companyReviews/{companyReviewId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Managed by admin
+    }
+  }
+}

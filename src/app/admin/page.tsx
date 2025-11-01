@@ -32,7 +32,7 @@ export default function AdminPage() {
         }
     }, [userRole, isRoleLoading, router]);
 
-    // Fetch all collections
+    // Fetch all collections only if the user is an admin
     const jobSeekersQuery = useMemoFirebase(() => {
         if (!firestore || userRole !== 'admin') return null;
         return query(collection(firestore, 'jobSeekers'));
@@ -56,10 +56,11 @@ export default function AdminPage() {
     const isLoading = loadingSeekers || loadingEmployers || loadingJobs || isRoleLoading;
 
     const allUsers: CombinedUser[] = useMemo(() => {
+        if (userRole !== 'admin') return [];
         const seekers: CombinedUser[] = jobSeekers ? jobSeekers.map(u => ({ ...u, role: 'Job Seeker' })) : [];
         const employerUsers: CombinedUser[] = employers ? employers.map(u => ({ ...u, role: 'Employer' })) : [];
         return [...seekers, ...employerUsers];
-    }, [jobSeekers, employers]);
+    }, [jobSeekers, employers, userRole]);
 
     const getDisplayName = (user: CombinedUser) => {
         if (user.role === 'Employer') {
