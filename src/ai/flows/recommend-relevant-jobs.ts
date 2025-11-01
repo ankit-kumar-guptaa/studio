@@ -26,7 +26,7 @@ export type RecommendRelevantJobsInput = z.infer<
 const RecommendRelevantJobsOutputSchema = z.object({
   jobRecommendations: z
     .string()
-    .describe('A list of job recommendations based on the user profile and search history.'),
+    .describe('A list of job recommendations based on the user profile and search history in markdown format.'),
 });
 export type RecommendRelevantJobsOutput = z.infer<
   typeof RecommendRelevantJobsOutputSchema
@@ -42,12 +42,18 @@ const prompt = ai.definePrompt({
   name: 'recommendRelevantJobsPrompt',
   input: {schema: RecommendRelevantJobsInputSchema},
   output: {schema: RecommendRelevantJobsOutputSchema},
-  prompt: `You are an AI job recommendation agent. Based on the job seeker's profile and search history, you will recommend relevant jobs.
+  prompt: `You are an expert AI job recommendation agent for the Indian job market. Your task is to analyze the provided job seeker's profile and their search history to generate a list of highly relevant job recommendations.
 
-Job Seeker Profile: {{{userProfile}}}
-Search History: {{{searchHistory}}}
+The output should be a friendly, engaging, and well-formatted list in markdown. Start with a positive opening, then list 3-5 job recommendations. For each recommendation, include the Job Title, a potential company (be creative and relevant to India), and a short, compelling reason why it's a good fit for the user.
 
-Recommendations:`,
+Job Seeker Profile:
+{{{userProfile}}}
+
+Search History (Keywords they have recently searched for):
+{{{searchHistory}}}
+
+Generate the markdown-formatted job recommendations now.
+`,
 });
 
 const recommendRelevantJobsFlow = ai.defineFlow(

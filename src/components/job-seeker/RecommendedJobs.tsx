@@ -42,7 +42,7 @@ export function RecommendedJobs() {
     const userProfileString = `
       Name: ${jobSeekerData.firstName || ''} ${jobSeekerData.lastName || ''}.
       Location: ${jobSeekerData.location || 'Not specified'}.
-      Preferred Categories: ${jobSeekerData.categoryPreferences?.join(', ') || 'Not specified'}.
+      Experience Level: ${jobSeekerData.experienceLevel || 'Not specified'}.
       Resume Summary: ${jobSeekerData.summary || 'Not provided'}.
       Skills: ${jobSeekerData.skills?.map(s => s.value).join(', ') || 'Not provided'}.
     `.trim();
