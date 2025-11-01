@@ -27,7 +27,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 type CombinedUser = (JobSeeker | Employer) & { role: 'Job Seeker' | 'Employer' };
 
-export function AdminDashboard() {
+export function UserManagementDashboard() {
     const { firestore } = useFirebase();
     const { userRole, isRoleLoading } = useUserRole();
     const { toast } = useToast();
@@ -53,6 +53,13 @@ export function AdminDashboard() {
         const employerUsers: CombinedUser[] = employers ? employers.map(u => ({ ...u, role: 'Employer' })) : [];
         return [...seekers, ...employerUsers];
     }, [jobSeekers, employers]);
+
+    const stats = useMemo(() => ({
+        totalUsers: allUsers.length,
+        totalJobs: jobPosts?.length || 0,
+        totalSeekers: jobSeekers?.length || 0,
+        totalEmployers: employers?.length || 0
+    }), [allUsers, jobPosts, jobSeekers, employers]);
 
     // Delete Handlers
     const handleDeleteUser = async (userToDelete: CombinedUser) => {
@@ -122,10 +129,10 @@ export function AdminDashboard() {
   return (
     <>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 my-8">
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Users</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : allUsers.length}</div></CardContent></Card>
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Job Posts</CardTitle><Briefcase className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : (jobPosts?.length || 0)}</div></CardContent></Card>
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Job Seekers</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : (jobSeekers?.length || 0)}</div></CardContent></Card>
-            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Employers</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : (employers?.length || 0)}</div></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Users</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : stats.totalUsers}</div></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Job Posts</CardTitle><Briefcase className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : stats.totalJobs}</div></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Job Seekers</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : stats.totalSeekers}</div></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Employers</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : stats.totalEmployers}</div></CardContent></Card>
         </div>
     
         <Card>

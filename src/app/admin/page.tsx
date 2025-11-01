@@ -4,14 +4,15 @@ import { useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Loader2, Users, UserPlus, PlusCircle } from 'lucide-react';
+import { Loader2, Users, UserPlus, PlusCircle, LineChart } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter } from 'next/navigation';
-import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { PostJobForm } from '@/components/admin/PostJobForm';
 import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
+import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 
 export default function AdminPage() {
     const { isUserLoading } = useFirebase();
@@ -44,15 +45,20 @@ export default function AdminPage() {
                 <p className="text-muted-foreground">Oversee site activity and manage all platform content.</p>
             </div>
             
-            <Tabs defaultValue="dashboard">
-                <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 h-auto">
-                    <TabsTrigger value="dashboard"><Users className="mr-2 h-4 w-4" /> User Management</TabsTrigger>
+            <Tabs defaultValue="management">
+                <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 h-auto">
+                    <TabsTrigger value="management"><Users className="mr-2 h-4 w-4" /> User & Job Management</TabsTrigger>
+                     <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Platform Analytics</TabsTrigger>
                     <TabsTrigger value="create-candidate"><UserPlus className="mr-2 h-4 w-4" /> Create Candidate Profile</TabsTrigger>
                     <TabsTrigger value="post-job"><PlusCircle className="mr-2 h-4 w-4" /> Post a Job</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="dashboard">
-                    <AdminDashboard />
+                <TabsContent value="management">
+                    <UserManagementDashboard />
+                </TabsContent>
+
+                 <TabsContent value="analytics">
+                    <AnalyticsDashboard />
                 </TabsContent>
 
                 <TabsContent value="create-candidate">
