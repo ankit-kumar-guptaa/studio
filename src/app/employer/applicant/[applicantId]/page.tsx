@@ -74,7 +74,7 @@ function ApplicantProfilePage() {
                     <Card>
                         <CardHeader className="flex flex-col items-center justify-center space-y-4 text-center border-b p-8">
                              <Avatar className="h-24 w-24 border-4 border-primary">
-                                <AvatarImage src={undefined} /> 
+                                <AvatarImage src={applicant.profilePictureUrl} /> 
                                 <AvatarFallback className="text-3xl">{getInitials(`${applicant.firstName} ${applicant.lastName}`)}</AvatarFallback>
                             </Avatar>
                             <div className="space-y-1">
@@ -119,7 +119,7 @@ function ApplicantProfilePage() {
                                 <div className="md:col-span-2">
                                     <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"><Star className="h-5 w-5 text-primary"/> Skills</h3>
                                     <div className="flex flex-wrap gap-2">
-                                        {applicant.skills.map(skill => <Badge key={skill.value} variant="secondary">{skill.value}</Badge>)}
+                                        {applicant.skills.map((skill, index) => <Badge key={`skill-${skill.value}-${index}`} variant="secondary">{skill.value}</Badge>)}
                                     </div>
                                 </div>
                             )}
