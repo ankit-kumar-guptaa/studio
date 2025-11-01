@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect } from 'react';
@@ -9,7 +8,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Briefcase, UserCheck, Building } from 'lucide-react';
+import { Loader2, Users, Briefcase, UserCheck, Building, PlusCircle } from 'lucide-react';
 import { collection, query } from 'firebase/firestore';
 import type { JobSeeker, Employer, JobPost } from '@/lib/types';
 import Link from 'next/link';
@@ -69,10 +68,8 @@ export default function AdminPage() {
         return `${user.firstName} ${user.lastName}`;
     };
     
+    // Fixed: Both link types should point to the same functional profile viewer page.
     const getProfileLink = (user: CombinedUser) => {
-        if (user.role === 'Employer') {
-            return `/admin/user/${user.id}`; 
-        }
         return `/employer/applicant/${user.id}`;
     };
 
@@ -157,9 +154,16 @@ export default function AdminPage() {
             </div>
         
             <Card>
-                <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>View and manage all users on the platform.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>User Management</CardTitle>
+                        <CardDescription>View and manage all users on the platform.</CardDescription>
+                    </div>
+                    <Button asChild>
+                        <Link href="/admin/add-user">
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add New User
+                        </Link>
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     <Table>
