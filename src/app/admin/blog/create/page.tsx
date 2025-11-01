@@ -12,12 +12,13 @@ import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useState, Suspense, useRef } from 'react';
 import { Loader2, ArrowLeft, Sparkles, Upload } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateBlogPost } from '@/ai/flows/generate-blog-post-flow';
 import Image from 'next/image';
+import { slugify } from '@/lib/utils';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 4; // in MB
@@ -117,8 +118,14 @@ function CreateBlogPageContent() {
     setIsSaving(true);
     try {
       const collectionRef = collection(firestore, 'blogs');
-      await addDoc(collectionRef, {
+      const docRef = doc(collectionRef); // Create a reference with a new ID
+      
+      const slug = slugify(values.title);
+
+      await setDoc(docRef, {
         ...values,
+        id: docRef.id, // Store the document ID
+        slug: slug,
         publicationDate: serverTimestamp(),
       });
       toast({ title: 'Blog Post Published!', description: 'Your new post is now live.' });

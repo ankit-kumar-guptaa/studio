@@ -19,6 +19,8 @@ import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateBlogPost } from '@/ai/flows/generate-blog-post-flow';
 import Image from 'next/image';
+import { slugify } from '@/lib/utils';
+
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 4; // in MB
@@ -141,7 +143,10 @@ function EditBlogPageContent() {
       const postRef = doc(firestore, 'blogs', blogId);
       // We don't want to save keywords to the document
       const { keywords, ...postData } = values;
-      await updateDoc(postRef, postData);
+      
+      const slug = slugify(postData.title);
+
+      await updateDoc(postRef, { ...postData, slug });
       
       toast({ title: 'Blog Post Updated!', description: 'Your changes have been saved.' });
       router.push('/admin?tab=blog-management');

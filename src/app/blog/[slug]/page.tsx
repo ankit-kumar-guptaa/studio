@@ -5,23 +5,39 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
 import type { Blog } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 export default function BlogDetailPage() {
   const params = useParams();
-  const blogId = params.blogId as string;
+  const slug = params.slug as string;
   const { firestore } = useFirebase();
+  const [post, setPost] = useState<Blog | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const blogRef = useMemoFirebase(() => {
-    if (!firestore || !blogId) return null;
-    return doc(firestore, 'blogs', blogId);
-  }, [firestore, blogId]);
+  const blogQuery = useMemoFirebase(() => {
+    if (!firestore || !slug) return null;
+    // Query by slug
+    return query(collection(firestore, 'blogs'), where('slug', '==', slug), limit(1));
+  }, [firestore, slug]);
+  
+  const { data: posts, isLoading: isQueryLoading } = useCollection<Blog>(blogQuery);
 
-  const { data: post, isLoading } = useDoc<Blog>(blogRef);
+  useEffect(() => {
+    if (!isQueryLoading) {
+      if (posts && posts.length > 0) {
+        setPost(posts[0]);
+      } else {
+        setPost(null); // Explicitly set to null if not found
+      }
+      setIsLoading(false);
+    }
+  }, [posts, isQueryLoading]);
+
 
   if (isLoading) {
     return (
@@ -32,6 +48,7 @@ export default function BlogDetailPage() {
   }
 
   if (!post) {
+    // This will be triggered after the query finishes and finds no matching post
     notFound();
   }
 

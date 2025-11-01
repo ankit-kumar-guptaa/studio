@@ -44,20 +44,26 @@ export default function BlogPage() {
                 const postDate = post.publicationDate && typeof (post.publicationDate as any).toDate === 'function' 
                     ? (post.publicationDate as any).toDate()
                     : new Date(post.publicationDate as string);
+                
+                const href = post.slug ? `/blog/${post.slug}` : `/blog/${post.id}`;
 
                 return (
                   <Card key={post.id} className="flex flex-col overflow-hidden">
-                    <div className="relative aspect-video">
-                        <Image 
-                            src={post.imageUrl || 'https://picsum.photos/seed/placeholder/600/400'} 
-                            alt={post.title} 
-                            fill
-                            className="object-cover"
-                            data-ai-hint={post.imageHint || 'abstract'}
-                        />
-                    </div>
+                    <Link href={href} className="block aspect-video relative">
+                      <Image 
+                          src={post.imageUrl || 'https://picsum.photos/seed/placeholder/600/400'} 
+                          alt={post.title} 
+                          fill
+                          className="object-cover"
+                          data-ai-hint={post.imageHint || 'abstract'}
+                      />
+                    </Link>
                     <CardHeader>
-                      <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+                      <CardTitle className="line-clamp-2">
+                        <Link href={href}>
+                         {post.title}
+                        </Link>
+                      </CardTitle>
                       <CardDescription>{format(postDate, 'PPP')} by {post.author}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow">
@@ -65,7 +71,7 @@ export default function BlogPage() {
                     </CardContent>
                     <CardFooter>
                       <Button asChild variant="link" className="p-0">
-                        <Link href={`/blog/${post.id}`}>
+                        <Link href={href}>
                           Read More <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                       </Button>
