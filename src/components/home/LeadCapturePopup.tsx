@@ -43,12 +43,12 @@ const jobSeekerSchema = z.object({
 });
 
 const employerSchema = z.object({
-  role: z.literal('employer'),
-  companyName: z.string().min(1, 'Company name is required.'),
-  contactPerson: z.string().optional(),
-  employerEmail: z.string().email('Invalid email address.'),
-  employerPhone: z.string().optional(),
-  hiringNeeds: z.string().optional(),
+    role: z.literal('employer'),
+    companyName: z.string().min(1, 'Company name is required.'),
+    contactPerson: z.string().optional(),
+    employerEmail: z.string().email('Invalid email address.'),
+    employerPhone: z.string().optional(),
+    hiringNeeds: z.string().optional(),
 });
 
 // Create a discriminated union
@@ -66,6 +66,10 @@ export function LeadCapturePopup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
+    // Prevent popup from showing on every reload in development
+    if (sessionStorage.getItem('hasSeenLeadPopup')) {
+        return;
+    }
     const timer = setTimeout(() => {
         setIsOpen(true);
     }, 3000); // Show popup after 3 seconds
@@ -124,8 +128,7 @@ export function LeadCapturePopup() {
 
   const handleClose = () => {
     setIsOpen(false);
-    // You could set a flag in sessionStorage here if you only want to show it once per session
-    // sessionStorage.setItem('hasSeenLeadPopup', 'true');
+    sessionStorage.setItem('hasSeenLeadPopup', 'true');
   };
 
   const onSubmit = async (data: LeadFormData) => {
@@ -137,12 +140,13 @@ export function LeadCapturePopup() {
         description: 'Your information has been submitted successfully. We will get in touch with you shortly.',
       });
       handleClose();
+      form.reset();
     } catch (error) {
       console.error('Failed to send lead email:', error);
       toast({
         variant: 'destructive',
         title: 'Submission Failed',
-        description: 'Something went wrong. Please check your details and try again. If the problem persists, ensure server environment variables are set.',
+        description: 'Something went wrong. Please check your details or server configuration and try again.',
       });
     } finally {
       setIsLoading(false);
@@ -153,7 +157,7 @@ export function LeadCapturePopup() {
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="sm:max-w-md p-0">
         <DialogHeader className="p-6 pb-2 text-center">
-            <DialogTitle className="text-2xl">Let's Get You Started!</DialogTitle>
+            <DialogTitle className="text-xl">Let's Get You Started!</DialogTitle>
             <DialogDescription>
                 Tell us who you are to get personalized service.
             </DialogDescription>
@@ -166,13 +170,15 @@ export function LeadCapturePopup() {
                     onValueChange={(value) => form.setValue('role', value as 'job-seeker' | 'employer')}
                     className="w-full"
                 >
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="job-seeker"><User className="mr-2 h-4 w-4"/>Job Seeker</TabsTrigger>
-                        <TabsTrigger value="employer"><Briefcase className="mr-2 h-4 w-4"/>Employer</TabsTrigger>
-                    </TabsList>
+                    <div className="px-6">
+                      <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="job-seeker"><User className="mr-2 h-4 w-4"/>Job Seeker</TabsTrigger>
+                          <TabsTrigger value="employer"><Briefcase className="mr-2 h-4 w-4"/>Employer</TabsTrigger>
+                      </TabsList>
+                    </div>
 
-                    <TabsContent value="job-seeker" className="p-6 pt-4">
-                        <div className="space-y-4">
+                    <TabsContent value="job-seeker" className="px-6 pt-4">
+                        <div className="space-y-3">
                             <FormField control={form.control} name="jobSeekerName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Priya Sharma" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="jobSeekerEmail" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="priya@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="jobSeekerPhone" render={({ field }) => (<FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+91 98765 43210" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -195,18 +201,18 @@ export function LeadCapturePopup() {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="employer" className="p-6 pt-4">
-                        <div className="space-y-4">
+                    <TabsContent value="employer" className="px-6 pt-4">
+                        <div className="space-y-3">
                             <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Bharat Solutions Ltd." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person (Optional)</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="contactPerson" render={({ field }) => (<FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input placeholder="Rohan Gupta" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="employerEmail" render={({ field }) => (<FormItem><FormLabel>Work Email</FormLabel><FormControl><Input type="email" placeholder="rohan@bharatsolutions.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="employerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number (Optional)</FormLabel><FormControl><Input type="tel" placeholder="+91 99887 76655" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="employerPhone" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" placeholder="+91 99887 76655" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="hiringNeeds" render={({ field }) => (<FormItem><FormLabel>Hiring For (Role)</FormLabel><FormControl><Input placeholder="e.g., Senior Frontend Developer" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </TabsContent>
                 </Tabs>
                 
-                <DialogFooter className="px-6 pb-6 pt-2">
+                <DialogFooter className="px-6 pb-6 pt-4">
                     <Button type="submit" className="w-full gradient-saffron" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit
