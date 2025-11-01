@@ -124,7 +124,7 @@ function CreateBlogPageContent() {
 
       await setDoc(docRef, {
         ...values,
-        id: docRef.id, // Store the document ID
+        id: docRef.id,
         slug: slug,
         publicationDate: serverTimestamp(),
       });
