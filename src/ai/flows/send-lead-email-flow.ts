@@ -107,7 +107,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     }
 
     const mailOptions: nodemailer.SendMailOptions = {
-      from: `"Hiring Dekho Leads" <${process.env.SMTP_USER}>`,
+      from: `"Hiring Dekho Leads" <leads@hiringdekho.com>`,
       to: toEmail,
       subject: subject,
       html: htmlContent,
@@ -121,7 +121,7 @@ const sendLeadEmailFlow = ai.defineFlow(
     } catch (error) {
       console.error('Error sending email:', error);
       // In a real-world scenario, you might want to throw a more specific error
-      throw new Error('Failed to send email.');
+      throw new Error('Failed to send email. Check your SMTP credentials and server connection.');
     }
   }
 );
