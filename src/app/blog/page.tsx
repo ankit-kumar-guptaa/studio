@@ -46,7 +46,7 @@ export default function BlogPage() {
                     : new Date(post.publicationDate as string);
                 
                 // Fallback for old posts without a slug
-                const href = post.slug ? `/blog/${post.slug}` : `/blog/${post.id}`;
+                const href = `/blog/${post.slug || post.id}`;
 
                 return (
                   <Card key={post.id} className="flex flex-col overflow-hidden">
