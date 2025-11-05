@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Logo } from '@/components/icons/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail, ActionCodeSettings } from 'firebase/auth';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase/provider';
@@ -52,7 +52,14 @@ export default function ForgotPasswordPage() {
       if (!auth) {
         throw new Error('Firebase not initialized');
       }
-      await sendPasswordResetEmail(auth, data.email);
+
+      const actionCodeSettings: ActionCodeSettings = {
+        url: 'https://www.hiringdekho.com/login',
+        handleCodeInApp: true,
+      };
+      
+      await sendPasswordResetEmail(auth, data.email, actionCodeSettings);
+      
       toast({
         title: 'Password Reset Link Sent',
         description: 'Please check your email to reset your password.',
