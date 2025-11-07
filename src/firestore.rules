@@ -11,14 +11,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Check for a custom claim on the user's auth token.
     function isSuperAdmin() {
-        return request.auth.token.isSuperAdmin == true;
+        // Direct email check is simpler and more reliable for this client-side-only setup.
+        return request.auth.token.email == 'support@itsahayata.com';
     }
     
-    // Check for a custom claim on the user's auth token.
     function isSeoManager() {
-        return request.auth.token.isSeoManager == true;
+        // This remains a client-side role for now, but we can add a claim later if needed.
+        // For rules, we'll rely on Super Admin to manage SEO managers.
+        // Direct writes by SEO managers will be checked field-by-field.
+        return false; // Prevent direct writes unless specified elsewhere.
     }
 
     /**
@@ -77,7 +79,7 @@ service cloud.firestore {
         allow read: if true;
         allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || isSuperAdmin();
         allow update: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin() ||
-                         (isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']));
+                         (request.auth.token.isSeoManager == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']));
         allow delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();
     }
     
@@ -99,7 +101,7 @@ service cloud.firestore {
     match /blogs/{blogId} {
       allow read: if true;
       allow create, update, delete: if isSuperAdmin();
-      allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
+      allow update: if request.auth.token.isSeoManager == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
     }
 
     /**
@@ -112,10 +114,11 @@ service cloud.firestore {
     }
     
     /**
-     * @description SEO Manager profiles. Only Super Admins can manage them.
+     * @description SEO Manager profiles. Public read for login, write only for Super Admins.
      */
     match /seoManagers/{seoManagerId} {
-        allow read, write: if isSuperAdmin();
+        allow read: if true;
+        allow write: if isSuperAdmin();
     }
   }
 }
