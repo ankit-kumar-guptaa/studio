@@ -25,6 +25,9 @@ export interface JobPost {
   postDate: Timestamp | Date | string; // Allow serializable string
   companyName?: string;
   companyLogoUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface JobApplication {
@@ -62,6 +65,9 @@ export interface Blog {
   publicationDate: Timestamp | string;
   imageUrl?: string;
   imageHint?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 
@@ -125,4 +131,12 @@ export interface CompanyReview {
     companyName: string;
     companyLogo?: string;
     jobSeekerName: string;
+}
+
+export interface SEOManager {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    password?: string; // Stored for simulation, not for production
 }

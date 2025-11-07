@@ -10,20 +10,29 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    function isSuperAdmin() {
+        return request.auth.token.isSuperAdmin == true;
+    }
+    
+    // SEO Manager has read-only access to specific collections
+    // and can only update SEO fields.
+    function isSeoManager() {
+        return request.auth.token.isSeoManager == true;
+    }
 
     /**
      * @description Public read access for job seekers, write access is restricted to owner or Super Admin.
      */
     match /jobSeekers/{jobSeekerId} {
       allow read: if true;
-      // Allow create if user is owner, or if super admin is creating
-      allow create: if isOwner(jobSeekerId) || request.auth == null; 
-      allow update: if isOwner(jobSeekerId) || request.auth == null;
-      allow delete: if isOwner(jobSeekerId) || request.auth == null;
+      allow create: if isOwner(jobSeekerId) || request.auth == null; // Allow creation on signup
+      allow update: if isOwner(jobSeekerId) || isSuperAdmin();
+      allow delete: if isOwner(jobSeekerId) || isSuperAdmin();
     }
     
     match /jobSeekers/{jobSeekerId}/{documents=**} {
-      allow read, write: if isOwner(jobSeekerId) || request.auth == null;
+      allow read, write: if isOwner(jobSeekerId) || isSuperAdmin();
     }
 
     /**
@@ -35,15 +44,17 @@ service cloud.firestore {
         }
       allow read: if true;
       allow create: if isOwner(employerId) || request.auth == null;
-      allow update: if isExistingOwner() || request.auth == null;
-      allow delete: if isExistingOwner() || request.auth == null;
+      allow update: if isExistingOwner() || isSuperAdmin();
+      allow delete: if isExistingOwner() || isSuperAdmin();
     }
 
     /**
      * @description Employer's own job posts. Write restricted to owner or admin.
      */
     match /employers/{employerId}/jobPosts/{jobPostId} {
-      allow read, write: if isOwner(employerId) || request.auth == null;
+      allow read, write: if isOwner(employerId) || isSuperAdmin();
+      // SEO Manager can only update SEO fields
+      allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
     }
 
     /**
@@ -65,32 +76,31 @@ service cloud.firestore {
      */
     match /jobPosts/{jobPostId} {
         allow read: if true;
-        // Allow create if user is signed in OR if the job is being posted by SUPER_ADMIN
-        allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || request.auth.token.isSuperAdmin == true;
-        // Allow update/delete for owner or super admin
-        allow update, delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || request.auth.token.isSuperAdmin == true;
+        allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || isSuperAdmin();
+        allow update: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin() ||
+                         (isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']));
+        allow delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();
     }
     
     /**
      * @description Applications for SUPER_ADMIN job posts.
-     * Super admin can read/update/delete.
-     * Job seekers can only create.
      */
     match /jobPosts/{jobPostId}/applications/{applicationId} {
         function isJobSeekerOwner() {
           return isSignedIn() && request.auth.uid == request.resource.data.jobSeekerId;
         }
-       allow read, update, delete: if request.auth.token.isSuperAdmin == true; // Allows super admin full control
-       allow create: if isJobSeekerOwner(); // Job seekers can apply
+       allow read, update, delete: if isSuperAdmin();
+       allow create: if isJobSeekerOwner();
     }
 
 
     /**
-     * @description Public read for blogs. Write access for admins only.
+     * @description Public read for blogs. Admins can write, SEO managers can update SEO fields.
      */
     match /blogs/{blogId} {
       allow read: if true;
-      allow create, update, delete: if request.auth.token.isSuperAdmin == true; // Allow admins to write
+      allow create, update, delete: if isSuperAdmin();
+      allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
     }
 
     /**
@@ -99,7 +109,14 @@ service cloud.firestore {
     match /companyReviews/{companyReviewId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow write: if false; // Can be changed to allow admins/owners
+      allow write: if false; 
+    }
+    
+    /**
+     * @description SEO Manager profiles. Only Super Admins can manage them.
+     */
+    match /seoManagers/{seoManagerId} {
+        allow read, write: if isSuperAdmin();
     }
   }
 }

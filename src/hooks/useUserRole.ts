@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from './useAuth.tsx';
+import { useAuth } from './useAuth';
 
-type UserRole = 'admin' | 'employer' | 'job-seeker' | 'none';
+type UserRole = 'admin' | 'employer' | 'job-seeker' | 'seo-manager' | 'none';
 
 export function useUserRole() {
   const { user, firestore, isUserLoading } = useFirebase();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSeoManager } = useAuth();
   const [userRole, setUserRole] = useState<UserRole>('none');
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
@@ -20,6 +20,13 @@ export function useUserRole() {
           setUserRole('admin');
           setIsRoleLoading(false);
           return;
+      }
+      
+      // Check 2: Is the user an SEO manager?
+      if (isSeoManager) {
+        setUserRole('seo-manager');
+        setIsRoleLoading(false);
+        return;
       }
       
       // Don't do anything until Firebase auth state is resolved.
@@ -37,7 +44,7 @@ export function useUserRole() {
       // Start the role checking process.
       setIsRoleLoading(true);
 
-      // Check 2: Is the user in the 'employers' collection?
+      // Check 3: Is the user in the 'employers' collection?
       try {
         const employerRef = doc(firestore, 'employers', user.uid);
         const employerSnap = await getDoc(employerRef);
@@ -47,12 +54,11 @@ export function useUserRole() {
           return;
         }
       } catch (e) {
-        // This might happen if rules deny access, which is fine.
         console.warn("Could not check employer role:", e);
       }
 
 
-      // Check 3: Is the user in the 'jobSeekers' collection?
+      // Check 4: Is the user in the 'jobSeekers' collection?
       try {
         const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
         const jobSeekerSnap = await getDoc(jobSeekerRef);
@@ -72,7 +78,7 @@ export function useUserRole() {
     };
 
     fetchUserRole();
-  }, [user, firestore, isUserLoading, isAdmin]);
+  }, [user, firestore, isUserLoading, isAdmin, isSeoManager]);
 
   return { userRole, isRoleLoading };
 }

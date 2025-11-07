@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useEffect, Suspense } from 'react';
+import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Loader2, Users, UserPlus, PlusCircle, LineChart, LayoutDashboard } from 'lucide-react';
+import { Loader2, Users, UserPlus, PlusCircle, LineChart, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
@@ -14,7 +14,7 @@ import { PostJobForm } from '@/components/admin/PostJobForm';
 import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { BlogManagement } from '@/components/admin/BlogManagement';
-import { Suspense } from 'react';
+import { SeoManagementDashboard } from '@/components/admin/SeoManagementDashboard';
 
 function AdminPageContent() {
     const { isUserLoading } = useFirebase();
@@ -51,12 +51,13 @@ function AdminPageContent() {
             </div>
             
             <Tabs defaultValue={defaultTab}>
-                <TabsList className="grid w-full grid-cols-1 md:grid-cols-5 h-auto">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 h-auto">
                     <TabsTrigger value="management"><Users className="mr-2 h-4 w-4" /> User & Job Management</TabsTrigger>
                      <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Platform Analytics</TabsTrigger>
                      <TabsTrigger value="blog-management"><LayoutDashboard className="mr-2 h-4 w-4" /> Blog Management</TabsTrigger>
                     <TabsTrigger value="create-candidate"><UserPlus className="mr-2 h-4 w-4" /> Create Candidate Profile</TabsTrigger>
                     <TabsTrigger value="post-job"><PlusCircle className="mr-2 h-4 w-4" /> Post a Job</TabsTrigger>
+                    <TabsTrigger value="seo-management"><ShieldCheck className="mr-2 h-4 w-4" /> SEO Management</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="management">
@@ -97,6 +98,10 @@ function AdminPageContent() {
                             <PostJobForm />
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="seo-management">
+                    <SeoManagementDashboard />
                 </TabsContent>
             </Tabs>
         </div>
