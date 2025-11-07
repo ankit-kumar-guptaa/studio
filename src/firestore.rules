@@ -11,16 +11,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Super Admin is identified by a specific email address.
+    // Super Admin is identified by a specific UID.
     function isSuperAdmin() {
-        return isSignedIn() && request.auth.token.email == 'support@itsahayata.com';
+        // This UID corresponds to the user with email 'support@itsahayata.com'
+        return isSignedIn() && request.auth.uid == 'gHZ9n7s2b9X8fJ2kP3s5t8YxVOE2';
     }
     
     // SEO Manager has read-only access to specific collections
     // and can only update SEO fields.
     function isSeoManager() {
         // This relies on a custom claim being set, which our current setup doesn't do.
-        // The logic in useAuth.tsx and useUserRole.tsx handles this client-side.
+        // The logic in useAuth.tsx handles this client-side.
         // For rules, we'll assume a future implementation might set a claim.
         return request.auth.token.isSeoManager == true;
     }
@@ -58,7 +59,7 @@ service cloud.firestore {
     match /employers/{employerId}/jobPosts/{jobPostId} {
       allow read, write: if isOwner(employerId) || isSuperAdmin();
       // This rule is tricky with client-side only roles. Assuming isSeoManager() would be implemented via claims.
-      // allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
+      allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
     }
 
     /**
@@ -82,8 +83,8 @@ service cloud.firestore {
         allow read: if true;
         allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || isSuperAdmin();
         // SEO Manager updates are tricky without claims. For now, allow super admin.
-        allow update: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();
-                         // (isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']));
+        allow update: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin() ||
+                         (isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']));
         allow delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();
     }
     
@@ -105,8 +106,7 @@ service cloud.firestore {
     match /blogs/{blogId} {
       allow read: if true;
       allow create, update, delete: if isSuperAdmin();
-      // SEO manager updates are also tricky without claims.
-      // allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
+      allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
     }
 
     /**
