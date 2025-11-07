@@ -20,18 +20,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from '@/hooks/useAuth';
-
 
 export function SeoManagementDashboard() {
   const { firestore } = useFirebase();
-  const { isAdmin, isAuthLoading } = useAuth();
   const { toast } = useToast();
   const [seoManagers, setSeoManagers] = useState<SEOManager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthLoading && isAdmin && firestore) {
+    if (firestore) {
       const fetchManagers = async () => {
         setIsLoading(true);
         try {
@@ -51,11 +48,8 @@ export function SeoManagementDashboard() {
         }
       };
       fetchManagers();
-    } else if (!isAuthLoading && !isAdmin) {
-      setIsLoading(false);
-      setSeoManagers([]);
     }
-  }, [isAdmin, isAuthLoading, firestore, toast]);
+  }, [firestore, toast]);
 
   const handleDelete = async (id: string) => {
     if (!firestore) return;
@@ -68,7 +62,6 @@ export function SeoManagementDashboard() {
     }
   };
 
-  const displayLoading = isLoading || isAuthLoading;
 
   return (
     <Card>
@@ -82,7 +75,7 @@ export function SeoManagementDashboard() {
              <Table>
                 <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                 <TableBody>
-                    {displayLoading ? (
+                    {isLoading ? (
                         <TableRow><TableCell colSpan={3} className="text-center h-24"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
                     ) : seoManagers && seoManagers.length > 0 ? (
                         seoManagers.map(manager => (

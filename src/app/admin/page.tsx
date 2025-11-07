@@ -13,22 +13,26 @@ import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { BlogManagement } from '@/components/admin/BlogManagement';
 import { SeoManagementDashboard } from '@/components/admin/SeoManagementDashboard';
-import { useAuth } from '@/hooks/useAuth';
+import { useFirebase } from '@/firebase';
+
+const ADMIN_EMAIL = 'support@itsahayata.com';
 
 function AdminPageContent() {
-    const { userRole, isAuthLoading } = useAuth();
+    const { user, isUserLoading } = useFirebase();
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const defaultTab = searchParams.get('tab') || "management";
 
+    const isAdmin = user?.email === ADMIN_EMAIL;
+
     useEffect(() => {
-        if (!isAuthLoading && userRole !== 'admin') {
+        if (!isUserLoading && !isAdmin) {
             router.push('/login'); // Redirect non-admins to main login
         }
-    }, [isAuthLoading, userRole, router]);
+    }, [isUserLoading, isAdmin, router]);
 
-    if (isAuthLoading || userRole !== 'admin') {
+    if (isUserLoading || !isAdmin) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />

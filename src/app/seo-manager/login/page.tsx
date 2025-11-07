@@ -26,7 +26,6 @@ import { Logo } from '@/components/icons/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { useFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { SEOManager } from '@/lib/types';
@@ -43,14 +42,15 @@ export default function SeoManagerLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { isSeoManager, loginAsSeoManager, isAuthLoading } = useAuth();
   const { firestore } = useFirebase();
 
+  // Check for existing session on page load
   useEffect(() => {
-    if (!isAuthLoading && isSeoManager) {
+    const seoManagerSession = sessionStorage.getItem('seo-manager');
+    if (seoManagerSession) {
       router.push('/seo-manager');
     }
-  }, [isSeoManager, isAuthLoading, router]);
+  }, [router]);
 
 
   const form = useForm<FormData>({
@@ -83,7 +83,8 @@ export default function SeoManagerLoginPage() {
         const seoManagerData = seoManagerDoc.data() as SEOManager;
 
         if (seoManagerData.password === data.password) {
-            loginAsSeoManager(seoManagerData);
+            // Use sessionStorage for simple, non-Firebase auth
+            sessionStorage.setItem('seo-manager', JSON.stringify(seoManagerData));
             toast({ title: 'Login Successful', description: 'Welcome, SEO Manager!' });
             router.push('/seo-manager');
         } else {
@@ -95,14 +96,6 @@ export default function SeoManagerLoginPage() {
         setIsLoading(false);
     }
   };
-  
-  if (isAuthLoading || isSeoManager) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-secondary">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary">

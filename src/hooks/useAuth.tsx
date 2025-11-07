@@ -6,18 +6,17 @@ import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 const ADMIN_EMAIL = 'support@itsahayata.com';
-const SEO_MANAGER_AUTH_KEY = 'seo_manager_auth_token';
 
 type UserRole = 'admin' | 'employer' | 'job-seeker' | 'seo-manager' | 'none';
 
 interface AuthContextType {
   userRole: UserRole;
   isAuthLoading: boolean;
-  logout: () => void;
   seoManager: SEOManager | null;
-  loginAsSeoManager: (manager: SEOManager) => void;
+  setSeoManager: (manager: SEOManager | null) => void;
   isAdmin: boolean;
   isSeoManager: boolean;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,42 +24,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { user, firestore, isUserLoading: isFirebaseUserLoading } = useFirebase();
   const [userRole, setUserRole] = useState<UserRole>('none');
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [seoManager, setSeoManager] = useState<SEOManager | null>(null);
+  const [isRoleLoading, setIsRoleLoading] = useState(true);
+  const [seoManager, setSeoManagerState] = useState<SEOManager | null>(null);
 
   useEffect(() => {
     const determineRole = async () => {
-      setIsAuthLoading(true);
+      setIsRoleLoading(true);
+
+      // SEO Manager is handled by session storage on its specific pages, so we don't check for it here.
 
       if (isFirebaseUserLoading) {
         return; 
       }
 
-      // Check 1: Super Admin via Firebase Auth email
       if (user?.email === ADMIN_EMAIL) {
         setUserRole('admin');
-        setIsAuthLoading(false);
+        setIsRoleLoading(false);
         return;
-      }
-      
-      // Check 2: SEO Manager via localStorage 
-      const seoManagerToken = localStorage.getItem(SEO_MANAGER_AUTH_KEY);
-      if (seoManagerToken) {
-        try {
-          const managerData = JSON.parse(seoManagerToken);
-          setSeoManager(managerData);
-          setUserRole('seo-manager');
-          setIsAuthLoading(false);
-          return;
-        } catch (e) {
-          console.error("Clearing corrupted SEO manager token", e);
-          localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
-        }
       }
 
       if (!user || !firestore) {
         setUserRole('none');
-        setIsAuthLoading(false);
+        setIsRoleLoading(false);
         return;
       }
       
@@ -69,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const employerSnap = await getDoc(employerRef);
         if (employerSnap.exists()) {
           setUserRole('employer');
-          setIsAuthLoading(false);
+          setIsRoleLoading(false);
           return;
         }
 
@@ -77,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const jobSeekerSnap = await getDoc(jobSeekerRef);
         if (jobSeekerSnap.exists()) {
           setUserRole('job-seeker');
-          setIsAuthLoading(false);
+          setIsRoleLoading(false);
           return;
         }
       } catch (e) {
@@ -85,32 +70,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setUserRole('none');
-      setIsAuthLoading(false);
+      setIsRoleLoading(false);
     };
 
     determineRole();
   }, [user, firestore, isFirebaseUserLoading]);
 
-  const loginAsSeoManager = (manager: SEOManager) => {
-    localStorage.setItem(SEO_MANAGER_AUTH_KEY, JSON.stringify(manager));
-    setSeoManager(manager);
-    setUserRole('seo-manager');
-  };
-
   const logout = () => {
-    localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
-    setSeoManager(null);
+    // This will be called by the header to sign out from Firebase
+    // SEO manager logout is handled by clearing session storage on its page
     setUserRole('none');
+    setSeoManagerState(null);
+    sessionStorage.removeItem('seo-manager');
   };
 
   const value = {
     userRole,
-    isAuthLoading,
-    logout,
+    isAuthLoading: isFirebaseUserLoading || isRoleLoading,
     seoManager,
-    loginAsSeoManager,
+    setSeoManager: setSeoManagerState,
     isAdmin: userRole === 'admin',
-    isSeoManager: userRole === 'seo-manager',
+    isSeoManager: !!seoManager,
+    logout,
   };
 
   return (

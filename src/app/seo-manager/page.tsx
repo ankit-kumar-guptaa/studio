@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -8,21 +8,31 @@ import { Loader2, BookOpen, Briefcase } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SeoBlogManagement } from '@/components/seo-manager/SeoBlogManagement';
 import { SeoJobManagement } from '@/components/seo-manager/SeoJobManagement';
+import type { SEOManager } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
 
 function SeoManagerPageContent() {
-    const { isSeoManager, isAuthLoading } = useAuth();
+    const [seoManager, setSeoManager] = useState<SEOManager | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const { setSeoManager: setGlobalSeoManager } = useAuth();
+    
     const router = useRouter();
     const searchParams = useSearchParams();
     const defaultTab = searchParams.get('tab') || "blog-seo";
 
     useEffect(() => {
-        if (!isAuthLoading && !isSeoManager) {
+        const seoManagerData = sessionStorage.getItem('seo-manager');
+        if (seoManagerData) {
+            const manager = JSON.parse(seoManagerData);
+            setSeoManager(manager);
+            setGlobalSeoManager(manager);
+        } else {
             router.push('/seo-manager/login');
         }
-    }, [isSeoManager, isAuthLoading, router]);
+        setIsLoading(false);
+    }, [router, setGlobalSeoManager]);
 
-    if (isAuthLoading || !isSeoManager) {
+    if (isLoading || !seoManager) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -37,7 +47,7 @@ function SeoManagerPageContent() {
                 <div className="container mx-auto max-w-7xl px-4">
                      <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight">SEO Manager Dashboard</h1>
-                        <p className="text-muted-foreground">Manage on-page SEO for blog posts and job listings.</p>
+                        <p className="text-muted-foreground">Manage on-page SEO for blog posts and job listings. Welcome, {seoManager.firstName}!</p>
                     </div>
                     <Tabs defaultValue={defaultTab}>
                         <TabsList className="grid w-full grid-cols-2">
