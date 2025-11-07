@@ -43,14 +43,14 @@ export default function SeoManagerLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { isSeoManager, loginAsSeoManager } = useAuth();
+  const { isSeoManager, loginAsSeoManager, isAuthLoading } = useAuth();
   const { firestore } = useFirebase();
 
   useEffect(() => {
-    if (isSeoManager) {
+    if (!isAuthLoading && isSeoManager) {
       router.push('/seo-manager');
     }
-  }, [isSeoManager, router]);
+  }, [isSeoManager, isAuthLoading, router]);
 
 
   const form = useForm<FormData>({
@@ -96,7 +96,7 @@ export default function SeoManagerLoginPage() {
     }
   };
   
-  if (isSeoManager) {
+  if (isAuthLoading || isSeoManager) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
