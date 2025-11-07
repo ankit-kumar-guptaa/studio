@@ -114,10 +114,11 @@ service cloud.firestore {
     }
     
     /**
-     * @description SEO Manager profiles. Only Super Admins can manage them.
+     * @description SEO Manager profiles. Public read for login, write only for Super Admins.
      */
     match /seoManagers/{seoManagerId} {
-        allow read, write: if isSuperAdmin();
+        allow read: if true;
+        allow write: if isSuperAdmin();
     }
   }
 }
