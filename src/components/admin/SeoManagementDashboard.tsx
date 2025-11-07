@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, doc, setDoc, deleteDoc, query } from 'firebase/firestore';
+import { useState, useMemo, useEffect } from 'react';
+import { useFirebase } from '@/firebase';
+import { collection, addDoc, doc, setDoc, deleteDoc, query, getDocs } from 'firebase/firestore';
 import type { SEOManager } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,17 +50,32 @@ export function SeoManagementDashboard() {
   const { userRole, isRoleLoading } = useUserRole();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
+  const [seoManagers, setSeoManagers] = useState<SEOManager[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Determine if we should fetch data. Only fetch if the user is a confirmed admin.
-  const shouldFetchData = !isRoleLoading && userRole === 'admin';
-
-  const seoManagersQuery = useMemoFirebase(() => {
-    // Only create the query if we should fetch the data.
-    if (!firestore || !shouldFetchData) return null;
-    return query(collection(firestore, 'seoManagers'));
-  }, [firestore, shouldFetchData]);
-
-  const { data: seoManagers, isLoading, setData: setSeoManagers } = useCollection<SEOManager>(seoManagersQuery);
+  useEffect(() => {
+    // Only fetch data if the user is confirmed to be an admin.
+    if (!isRoleLoading && userRole === 'admin' && firestore) {
+      setIsLoading(true);
+      const seoManagersQuery = query(collection(firestore, 'seoManagers'));
+      getDocs(seoManagersQuery)
+        .then((snapshot) => {
+          const managers = snapshot.docs.map(doc => doc.data() as SEOManager);
+          setSeoManagers(managers);
+        })
+        .catch(error => {
+          console.error("Error fetching SEO managers:", error);
+          toast({ variant: 'destructive', title: 'Fetch Failed', description: error.message });
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else if (!isRoleLoading) {
+        // If role is not admin, stop loading and show an empty state.
+        setIsLoading(false);
+    }
+  }, [userRole, isRoleLoading, firestore, toast]);
+  
 
   const form = useForm<SeoManagerFormData>({
     resolver: zodResolver(seoManagerSchema),
@@ -77,14 +92,12 @@ export function SeoManagementDashboard() {
     setIsCreating(true);
 
     const newId = uuidv4();
-    const managerData = {
+    const managerData: SEOManager = {
         id: newId,
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
-        // In a real app, you'd use Firebase Auth to create a user and store only the UID.
-        // For this simulation, we'll store the data directly.
-        password: values.password, // This is NOT secure and only for demonstration
+        password: values.password,
     };
 
     try {
@@ -94,7 +107,7 @@ export function SeoManagementDashboard() {
         description: 'The new SEO manager account has been created.',
       });
       form.reset();
-      setSeoManagers(prev => [...(prev || []), managerData]);
+      setSeoManagers(prev => [...prev, managerData]);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -111,7 +124,7 @@ export function SeoManagementDashboard() {
     try {
       await deleteDoc(doc(firestore, 'seoManagers', id));
       toast({ title: 'SEO Manager Deleted' });
-      setSeoManagers(prev => prev?.filter(m => m.id !== id) || null);
+      setSeoManagers(prev => prev.filter(m => m.id !== id));
     } catch (error: any) {
        toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
     }
