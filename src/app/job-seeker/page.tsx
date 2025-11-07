@@ -3,27 +3,25 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { JobSeekerDashboard } from "@/components/job-seeker/JobSeekerDashboard";
 import { Loader2 } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 
 function JobSeekerPageContent() {
-  const { isUserLoading } = useFirebase();
-  const { userRole, isRoleLoading } = useUserRole();
+  const { userRole, isAuthLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !isRoleLoading) {
+    if (!isAuthLoading) {
       if (userRole !== 'job-seeker') {
         router.push('/login');
       }
     }
-  }, [isUserLoading, isRoleLoading, userRole, router]);
+  }, [isAuthLoading, userRole, router]);
 
-  if (isUserLoading || isRoleLoading) {
+  if (isAuthLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

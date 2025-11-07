@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 
 
 const seoManagerSchema = z.object({
@@ -47,15 +47,15 @@ type SeoManagerFormData = z.infer<typeof seoManagerSchema>;
 
 export function SeoManagementDashboard() {
   const { firestore } = useFirebase();
-  const { userRole, isRoleLoading } = useUserRole();
+  const { isAdmin, isAuthLoading } = useAuth();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [seoManagers, setSeoManagers] = useState<SEOManager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Only fetch data if the user is confirmed to be an admin.
-    if (!isRoleLoading && userRole === 'admin' && firestore) {
+    // Only fetch data if the auth state is resolved and the user is an admin.
+    if (!isAuthLoading && isAdmin && firestore) {
       const fetchManagers = async () => {
         setIsLoading(true);
         try {
@@ -71,11 +71,11 @@ export function SeoManagementDashboard() {
         }
       };
       fetchManagers();
-    } else if (!isRoleLoading) {
-        // If role is not admin or firestore is not ready, stop loading.
-        setIsLoading(false);
+    } else if (!isAuthLoading) {
+      // If auth is resolved but user is not admin, stop loading.
+      setIsLoading(false);
     }
-  }, [userRole, isRoleLoading, firestore, toast]);
+  }, [isAdmin, isAuthLoading, firestore, toast]);
   
 
   const form = useForm<SeoManagerFormData>({
@@ -131,7 +131,7 @@ export function SeoManagementDashboard() {
     }
   };
 
-  const displayLoading = isLoading || isRoleLoading;
+  const displayLoading = isLoading || isAuthLoading;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">

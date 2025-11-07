@@ -12,12 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 
 function ApplicantProfilePage() {
     const { firestore } = useFirebase();
-    const { userRole, isRoleLoading } = useUserRole();
+    const { isAuthLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
     const applicantId = params.applicantId as string;
@@ -70,14 +70,14 @@ function ApplicantProfilePage() {
             }
         };
 
-        if (!isRoleLoading) {
+        if (!isAuthLoading) {
             fetchApplicantData();
         }
 
-    }, [firestore, applicantId, isRoleLoading]);
+    }, [firestore, applicantId, isAuthLoading]);
 
 
-    if (isLoading || isRoleLoading) {
+    if (isLoading || isAuthLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />

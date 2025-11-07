@@ -23,11 +23,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useRouter } from 'next/navigation';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { JobSeeker, Employer } from '@/lib/types';
-import { useAuth } from '@/hooks/useAuth';
 
 
 const defaultNavLinks = [
@@ -39,8 +38,7 @@ const defaultNavLinks = [
 
 export function Header() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
-  const { userRole, isRoleLoading } = useUserRole();
-  const { isSeoManager, seoManager, logout: customLogout } = useAuth();
+  const { userRole, isAuthLoading, logout, seoManager } = useAuth();
   const router = useRouter();
   
   const userDocRef = useMemoFirebase(() => {
@@ -54,13 +52,13 @@ export function Header() {
   const profilePictureUrl = (userData as Employer)?.companyLogoUrl || (userData as JobSeeker)?.profilePictureUrl || user?.photoURL;
   
   const handleLogout = async () => {
-    if (isSeoManager) {
-      customLogout();
-      router.push('/');
-    } else if (auth) {
+    // This single logout function handles all user types.
+    // The specific logic is inside the useAuth hook.
+    logout();
+    if (auth) {
       await signOut(auth);
-      router.push('/');
     }
+    router.push('/');
   };
 
   const getInitials = (name: string | null | undefined) => {
@@ -73,9 +71,9 @@ export function Header() {
   };
 
   const getDashboardLink = () => {
-    if (userRole === 'admin') return '/admin';
-    if (isSeoManager) return '/seo-manager';
     switch(userRole) {
+      case 'admin': return '/admin';
+      case 'seo-manager': return '/seo-manager';
       case 'employer': return '/employer';
       case 'job-seeker': return '/job-seeker';
       default: return '/';
@@ -83,17 +81,22 @@ export function Header() {
   }
   
   const getDisplayName = () => {
-    if (userRole === 'admin') return 'Super Admin';
-    if (isSeoManager) return `${seoManager?.firstName} ${seoManager?.lastName}`;
-    return user?.displayName;
+     switch(userRole) {
+      case 'admin': return 'Super Admin';
+      case 'seo-manager': return `${seoManager?.firstName} ${seoManager?.lastName}`;
+      default: return user?.displayName;
+    }
   }
   
   const getDisplayEmail = () => {
-     if (isSeoManager) return seoManager?.email;
-     return user?.email;
+    switch(userRole) {
+      case 'admin': return user?.email;
+      case 'seo-manager': return seoManager?.email;
+      default: return user?.email;
+    }
   }
   
-  const isLoggedIn = user || isSeoManager;
+  const isLoggedIn = userRole !== 'none';
 
   const navLinks = userRole === 'employer' 
     ? [
@@ -129,14 +132,14 @@ export function Header() {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <div className="hidden items-center space-x-2 md:flex">
-            {isUserLoading || isRoleLoading ? (
+            {isUserLoading || isAuthLoading ? (
               <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
             ) : isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-9 w-9">
-                      {(userRole === 'admin' || isSeoManager) ? (
+                      {(userRole === 'admin' || userRole === 'seo-manager') ? (
                         <AvatarFallback><Shield /></AvatarFallback>
                       ) : (
                         <>
@@ -158,7 +161,7 @@ export function Header() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push(getDashboardLink())}>
-                    {(userRole === 'admin' || isSeoManager) && <Shield className="mr-2 h-4 w-4" />}
+                    {(userRole === 'admin' || userRole === 'seo-manager') && <Shield className="mr-2 h-4 w-4" />}
                     {userRole === 'employer' && <Briefcase className="mr-2 h-4 w-4" />}
                     {userRole === 'job-seeker' && <User className="mr-2 h-4 w-4" />}
                     <span>Dashboard</span>

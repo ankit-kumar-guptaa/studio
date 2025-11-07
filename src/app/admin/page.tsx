@@ -13,22 +13,22 @@ import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { BlogManagement } from '@/components/admin/BlogManagement';
 import { SeoManagementDashboard } from '@/components/admin/SeoManagementDashboard';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 
 function AdminPageContent() {
-    const { userRole, isRoleLoading } = useUserRole();
+    const { userRole, isAuthLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const defaultTab = searchParams.get('tab') || "management";
 
     useEffect(() => {
-        if (!isRoleLoading && userRole !== 'admin') {
+        if (!isAuthLoading && userRole !== 'admin') {
             router.push('/login'); // Redirect non-admins to main login
         }
-    }, [isRoleLoading, userRole, router]);
+    }, [isAuthLoading, userRole, router]);
 
-    if (isRoleLoading || userRole !== 'admin') {
+    if (isAuthLoading || userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />

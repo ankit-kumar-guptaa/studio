@@ -8,22 +8,21 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Loader2 } from 'lucide-react';
 import { EmployerDashboard } from '@/components/employer/EmployerDashboard';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function EmployerPage() {
-  const { isUserLoading } = useFirebase();
-  const { userRole, isRoleLoading } = useUserRole();
+  const { userRole, isAuthLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !isRoleLoading) {
+    if (!isAuthLoading) {
       if (userRole !== 'employer') {
         router.push('/login');
       }
     }
-  }, [isUserLoading, isRoleLoading, userRole, router]);
+  }, [isAuthLoading, userRole, router]);
 
-  if (isUserLoading || isRoleLoading) {
+  if (isAuthLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

@@ -10,20 +10,20 @@ import { Footer } from "@/components/layout/Footer";
 import { PostJobForm } from "@/components/admin/PostJobForm";
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
 function EditJobPageContent() {
-    const { userRole, isRoleLoading } = useUserRole();
+    const { userRole, isAuthLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
     const jobId = params.jobId as string;
     
     useEffect(() => {
-        if (!isRoleLoading && userRole !== 'admin') {
-            router.push('/super-admin/login');
+        if (!isAuthLoading && userRole !== 'admin') {
+            router.push('/login');
         }
-    }, [isRoleLoading, userRole, router]);
+    }, [isAuthLoading, userRole, router]);
 
     const { firestore, isUserLoading } = useFirebase();
 
@@ -34,7 +34,7 @@ function EditJobPageContent() {
 
     const { data: job, isLoading: isJobLoading } = useDoc<JobPost>(jobRef);
 
-    if (isUserLoading || isRoleLoading || isJobLoading || userRole !== 'admin') {
+    if (isUserLoading || isAuthLoading || isJobLoading || userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />

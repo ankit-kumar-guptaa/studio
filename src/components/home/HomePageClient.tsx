@@ -3,7 +3,7 @@
 import { useFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import { CandidateSearch } from '@/components/employer/CandidateSearch';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import { HeroSection } from './HeroSection';
 import { Testimonials } from './Testimonials';
 import { CtaSection } from './CtaSection';
@@ -65,9 +65,9 @@ function JobSeekerHomePage() {
 
 export function HomePageClient() {
   const { isUserLoading } = useFirebase();
-  const { userRole, isRoleLoading } = useUserRole();
+  const { userRole, isAuthLoading } = useAuth();
 
-  if (isUserLoading || isRoleLoading) {
+  if (isUserLoading || isAuthLoading) {
     return <LoadingSpinner />;
   }
   

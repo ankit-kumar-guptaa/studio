@@ -22,24 +22,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 
 const statusOptions: JobApplication['status'][] = ['Applied', 'Reviewed', 'Interviewing', 'Offered', 'Rejected'];
 
 
 function AdminJobApplicantsPageContent() {
   const { firestore } = useFirebase();
-  const { userRole, isRoleLoading } = useUserRole();
+  const { userRole, isAuthLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const jobId = params.jobId as string;
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!isRoleLoading && userRole !== 'admin') {
-      router.push('/super-admin/login');
+    if (!isAuthLoading && userRole !== 'admin') {
+      router.push('/login');
     }
-  }, [isRoleLoading, userRole, router]);
+  }, [isAuthLoading, userRole, router]);
 
   const applicationsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !jobId) return null;
@@ -79,7 +79,7 @@ function AdminJobApplicantsPageContent() {
   };
 
 
-  if (isRoleLoading) {
+  if (isAuthLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
