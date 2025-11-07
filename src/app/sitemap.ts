@@ -1,8 +1,31 @@
 import { MetadataRoute } from 'next';
-import { adminDb } from '@/lib/firebase-admin';
 import type { JobPost, Blog } from '@/lib/types';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+
 
 const BASE_URL = 'https://www.hiringdekho.com';
+
+async function initializeAdminApp() {
+    if (getApps().length > 0) {
+        return getFirestore();
+    }
+    
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+        : undefined;
+
+    if (serviceAccount) {
+        initializeApp({
+            credential: cert(serviceAccount)
+        });
+    } else {
+        // Fallback for environments where service account is auto-detected
+        initializeApp();
+    }
+    
+    return getFirestore();
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date().toISOString();
@@ -32,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let dynamicRoutes: MetadataRoute.Sitemap = [];
 
   try {
+    const adminDb = await initializeAdminApp();
     if (!adminDb) {
         throw new Error('Firestore Admin DB not initialized');
     }

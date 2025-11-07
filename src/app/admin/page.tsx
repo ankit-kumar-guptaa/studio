@@ -24,13 +24,15 @@ function AdminPageContent() {
 
     const defaultTab = searchParams.get('tab') || "management";
 
-    const isAdmin = user?.email === ADMIN_EMAIL;
+    const isAdmin = !isUserLoading && user?.email === ADMIN_EMAIL;
 
     useEffect(() => {
-        if (!isUserLoading && !isAdmin) {
-            router.push('/login'); // Redirect non-admins to main login
+        if (!isUserLoading && !user) {
+            router.push('/login'); // Not logged in at all
+        } else if (!isUserLoading && user && !isAdmin) {
+             router.push('/login'); // Logged in but not as admin
         }
-    }, [isUserLoading, isAdmin, router]);
+    }, [isUserLoading, user, isAdmin, router]);
 
     if (isUserLoading || !isAdmin) {
         return (

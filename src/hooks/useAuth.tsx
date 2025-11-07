@@ -12,10 +12,7 @@ type UserRole = 'admin' | 'employer' | 'job-seeker' | 'seo-manager' | 'none';
 interface AuthContextType {
   userRole: UserRole;
   isAuthLoading: boolean;
-  seoManager: SEOManager | null;
-  setSeoManager: (manager: SEOManager | null) => void;
   isAdmin: boolean;
-  isSeoManager: boolean;
   logout: () => void;
 }
 
@@ -25,51 +22,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { user, firestore, isUserLoading: isFirebaseUserLoading } = useFirebase();
   const [userRole, setUserRole] = useState<UserRole>('none');
   const [isRoleLoading, setIsRoleLoading] = useState(true);
-  const [seoManager, setSeoManagerState] = useState<SEOManager | null>(null);
 
   useEffect(() => {
     const determineRole = async () => {
       setIsRoleLoading(true);
 
-      // SEO Manager is handled by session storage on its specific pages, so we don't check for it here.
-
       if (isFirebaseUserLoading) {
         return; 
       }
 
-      if (user?.email === ADMIN_EMAIL) {
-        setUserRole('admin');
-        setIsRoleLoading(false);
-        return;
-      }
-
-      if (!user || !firestore) {
+      if (!user) {
         setUserRole('none');
         setIsRoleLoading(false);
         return;
       }
       
-      try {
-        const employerRef = doc(firestore, 'employers', user.uid);
-        const employerSnap = await getDoc(employerRef);
-        if (employerSnap.exists()) {
-          setUserRole('employer');
-          setIsRoleLoading(false);
-          return;
-        }
+      if (user.email === ADMIN_EMAIL) {
+        setUserRole('admin');
+        setIsRoleLoading(false);
+        return;
+      }
 
-        const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
-        const jobSeekerSnap = await getDoc(jobSeekerRef);
-        if (jobSeekerSnap.exists()) {
-          setUserRole('job-seeker');
-          setIsRoleLoading(false);
-          return;
-        }
-      } catch (e) {
-        console.warn("Error checking user role in Firestore:", e);
+      if (firestore) {
+          try {
+            const employerRef = doc(firestore, 'employers', user.uid);
+            const employerSnap = await getDoc(employerRef);
+            if (employerSnap.exists()) {
+              setUserRole('employer');
+              setIsRoleLoading(false);
+              return;
+            }
+
+            const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
+            const jobSeekerSnap = await getDoc(jobSeekerRef);
+            if (jobSeekerSnap.exists()) {
+              setUserRole('job-seeker');
+              setIsRoleLoading(false);
+              return;
+            }
+
+            const seoManagerRef = doc(firestore, 'seoManagers', user.uid);
+            const seoManagerSnap = await getDoc(seoManagerRef);
+            if (seoManagerSnap.exists()) {
+              setUserRole('seo-manager');
+              setIsRoleLoading(false);
+              return;
+            }
+
+          } catch (e) {
+            console.warn("Error checking user role in Firestore:", e);
+          }
       }
       
-      setUserRole('none');
+      setUserRole('none'); // Default if no role found
       setIsRoleLoading(false);
     };
 
@@ -77,20 +82,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user, firestore, isFirebaseUserLoading]);
 
   const logout = () => {
-    // This will be called by the header to sign out from Firebase
-    // SEO manager logout is handled by clearing session storage on its page
     setUserRole('none');
-    setSeoManagerState(null);
-    sessionStorage.removeItem('seo-manager');
   };
 
   const value = {
     userRole,
     isAuthLoading: isFirebaseUserLoading || isRoleLoading,
-    seoManager,
-    setSeoManager: setSeoManagerState,
     isAdmin: userRole === 'admin',
-    isSeoManager: !!seoManager,
     logout,
   };
 

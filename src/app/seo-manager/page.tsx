@@ -9,28 +9,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SeoBlogManagement } from '@/components/seo-manager/SeoBlogManagement';
 import { SeoJobManagement } from '@/components/seo-manager/SeoJobManagement';
 import type { SEOManager } from '@/lib/types';
-import { useAuth } from '@/hooks/useAuth';
 
 function SeoManagerPageContent() {
     const [seoManager, setSeoManager] = useState<SEOManager | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const { setSeoManager: setGlobalSeoManager } = useAuth();
     
     const router = useRouter();
     const searchParams = useSearchParams();
     const defaultTab = searchParams.get('tab') || "blog-seo";
 
     useEffect(() => {
-        const seoManagerData = sessionStorage.getItem('seo-manager');
-        if (seoManagerData) {
-            const manager = JSON.parse(seoManagerData);
-            setSeoManager(manager);
-            setGlobalSeoManager(manager);
-        } else {
+        try {
+            const seoManagerData = sessionStorage.getItem('seo-manager');
+            if (seoManagerData) {
+                const manager = JSON.parse(seoManagerData);
+                setSeoManager(manager);
+            } else {
+                router.push('/seo-manager/login');
+            }
+        } catch (error) {
+            console.error("Failed to parse SEO manager data from session storage", error);
             router.push('/seo-manager/login');
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
-    }, [router, setGlobalSeoManager]);
+    }, [router]);
 
     if (isLoading || !seoManager) {
         return (
