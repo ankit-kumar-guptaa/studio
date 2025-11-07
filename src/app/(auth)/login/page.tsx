@@ -66,7 +66,7 @@ export default function LoginPage() {
     if (!firestore) return;
     
     // Immediately redirect if it's the super admin
-    if (user.email === 'support@algoweb.in') {
+    if (user.email === 'support@itsahayata.com') {
       router.push('/admin');
       return;
     }
@@ -99,7 +99,7 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
       // For regular users, check email verification. Admin can bypass this.
-      if (userCredential.user.email !== 'support@algoweb.in' && !userCredential.user.emailVerified) {
+      if (userCredential.user.email !== 'support@itsahayata.com' && !userCredential.user.emailVerified) {
         toast({
           variant: 'destructive',
           title: 'Email Not Verified',

@@ -21,7 +21,7 @@ export function useUserRole() {
       }
       
       // Check 1: Is the user the hardcoded Super Admin via Firebase Auth?
-      if (user?.email === 'support@algoweb.in') {
+      if (user?.email === 'support@itsahayata.com') {
         setUserRole('admin');
         setIsRoleLoading(false);
         return;
