@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { collection, addDoc, doc, setDoc, deleteDoc, query, getDocs } from 'firebase/firestore';
 import type { SEOManager } from '@/lib/types';
