@@ -10,7 +10,7 @@ import { collection, query, doc, deleteDoc, getDocs, where, getDoc } from 'fireb
 import type { JobSeeker, Employer, JobPost } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,10 +29,10 @@ type CombinedUser = (JobSeeker | Employer) & { role: 'Job Seeker' | 'Employer' }
 
 export function UserManagementDashboard() {
     const { firestore } = useFirebase();
-    const { userRole, isRoleLoading } = useUserRole();
+    const { isAdmin, isAuthLoading } = useAuth();
     const { toast } = useToast();
 
-    const shouldFetchData = userRole === 'admin' && !isRoleLoading;
+    const shouldFetchData = isAdmin && !isAuthLoading;
 
     // Queries
     const jobSeekersQuery = useMemoFirebase(() => shouldFetchData ? query(collection(firestore, 'jobSeekers')) : null, [firestore, shouldFetchData]);
@@ -116,7 +116,7 @@ export function UserManagementDashboard() {
         return user.role === 'Employer' ? (user as Employer).companyName || 'N/A' : `${user.firstName} ${user.lastName}`;
     };
 
-    if (isRoleLoading) {
+    if (isAuthLoading) {
         return <div className="flex min-h-[400px] items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 

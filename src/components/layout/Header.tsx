@@ -40,7 +40,7 @@ const defaultNavLinks = [
 export function Header() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
-  const { isSeoManager, seoManager, logout: customLogout } = useAuth();
+  const { isAdmin, isSeoManager, seoManager, logout: customLogout } = useAuth();
   const router = useRouter();
   
   const userDocRef = useMemoFirebase(() => {
@@ -54,11 +54,11 @@ export function Header() {
   const profilePictureUrl = (userData as Employer)?.companyLogoUrl || (userData as JobSeeker)?.profilePictureUrl || user?.photoURL;
   
   const handleLogout = async () => {
-    if (isSeoManager) {
-      customLogout(); // Use custom logout for SEO manager
+    if (isAdmin || isSeoManager) {
+      customLogout();
       router.push('/');
     } else if (auth) {
-      await signOut(auth); // Firebase standard logout
+      await signOut(auth);
       router.push('/');
     }
   };
@@ -73,7 +73,7 @@ export function Header() {
   };
 
   const getDashboardLink = () => {
-    if (userRole === 'admin') return '/admin';
+    if (isAdmin) return '/admin';
     if (isSeoManager) return '/seo-manager';
     switch(userRole) {
       case 'employer': return '/employer';
@@ -83,7 +83,7 @@ export function Header() {
   }
   
   const getDisplayName = () => {
-    if (userRole === 'admin') return 'Super Admin';
+    if (isAdmin) return 'Super Admin';
     if (isSeoManager) return `${seoManager?.firstName} ${seoManager?.lastName}`;
     return user?.displayName;
   }
@@ -93,7 +93,7 @@ export function Header() {
      return user?.email;
   }
   
-  const isLoggedIn = user || isSeoManager;
+  const isLoggedIn = user || isAdmin || isSeoManager;
 
   const navLinks = userRole === 'employer' 
     ? [
@@ -136,7 +136,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-9 w-9">
-                      {(userRole === 'admin' || isSeoManager) ? (
+                      {(isAdmin || isSeoManager) ? (
                         <AvatarFallback><Shield /></AvatarFallback>
                       ) : (
                         <>
@@ -158,7 +158,7 @@ export function Header() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push(getDashboardLink())}>
-                    {(userRole === 'admin' || isSeoManager) && <Shield className="mr-2 h-4 w-4" />}
+                    {(isAdmin || isSeoManager) && <Shield className="mr-2 h-4 w-4" />}
                     {userRole === 'employer' && <Briefcase className="mr-2 h-4 w-4" />}
                     {userRole === 'job-seeker' && <User className="mr-2 h-4 w-4" />}
                     <span>Dashboard</span>

@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -12,21 +11,18 @@ import { SeoJobManagement } from '@/components/seo-manager/SeoJobManagement';
 import { useAuth } from '@/hooks/useAuth';
 
 function SeoManagerPageContent() {
-    const { userRole } = useUserRole();
-    const { isSeoManager } = useAuth();
+    const { isSeoManager, isAuthLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const defaultTab = searchParams.get('tab') || "blog-seo";
 
     useEffect(() => {
-        // Redirect if not an SEO Manager or a Super Admin
-        if (!isSeoManager && userRole !== 'admin') {
+        if (!isAuthLoading && !isSeoManager) {
             router.push('/seo-manager/login');
         }
-    }, [isSeoManager, userRole, router]);
+    }, [isSeoManager, isAuthLoading, router]);
 
-    // Show a loader while authentication state is being determined
-    if (!isSeoManager && userRole !== 'admin') {
+    if (isAuthLoading || !isSeoManager) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />

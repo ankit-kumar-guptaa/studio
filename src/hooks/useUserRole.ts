@@ -3,42 +3,48 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from './useAuth';
 
 type UserRole = 'admin' | 'employer' | 'job-seeker' | 'seo-manager' | 'none';
 
-// Define the super admin email address
-const SUPER_ADMIN_EMAIL = 'theankitkumarg@gmail.com';
-
 export function useUserRole() {
-  const { user, firestore, isUserLoading } = useFirebase();
+  const { user, firestore, isUserLoading: isFirebaseUserLoading } = useFirebase();
+  const { isAdmin, isSeoManager, isAuthLoading } = useAuth();
   const [userRole, setUserRole] = useState<UserRole>('none');
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      // Don't do anything until Firebase auth state is resolved.
-      if (isUserLoading) {
+      // Don't do anything until both Firebase auth and custom auth state are resolved.
+      if (isFirebaseUserLoading || isAuthLoading) {
         return;
       }
       
-      // If there's no user, the role is 'none'.
+      // Check 1: Is the user a custom-authenticated admin?
+      if (isAdmin) {
+        setUserRole('admin');
+        setIsRoleLoading(false);
+        return;
+      }
+      
+      // Check 2: Is the user a custom-authenticated SEO manager?
+      if (isSeoManager) {
+        setUserRole('seo-manager');
+        setIsRoleLoading(false);
+        return;
+      }
+      
+      // If there's no Firebase user, the role is 'none'.
       if (!user || !firestore) {
         setUserRole('none');
         setIsRoleLoading(false);
         return;
       }
       
-      // Check 1: Is the logged-in user the designated super admin?
-      if (user.email === SUPER_ADMIN_EMAIL) {
-          setUserRole('admin');
-          setIsRoleLoading(false);
-          return;
-      }
-
-      // Start the role checking process for other roles.
+      // Start checking Firestore roles for the authenticated Firebase user.
       setIsRoleLoading(true);
 
-      // Check 2: Is the user in the 'employers' collection?
+      // Check 3: Is the user in the 'employers' collection?
       try {
         const employerRef = doc(firestore, 'employers', user.uid);
         const employerSnap = await getDoc(employerRef);
@@ -51,8 +57,7 @@ export function useUserRole() {
         console.warn("Could not check employer role:", e);
       }
 
-
-      // Check 3: Is the user in the 'jobSeekers' collection?
+      // Check 4: Is the user in the 'jobSeekers' collection?
       try {
         const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
         const jobSeekerSnap = await getDoc(jobSeekerRef);
@@ -65,14 +70,13 @@ export function useUserRole() {
          console.warn("Could not check job seeker role:", e);
       }
 
-
       // If none of the above, the user has no specific role yet.
       setUserRole('none');
       setIsRoleLoading(false);
     };
 
     fetchUserRole();
-  }, [user, firestore, isUserLoading]);
+  }, [user, firestore, isFirebaseUserLoading, isAdmin, isSeoManager, isAuthLoading]);
 
   return { userRole, isRoleLoading };
 }
