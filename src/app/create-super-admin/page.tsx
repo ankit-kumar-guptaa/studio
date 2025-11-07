@@ -24,7 +24,7 @@ export default function CreateSuperAdminPage() {
         }
         setIsLoading(true);
         try {
-            await createUserWithEmailAndPassword(auth, 'super.admin@hiringdekho.com', 'admin@123');
+            await createUserWithEmailAndPassword(auth, 'support@algoweb.in', 'admin@123');
             toast({
                 title: "Super Admin Account Created!",
                 description: "You can now log in with the admin credentials."

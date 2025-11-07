@@ -13,7 +13,7 @@ service cloud.firestore {
     
     // Super Admin is identified by a specific email address.
     function isSuperAdmin() {
-        return isSignedIn() && request.auth.token.email == 'super.admin@hiringdekho.com';
+        return isSignedIn() && request.auth.token.email == 'support@algoweb.in';
     }
     
     // SEO Manager has read-only access to specific collections
