@@ -27,47 +27,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [seoManager, setSeoManager] = useState<SEOManager | null>(null);
 
-  // This effect determines the user's role.
   useEffect(() => {
     const determineRole = async () => {
-      // Wait until Firebase auth state is resolved.
       if (isFirebaseUserLoading) {
         return;
       }
-
+      
       setIsAuthLoading(true);
 
-      // Check 1: Is the user the hardcoded Super Admin via Firebase Auth?
+      // Check 1: Super Admin via Firebase Auth
       if (user?.email === ADMIN_EMAIL) {
+        // Force a token refresh to get custom claims after login
+        await user.getIdToken(true); 
         setUserRole('admin');
-        setSeoManager(null); // Ensure SEO manager state is cleared
         setIsAuthLoading(false);
         return;
       }
 
-      // Check 2: Is there an SEO manager session in localStorage?
-      try {
-        const seoManagerToken = localStorage.getItem(SEO_MANAGER_AUTH_KEY);
-        if (seoManagerToken) {
+      // Check 2: SEO Manager via localStorage
+      const seoManagerToken = localStorage.getItem(SEO_MANAGER_AUTH_KEY);
+      if (seoManagerToken) {
+        try {
           const managerData = JSON.parse(seoManagerToken);
           setSeoManager(managerData);
           setUserRole('seo-manager');
           setIsAuthLoading(false);
           return;
+        } catch (e) {
+          console.error("Clearing corrupted SEO manager token", e);
+          localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
         }
-      } catch (e) {
-        console.error("Error reading SEO manager state from localStorage", e);
-        localStorage.removeItem(SEO_MANAGER_AUTH_KEY); // Clear corrupted token
       }
-
-      // If not admin or SEO manager, check Firestore for regular user roles.
+      
+      // If not a special role, check for regular Firebase user
       if (!user || !firestore) {
         setUserRole('none');
         setIsAuthLoading(false);
         return;
       }
 
-      // Check 3: Is the user an employer?
+      // Check Firestore for employer or job-seeker role
       try {
         const employerRef = doc(firestore, 'employers', user.uid);
         const employerSnap = await getDoc(employerRef);
@@ -76,12 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAuthLoading(false);
           return;
         }
-      } catch (e) {
-        console.warn("Could not check employer role:", e);
-      }
 
-      // Check 4: Is the user a job seeker?
-      try {
         const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
         const jobSeekerSnap = await getDoc(jobSeekerRef);
         if (jobSeekerSnap.exists()) {
@@ -89,11 +83,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAuthLoading(false);
           return;
         }
-      } catch (e) {
-         console.warn("Could not check job seeker role:", e);
+      } catch(e) {
+        console.warn("Error checking user role in Firestore:", e);
       }
-
-      // If none of the above, the user has no specific role.
+      
       setUserRole('none');
       setIsAuthLoading(false);
     };
@@ -101,24 +94,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     determineRole();
   }, [user, firestore, isFirebaseUserLoading]);
 
-  const loginAsSeoManager = (manager: SEOManager) => {
-    try {
-      localStorage.setItem(SEO_MANAGER_AUTH_KEY, JSON.stringify(manager));
-      setSeoManager(manager);
-      setUserRole('seo-manager');
-    } catch (e) {
-      console.error("Failed to save SEO manager session", e);
-    }
+  const loginAsSeoManager = async (manager: SEOManager) => {
+    localStorage.setItem(SEO_MANAGER_AUTH_KEY, JSON.stringify(manager));
+    setSeoManager(manager);
+    setUserRole('seo-manager');
+    // In a real scenario, you might want to link this to a Firebase user and set claims
   };
 
   const logout = () => {
-    // This clears the custom SEO manager session.
-    // Firebase sign-out is handled separately in the Header component.
-    try {
-      localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
-    } catch (e) {
-      console.error("Failed to clear SEO manager session", e);
-    }
+    localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
     setSeoManager(null);
     setUserRole('none');
   };
@@ -128,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthLoading,
     logout,
     seoManager,
-    loginAsSeoManager, // Expose this for the SEO login page
+    loginAsSeoManager,
     isAdmin: userRole === 'admin',
     isSeoManager: userRole === 'seo-manager',
   };

@@ -11,18 +11,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Super Admin is identified by a specific UID.
+    // Check for a custom claim on the user's auth token.
     function isSuperAdmin() {
-        // This UID corresponds to the user with email 'support@itsahayata.com'
-        return isSignedIn() && request.auth.uid == 'gHZ9n7s2b9X8fJ2kP3s5t8YxVOE2';
+        return request.auth.token.isSuperAdmin == true;
     }
     
-    // SEO Manager has read-only access to specific collections
-    // and can only update SEO fields.
+    // Check for a custom claim on the user's auth token.
     function isSeoManager() {
-        // This relies on a custom claim being set, which our current setup doesn't do.
-        // The logic in useAuth.tsx handles this client-side.
-        // For rules, we'll assume a future implementation might set a claim.
         return request.auth.token.isSeoManager == true;
     }
 
@@ -58,7 +53,6 @@ service cloud.firestore {
      */
     match /employers/{employerId}/jobPosts/{jobPostId} {
       allow read, write: if isOwner(employerId) || isSuperAdmin();
-      // This rule is tricky with client-side only roles. Assuming isSeoManager() would be implemented via claims.
       allow update: if isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']);
     }
 
@@ -82,7 +76,6 @@ service cloud.firestore {
     match /jobPosts/{jobPostId} {
         allow read: if true;
         allow create: if (isSignedIn() && request.resource.data.employerId == request.auth.uid) || isSuperAdmin();
-        // SEO Manager updates are tricky without claims. For now, allow super admin.
         allow update: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin() ||
                          (isSeoManager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seoTitle', 'seoDescription', 'seoKeywords']));
         allow delete: if (isSignedIn() && resource.data.employerId == request.auth.uid) || isSuperAdmin();

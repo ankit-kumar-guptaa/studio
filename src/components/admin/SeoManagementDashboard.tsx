@@ -71,9 +71,10 @@ export function SeoManagementDashboard() {
         }
       };
       fetchManagers();
-    } else if (!isAuthLoading) {
-      // If auth is resolved but user is not admin, stop loading.
+    } else if (!isAuthLoading && !isAdmin) {
+      // If auth is resolved but user is not admin, stop loading and clear data.
       setIsLoading(false);
+      setSeoManagers([]);
     }
   }, [isAdmin, isAuthLoading, firestore, toast]);
   
