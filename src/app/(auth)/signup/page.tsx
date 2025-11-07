@@ -25,7 +25,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Logo } from '@/components/icons/Logo';
 import { useToast } from '@/hooks/use-toast';
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, ActionCodeSettings } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -78,8 +78,13 @@ export default function SignupPage() {
       await updateProfile(user, {
         displayName: `${data.firstName} ${data.lastName}`,
       });
+
+      const actionCodeSettings: ActionCodeSettings = {
+        url: 'https://www.hiringdekho.com/login',
+        handleCodeInApp: true,
+      };
       
-      await sendEmailVerification(user);
+      await sendEmailVerification(user, actionCodeSettings);
       
       const userDocData = {
         id: user.uid,
