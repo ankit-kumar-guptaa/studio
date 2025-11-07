@@ -29,9 +29,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   User,
-  createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase/provider';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -48,25 +47,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRoleSelectionOpen, setIsRoleSelectionOpen] = useState(false);
   const [googleUser, setGoogleUser] = useState<User | null>(null);
-  const [showCreateAdmin, setShowCreateAdmin] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { auth, firestore } = useFirebase();
   const fromUrl = searchParams.get('from') || '/';
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'A') {
-        setShowCreateAdmin(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -154,39 +140,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleCreateSuperAdmin = async () => {
-    if (!auth) {
-        toast({ variant: "destructive", title: "Firebase not ready" });
-        return;
-    }
-    setIsLoading(true);
-    try {
-        await createUserWithEmailAndPassword(auth, 'admin@hiringdekho.com', 'admin@123');
-        toast({
-            title: "Super Admin Account Created!",
-            description: "You can now log in with the admin credentials."
-        });
-        setShowCreateAdmin(false);
-    } catch (error: any) {
-        if (error.code === 'auth/email-already-in-use') {
-            toast({
-                variant: "secondary",
-                title: "Admin Already Exists",
-                description: "The super admin account has already been created."
-            });
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Admin Creation Failed",
-                description: error.message
-            });
-        }
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
@@ -265,12 +218,6 @@ export default function LoginPage() {
             <CardDescription>Enter your email below to login to your account</CardDescription>
           </CardHeader>
           <CardContent>
-            {showCreateAdmin && (
-              <Button onClick={handleCreateSuperAdmin} className="w-full mb-4" variant="destructive" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Create Super Admin Account
-              </Button>
-            )}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
                 <FormField
