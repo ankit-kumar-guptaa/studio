@@ -56,22 +56,23 @@ export function SeoManagementDashboard() {
   useEffect(() => {
     // Only fetch data if the user is confirmed to be an admin.
     if (!isRoleLoading && userRole === 'admin' && firestore) {
-      setIsLoading(true);
-      const seoManagersQuery = query(collection(firestore, 'seoManagers'));
-      getDocs(seoManagersQuery)
-        .then((snapshot) => {
+      const fetchManagers = async () => {
+        setIsLoading(true);
+        try {
+          const seoManagersQuery = query(collection(firestore, 'seoManagers'));
+          const snapshot = await getDocs(seoManagersQuery);
           const managers = snapshot.docs.map(doc => doc.data() as SEOManager);
           setSeoManagers(managers);
-        })
-        .catch(error => {
+        } catch (error: any) {
           console.error("Error fetching SEO managers:", error);
           toast({ variant: 'destructive', title: 'Fetch Failed', description: error.message });
-        })
-        .finally(() => {
+        } finally {
           setIsLoading(false);
-        });
+        }
+      };
+      fetchManagers();
     } else if (!isRoleLoading) {
-        // If role is not admin, stop loading and show an empty state.
+        // If role is not admin or firestore is not ready, stop loading.
         setIsLoading(false);
     }
   }, [userRole, isRoleLoading, firestore, toast]);
