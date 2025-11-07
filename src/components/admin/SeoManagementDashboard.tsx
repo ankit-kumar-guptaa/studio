@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, query } from 'firebase/firestore';
 import type { SEOManager } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useUserRole } from '@/hooks/useUserRole';
 
 
 const seoManagerSchema = z.object({
@@ -46,13 +47,18 @@ type SeoManagerFormData = z.infer<typeof seoManagerSchema>;
 
 export function SeoManagementDashboard() {
   const { firestore } = useFirebase();
+  const { userRole, isRoleLoading } = useUserRole();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
 
+  // Determine if we should fetch data. Only fetch if the user is a confirmed admin.
+  const shouldFetchData = !isRoleLoading && userRole === 'admin';
+
   const seoManagersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'seoManagers');
-  }, [firestore]);
+    // Only create the query if we should fetch the data.
+    if (!firestore || !shouldFetchData) return null;
+    return query(collection(firestore, 'seoManagers'));
+  }, [firestore, shouldFetchData]);
 
   const { data: seoManagers, isLoading, setData: setSeoManagers } = useCollection<SEOManager>(seoManagersQuery);
 
@@ -111,6 +117,8 @@ export function SeoManagementDashboard() {
     }
   };
 
+  const displayLoading = isLoading || isRoleLoading;
+
   return (
     <div className="grid gap-8 md:grid-cols-2">
         <Card>
@@ -142,7 +150,7 @@ export function SeoManagementDashboard() {
                  <Table>
                     <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                     <TableBody>
-                        {isLoading ? (
+                        {displayLoading ? (
                             <TableRow><TableCell colSpan={3} className="text-center h-24"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
                         ) : seoManagers && seoManagers.length > 0 ? (
                             seoManagers.map(manager => (
