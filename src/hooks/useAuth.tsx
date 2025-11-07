@@ -15,6 +15,7 @@ interface AuthContextType {
   isAuthLoading: boolean;
   logout: () => void;
   seoManager: SEOManager | null;
+  loginAsSeoManager: (manager: SEOManager) => void;
   isAdmin: boolean;
   isSeoManager: boolean;
 }
@@ -29,22 +30,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const determineRole = async () => {
-      if (isFirebaseUserLoading) {
-        return;
-      }
-      
       setIsAuthLoading(true);
 
-      // Check 1: Super Admin via Firebase Auth
+      if (isFirebaseUserLoading) {
+        return; // Wait for firebase user to be loaded
+      }
+
+      // Check 1: Super Admin via Firebase Auth email
       if (user?.email === ADMIN_EMAIL) {
-        // Force a token refresh to get custom claims after login
-        await user.getIdToken(true); 
         setUserRole('admin');
         setIsAuthLoading(false);
         return;
       }
-
-      // Check 2: SEO Manager via localStorage
+      
+      // Check 2: SEO Manager via localStorage (for non-firebase auth session)
       const seoManagerToken = localStorage.getItem(SEO_MANAGER_AUTH_KEY);
       if (seoManagerToken) {
         try {
@@ -58,15 +57,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
         }
       }
-      
+
       // If not a special role, check for regular Firebase user
       if (!user || !firestore) {
         setUserRole('none');
         setIsAuthLoading(false);
         return;
       }
-
-      // Check Firestore for employer or job-seeker role
+      
+      // Check 3: Firestore for employer or job-seeker role
       try {
         const employerRef = doc(firestore, 'employers', user.uid);
         const employerSnap = await getDoc(employerRef);
@@ -83,10 +82,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAuthLoading(false);
           return;
         }
-      } catch(e) {
+      } catch (e) {
         console.warn("Error checking user role in Firestore:", e);
       }
       
+      // Fallback for logged-in users without a specific role document
       setUserRole('none');
       setIsAuthLoading(false);
     };
@@ -94,17 +94,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     determineRole();
   }, [user, firestore, isFirebaseUserLoading]);
 
-  const loginAsSeoManager = async (manager: SEOManager) => {
+  const loginAsSeoManager = (manager: SEOManager) => {
     localStorage.setItem(SEO_MANAGER_AUTH_KEY, JSON.stringify(manager));
     setSeoManager(manager);
     setUserRole('seo-manager');
-    // In a real scenario, you might want to link this to a Firebase user and set claims
   };
 
   const logout = () => {
     localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
     setSeoManager(null);
     setUserRole('none');
+    // Note: The actual Firebase signOut is handled in the Header component
   };
 
   const value = {
