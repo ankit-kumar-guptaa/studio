@@ -47,13 +47,12 @@ function AdminPageContent() {
             </div>
             
             <Tabs defaultValue={defaultTab}>
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 h-auto">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
                     <TabsTrigger value="management"><Users className="mr-2 h-4 w-4" /> User & Job Management</TabsTrigger>
                      <TabsTrigger value="analytics"><LineChart className="mr-2 h-4 w-4" /> Platform Analytics</TabsTrigger>
                      <TabsTrigger value="blog-management"><LayoutDashboard className="mr-2 h-4 w-4" /> Blog Management</TabsTrigger>
                     <TabsTrigger value="create-candidate"><UserPlus className="mr-2 h-4 w-4" /> Create Candidate Profile</TabsTrigger>
                     <TabsTrigger value="post-job"><PlusCircle className="mr-2 h-4 w-4" /> Post a Job</TabsTrigger>
-                    <TabsTrigger value="seo-management"><ShieldCheck className="mr-2 h-4 w-4" /> SEO Management</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="management">
@@ -95,11 +94,10 @@ function AdminPageContent() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-
-                <TabsContent value="seo-management">
-                    <SeoManagementDashboard />
-                </TabsContent>
             </Tabs>
+             <div className="mt-8">
+              <SeoManagementDashboard />
+            </div>
         </div>
       </main>
       <Footer />
