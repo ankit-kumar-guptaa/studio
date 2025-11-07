@@ -27,8 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import type { SEOManager } from '@/lib/types';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 
 const loginSchema = z.object({
@@ -42,16 +41,7 @@ export default function SeoManagerLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore } = useFirebase();
-
-  // Check for existing session on page load
-  useEffect(() => {
-    const seoManagerSession = sessionStorage.getItem('seo-manager');
-    if (seoManagerSession) {
-      router.push('/seo-manager');
-    }
-  }, [router]);
-
+  const { auth } = useFirebase();
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -63,35 +53,48 @@ export default function SeoManagerLoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-    if (!firestore) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Database not available.' });
+    if (!auth) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Firebase Auth not available.' });
         setIsLoading(false);
         return;
     }
 
     try {
-        const q = query(collection(firestore, 'seoManagers'), where('email', '==', data.email));
-        const querySnapshot = await getDocs(q);
+        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        const user = userCredential.user;
+        const idTokenResult = await user.getIdTokenResult(true); // Force refresh to get latest claims
 
-        if (querySnapshot.empty) {
-            toast({ variant: 'destructive', title: 'Login Failed', description: 'No account found with this email.' });
-            setIsLoading(false);
-            return;
-        }
-
-        const seoManagerDoc = querySnapshot.docs[0];
-        const seoManagerData = seoManagerDoc.data() as SEOManager;
-
-        if (seoManagerData.password === data.password) {
-            // Use sessionStorage for simple, non-Firebase auth
+        // Check for SEO Manager claim
+        if (idTokenResult.claims.isSeoManager) {
+             const seoManagerData = {
+                id: user.uid,
+                email: user.email,
+                firstName: user.displayName?.split(' ')[0] || 'SEO',
+                lastName: user.displayName?.split(' ')[1] || 'Manager',
+            };
             sessionStorage.setItem('seo-manager', JSON.stringify(seoManagerData));
             toast({ title: 'Login Successful', description: 'Welcome, SEO Manager!' });
             router.push('/seo-manager');
         } else {
-            toast({ variant: 'destructive', title: 'Login Failed', description: 'Incorrect password.' });
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'This account does not have SEO Manager permissions.' });
         }
     } catch (error: any) {
-         toast({ variant: 'destructive', title: 'An Error Occurred', description: error.message });
+         let errorMessage = "An unknown error occurred.";
+         if (error.code) {
+             switch (error.code) {
+                 case 'auth/user-not-found':
+                 case 'auth/invalid-email':
+                    errorMessage = 'No account found with this email.';
+                    break;
+                 case 'auth/wrong-password':
+                 case 'auth/invalid-credential':
+                    errorMessage = 'Incorrect email or password. Please try again.';
+                    break;
+                 default:
+                    errorMessage = error.message;
+            }
+         }
+         toast({ variant: 'destructive', title: 'Login Failed', description: errorMessage });
     } finally {
         setIsLoading(false);
     }

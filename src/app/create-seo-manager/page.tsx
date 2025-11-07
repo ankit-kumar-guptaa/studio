@@ -25,10 +25,11 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
-import { doc, setDoc, collection } from 'firebase/firestore';
 import Link from 'next/link';
 import { Logo } from '@/components/icons/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { createUser } from '@/ai/flows/create-user-flow';
+
 
 const createManagerSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
@@ -41,8 +42,8 @@ type FormData = z.infer<typeof createManagerSchema>;
 
 export default function CreateSeoManagerPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const { firestore } = useFirebase();
-  const { isAdmin, isAuthLoading } = useAuth();
+  const { isAuthLoading } = useFirebase();
+  const { isAdmin } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -57,10 +58,6 @@ export default function CreateSeoManagerPage() {
   });
 
   const onSubmit = async (data: FormData) => {
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Firebase not ready' });
-      return;
-    }
     if (!isAdmin) {
       toast({ variant: 'destructive', title: 'Unauthorized', description: 'Only a Super Admin can create SEO Managers.' });
       return;
@@ -68,21 +65,23 @@ export default function CreateSeoManagerPage() {
 
     setIsLoading(true);
     try {
-      const collectionRef = collection(firestore, 'seoManagers');
-      const docRef = doc(collectionRef); // Let Firestore generate a new ID
-
-      const newManager = {
-        id: docRef.id, // Use the generated ID
-        ...data,
-      };
-
-      await setDoc(docRef, newManager);
-      
-      toast({
-        title: 'SEO Manager Created!',
-        description: `Account for ${data.email} has been created successfully.`,
+      const result = await createUser({
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: 'seo-manager',
       });
-      router.push('/admin?tab=management'); // Redirect to admin dashboard
+
+      if (result.success) {
+        toast({
+          title: 'SEO Manager Created!',
+          description: `Account for ${data.email} has been created successfully.`,
+        });
+        router.push('/admin?tab=management'); // Redirect to admin dashboard
+      } else {
+        throw new Error(result.error || 'Unknown error occurred.');
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -127,7 +126,7 @@ export default function CreateSeoManagerPage() {
           </Link>
           <CardTitle className="text-2xl">Create New SEO Manager</CardTitle>
           <CardDescription>
-            This account will have access to manage SEO for blog posts and jobs.
+            This will create a new user with SEO Manager permissions.
           </CardDescription>
         </CardHeader>
         <CardContent>

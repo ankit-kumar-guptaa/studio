@@ -138,5 +138,4 @@ export interface SEOManager {
     firstName: string;
     lastName: string;
     email: string;
-    password?: string; // Stored for simulation, not for production
 }

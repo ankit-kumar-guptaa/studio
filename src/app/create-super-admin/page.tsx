@@ -6,44 +6,48 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 import { Logo } from '@/components/icons/Logo';
+import { createUser } from '@/ai/flows/create-user-flow';
 
 export default function CreateSuperAdminPage() {
     const [isLoading, setIsLoading] = useState(false);
-    const { auth } = useFirebase();
     const { toast } = useToast();
     const router = useRouter();
 
     const handleCreateSuperAdmin = async () => {
-        if (!auth) {
-            toast({ variant: "destructive", title: "Firebase not ready" });
-            return;
-        }
         setIsLoading(true);
         try {
-            await createUserWithEmailAndPassword(auth, 'support@itsahayata.com', 'admin@123');
-            toast({
-                title: "Super Admin Account Created!",
-                description: "You can now log in with the admin credentials."
+            const result = await createUser({
+                email: 'support@itsahayata.com',
+                password: 'admin@123',
+                firstName: 'Super',
+                lastName: 'Admin',
+                role: 'admin',
             });
-            router.push('/login');
-        } catch (error: any) {
-            if (error.code === 'auth/email-already-in-use') {
+            
+            if (result.success) {
+                toast({
+                    title: "Super Admin Account Created!",
+                    description: "You can now log in with the admin credentials."
+                });
+                router.push('/login');
+            } else if (result.error?.includes('EMAIL_EXISTS')) {
                 toast({
                     variant: "secondary",
                     title: "Admin Already Exists",
                     description: "The super admin account has already been created. You can proceed to login."
                 });
             } else {
-                toast({
-                    variant: "destructive",
-                    title: "Admin Creation Failed",
-                    description: error.message
-                });
+                 throw new Error(result.error || 'An unknown error occurred during creation.');
             }
+
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Admin Creation Failed",
+                description: error.message
+            });
         } finally {
             setIsLoading(false);
         }
