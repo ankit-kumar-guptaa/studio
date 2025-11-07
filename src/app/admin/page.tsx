@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, Suspense } from 'react';
-import { useFirebase } from '@/firebase';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Loader2, Users, UserPlus, PlusCircle, LineChart, LayoutDashboard, ShieldCheck } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserManagementDashboard } from '@/components/admin/UserManagementDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,22 +13,22 @@ import { ResumeBuilder } from '@/components/admin/ResumeBuilder';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { BlogManagement } from '@/components/admin/BlogManagement';
 import { SeoManagementDashboard } from '@/components/admin/SeoManagementDashboard';
+import { useUserRole } from '@/hooks/useUserRole';
 
 function AdminPageContent() {
-    const { isUserLoading } = useFirebase();
-    const { isAdmin, isAuthLoading } = useAuth();
+    const { userRole, isRoleLoading } = useUserRole();
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const defaultTab = searchParams.get('tab') || "management";
 
     useEffect(() => {
-        if (!isAuthLoading && !isAdmin) {
-            router.push('/super-admin/login'); // Redirect non-admins
+        if (!isRoleLoading && userRole !== 'admin') {
+            router.push('/login'); // Redirect non-admins to main login
         }
-    }, [isAuthLoading, isAdmin, router]);
+    }, [isRoleLoading, userRole, router]);
 
-    if (isUserLoading || isAuthLoading || !isAdmin) {
+    if (isRoleLoading || userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />

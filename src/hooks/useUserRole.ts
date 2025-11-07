@@ -9,7 +9,7 @@ type UserRole = 'admin' | 'employer' | 'job-seeker' | 'seo-manager' | 'none';
 
 export function useUserRole() {
   const { user, firestore, isUserLoading: isFirebaseUserLoading } = useFirebase();
-  const { isAdmin, isSeoManager, isAuthLoading } = useAuth();
+  const { isSeoManager, isAuthLoading } = useAuth();
   const [userRole, setUserRole] = useState<UserRole>('none');
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
@@ -20,8 +20,8 @@ export function useUserRole() {
         return;
       }
       
-      // Check 1: Is the user a custom-authenticated admin?
-      if (isAdmin) {
+      // Check 1: Is the user the hardcoded Super Admin via Firebase Auth?
+      if (user?.email === 'admin@hiringdekho.com') {
         setUserRole('admin');
         setIsRoleLoading(false);
         return;
@@ -76,7 +76,7 @@ export function useUserRole() {
     };
 
     fetchUserRole();
-  }, [user, firestore, isFirebaseUserLoading, isAdmin, isSeoManager, isAuthLoading]);
+  }, [user, firestore, isFirebaseUserLoading, isSeoManager, isAuthLoading]);
 
   return { userRole, isRoleLoading };
 }
