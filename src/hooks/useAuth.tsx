@@ -4,7 +4,6 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import type { SEOManager } from '@/lib/types';
 
 // This file now ONLY handles the non-Firebase, local storage-based authentication for the SEO Manager role.
-// Super Admin authentication is now handled by checking the user's email in useUserRole.ts
 
 const SEO_MANAGER_AUTH_KEY = 'seo_manager_auth_token';
 
