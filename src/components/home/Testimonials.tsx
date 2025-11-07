@@ -41,16 +41,6 @@ export function Testimonials() {
                           “{testimonial.quote}”
                         </blockquote>
                         <div className="mt-6 flex items-center gap-4">
-                          {avatarImage && (
-                            <Image
-                              src={avatarImage.imageUrl}
-                              alt={testimonial.name}
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 rounded-full object-cover"
-                              data-ai-hint={avatarImage.imageHint}
-                            />
-                          )}
                           <div>
                             <p className="font-semibold text-foreground">{testimonial.name}</p>
                             <p className="text-sm text-primary">{testimonial.role}</p>

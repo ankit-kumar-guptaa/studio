@@ -10,6 +10,9 @@ import { CtaSection } from './CtaSection';
 import { HowItWorks } from './HowItWorks';
 import { WhyChooseHiringDekho } from './WhyChooseHiringDekho';
 import { JobSearch } from '../job-seeker/JobSearch';
+import { SuccessStories } from './SuccessStories';
+import { IndustryTrends } from './IndustryTrends';
+import { MobileAppPromo } from './MobileAppPromo';
 
 function LoadingSpinner() {
   return (
@@ -24,8 +27,11 @@ function DefaultHomePage() {
     <>
       <HeroSection />
       <WhyChooseHiringDekho />
+      <IndustryTrends />
       <HowItWorks />
+      <SuccessStories />
       <Testimonials />
+      <MobileAppPromo />
       <CtaSection />
     </>
   );
