@@ -3,32 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from './useAuth';
 
 type UserRole = 'admin' | 'employer' | 'job-seeker' | 'seo-manager' | 'none';
 
+// Define the super admin email address
+const SUPER_ADMIN_EMAIL = 'theankitkumarg@gmail.com';
+
 export function useUserRole() {
   const { user, firestore, isUserLoading } = useFirebase();
-  const { isAdmin, isSeoManager } = useAuth();
   const [userRole, setUserRole] = useState<UserRole>('none');
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      // Check 1: Is the user a super admin via our custom auth hook?
-      if (isAdmin) {
-          setUserRole('admin');
-          setIsRoleLoading(false);
-          return;
-      }
-      
-      // Check 2: Is the user an SEO manager?
-      if (isSeoManager) {
-        setUserRole('seo-manager');
-        setIsRoleLoading(false);
-        return;
-      }
-      
       // Don't do anything until Firebase auth state is resolved.
       if (isUserLoading) {
         return;
@@ -40,11 +27,18 @@ export function useUserRole() {
         setIsRoleLoading(false);
         return;
       }
+      
+      // Check 1: Is the logged-in user the designated super admin?
+      if (user.email === SUPER_ADMIN_EMAIL) {
+          setUserRole('admin');
+          setIsRoleLoading(false);
+          return;
+      }
 
-      // Start the role checking process.
+      // Start the role checking process for other roles.
       setIsRoleLoading(true);
 
-      // Check 3: Is the user in the 'employers' collection?
+      // Check 2: Is the user in the 'employers' collection?
       try {
         const employerRef = doc(firestore, 'employers', user.uid);
         const employerSnap = await getDoc(employerRef);
@@ -58,7 +52,7 @@ export function useUserRole() {
       }
 
 
-      // Check 4: Is the user in the 'jobSeekers' collection?
+      // Check 3: Is the user in the 'jobSeekers' collection?
       try {
         const jobSeekerRef = doc(firestore, 'jobSeekers', user.uid);
         const jobSeekerSnap = await getDoc(jobSeekerRef);
@@ -78,7 +72,7 @@ export function useUserRole() {
     };
 
     fetchUserRole();
-  }, [user, firestore, isUserLoading, isAdmin, isSeoManager]);
+  }, [user, firestore, isUserLoading]);
 
   return { userRole, isRoleLoading };
 }

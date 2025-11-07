@@ -40,11 +40,11 @@ const defaultNavLinks = [
 export function Header() {
   const { user, auth, firestore, isUserLoading } = useFirebase();
   const { userRole, isRoleLoading } = useUserRole();
-  const { isAdmin, isSeoManager, seoManager, logout: customLogout } = useAuth();
+  const { isSeoManager, seoManager, logout: customLogout } = useAuth();
   const router = useRouter();
   
   const userDocRef = useMemoFirebase(() => {
-    if (!user || !firestore || !userRole || userRole === 'none' || userRole === 'admin') return null;
+    if (!user || !firestore || !userRole || userRole === 'none' || userRole === 'admin' || userRole === 'seo-manager') return null;
     const collectionName = userRole === 'employer' ? 'employers' : 'jobSeekers';
     return doc(firestore, collectionName, user.uid);
   }, [user, firestore, userRole]);
@@ -54,11 +54,11 @@ export function Header() {
   const profilePictureUrl = (userData as Employer)?.companyLogoUrl || (userData as JobSeeker)?.profilePictureUrl || user?.photoURL;
   
   const handleLogout = async () => {
-    if (isAdmin || isSeoManager) {
-      customLogout();
+    if (isSeoManager) {
+      customLogout(); // Use custom logout for SEO manager
       router.push('/');
     } else if (auth) {
-      await signOut(auth);
+      await signOut(auth); // Firebase standard logout
       router.push('/');
     }
   };
@@ -69,11 +69,11 @@ export function Header() {
     if (names.length > 1 && names[1]) {
       return `${names[0][0]}${names[names.length - 1][0]}`;
     }
-    return name[0];
+    return name.substring(0, 2).toUpperCase();
   };
 
   const getDashboardLink = () => {
-    if (isAdmin) return '/admin';
+    if (userRole === 'admin') return '/admin';
     if (isSeoManager) return '/seo-manager';
     switch(userRole) {
       case 'employer': return '/employer';
@@ -83,7 +83,7 @@ export function Header() {
   }
   
   const getDisplayName = () => {
-    if (isAdmin) return 'Super Admin';
+    if (userRole === 'admin') return 'Super Admin';
     if (isSeoManager) return `${seoManager?.firstName} ${seoManager?.lastName}`;
     return user?.displayName;
   }
@@ -92,6 +92,8 @@ export function Header() {
      if (isSeoManager) return seoManager?.email;
      return user?.email;
   }
+  
+  const isLoggedIn = user || isSeoManager;
 
   const navLinks = userRole === 'employer' 
     ? [
@@ -129,12 +131,12 @@ export function Header() {
           <div className="hidden items-center space-x-2 md:flex">
             {isUserLoading || isRoleLoading ? (
               <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
-            ) : user || isAdmin || isSeoManager ? (
+            ) : isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-9 w-9">
-                      {isAdmin || isSeoManager ? (
+                      {(userRole === 'admin' || isSeoManager) ? (
                         <AvatarFallback><Shield /></AvatarFallback>
                       ) : (
                         <>
@@ -156,7 +158,7 @@ export function Header() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push(getDashboardLink())}>
-                    {(isAdmin || isSeoManager) && <Shield className="mr-2 h-4 w-4" />}
+                    {(userRole === 'admin' || isSeoManager) && <Shield className="mr-2 h-4 w-4" />}
                     {userRole === 'employer' && <Briefcase className="mr-2 h-4 w-4" />}
                     {userRole === 'job-seeker' && <User className="mr-2 h-4 w-4" />}
                     <span>Dashboard</span>
@@ -211,7 +213,7 @@ export function Header() {
                   )}
                 </nav>
                 <div className="mt-auto flex flex-col gap-2 border-t p-4">
-                  {user || isAdmin || isSeoManager ? (
+                  {isLoggedIn ? (
                     <>
                       <Button variant="outline" asChild>
                         <Link href={getDashboardLink()}>My Dashboard</Link>

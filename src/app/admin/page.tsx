@@ -27,7 +27,7 @@ function AdminPageContent() {
     useEffect(() => {
         if (!isUserLoading && !isRoleLoading) {
             if (userRole !== 'admin') {
-                router.push('/super-admin/login');
+                router.push('/login'); // Redirect non-admins to main login
             }
         }
     }, [isUserLoading, isRoleLoading, userRole, router]);

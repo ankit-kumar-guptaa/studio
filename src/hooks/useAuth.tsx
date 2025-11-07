@@ -3,35 +3,26 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import type { SEOManager } from '@/lib/types';
 
-const ADMIN_AUTH_KEY = 'super_admin_auth_token';
-const ADMIN_AUTH_TOKEN = 'SUPER_ADMIN_LOGGED_IN';
+// This file now ONLY handles the non-Firebase, local storage-based authentication for the SEO Manager role.
+// Super Admin authentication is now handled by checking the user's email in useUserRole.ts
 
 const SEO_MANAGER_AUTH_KEY = 'seo_manager_auth_token';
 
 interface AuthContextType {
-  isAdmin: boolean;
-  login: () => void;
-  logout: () => void;
   isSeoManager: boolean;
   loginAsSeoManager: (manager: SEOManager) => void;
-  logoutSeoManager: () => void;
+  logout: () => void; // A single logout function for simplicity
   seoManager: SEOManager | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isSeoManager, setIsSeoManager] = useState(false);
   const [seoManager, setSeoManager] = useState<SEOManager | null>(null);
 
   useEffect(() => {
-    // Check localStorage for both roles on client side
-    const adminToken = localStorage.getItem(ADMIN_AUTH_KEY);
-    if (adminToken === ADMIN_AUTH_TOKEN) {
-      setIsAdmin(true);
-    }
-    
+    // Check localStorage for SEO manager role on client side
     const seoManagerToken = localStorage.getItem(SEO_MANAGER_AUTH_KEY);
     if (seoManagerToken) {
         try {
@@ -45,35 +36,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = () => {
-    localStorage.setItem(ADMIN_AUTH_KEY, ADMIN_AUTH_TOKEN);
-    setIsAdmin(true);
-  };
-
-  const logout = () => {
-    localStorage.removeItem(ADMIN_AUTH_KEY);
-    setIsAdmin(false);
-  };
-
   const loginAsSeoManager = (manager: SEOManager) => {
     localStorage.setItem(SEO_MANAGER_AUTH_KEY, JSON.stringify(manager));
     setSeoManager(manager);
     setIsSeoManager(true);
   };
 
-  const logoutSeoManager = () => {
+  const logout = () => {
+    // This function will be used for logging out the SEO Manager.
+    // Firebase logout is handled separately in the Header component.
     localStorage.removeItem(SEO_MANAGER_AUTH_KEY);
     setSeoManager(null);
     setIsSeoManager(false);
   };
 
-  const handleFullLogout = () => {
-    logout();
-    logoutSeoManager();
-  }
-
   return (
-    <AuthContext.Provider value={{ isAdmin, login, logout: handleFullLogout, isSeoManager, loginAsSeoManager, logoutSeoManager, seoManager }}>
+    <AuthContext.Provider value={{ isSeoManager, loginAsSeoManager, logout, seoManager }}>
       {children}
     </AuthContext.Provider>
   );

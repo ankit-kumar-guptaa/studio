@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -9,22 +9,24 @@ import { Loader2, BookOpen, Briefcase } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SeoBlogManagement } from '@/components/seo-manager/SeoBlogManagement';
 import { SeoJobManagement } from '@/components/seo-manager/SeoJobManagement';
+import { useAuth } from '@/hooks/useAuth';
 
 function SeoManagerPageContent() {
-    const { isAdmin, isSeoManager } = useAuth();
+    const { userRole } = useUserRole();
+    const { isSeoManager } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const defaultTab = searchParams.get('tab') || "blog-seo";
 
     useEffect(() => {
         // Redirect if not an SEO Manager or a Super Admin
-        if (!isSeoManager && !isAdmin) {
+        if (!isSeoManager && userRole !== 'admin') {
             router.push('/seo-manager/login');
         }
-    }, [isSeoManager, isAdmin, router]);
+    }, [isSeoManager, userRole, router]);
 
     // Show a loader while authentication state is being determined
-    if (!isSeoManager && !isAdmin) {
+    if (!isSeoManager && userRole !== 'admin') {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
