@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
-import { collection, addDoc, doc, setDoc, deleteDoc, query, getDocs } from 'firebase/firestore';
+import { collection, doc, deleteDoc, query, getDocs } from 'firebase/firestore';
 import type { SEOManager } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { v4 as uuidv4 } from 'uuid';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/hooks/useAuth';
+import { createSeoManager } from '@/ai/flows/create-seo-manager-flow';
 
 
 const seoManagerSchema = z.object({
@@ -65,7 +65,7 @@ export function SeoManagementDashboard() {
           setSeoManagers(managers);
         } catch (error: any) {
           console.error("Error fetching SEO managers:", error);
-          toast({ variant: 'destructive', title: 'Fetch Failed', description: error.message });
+          // Don't toast on initial load error as it might be a permission issue before auth resolves
         } finally {
           setIsLoading(false);
         }
@@ -76,7 +76,7 @@ export function SeoManagementDashboard() {
       setIsLoading(false);
       setSeoManagers([]);
     }
-  }, [isAdmin, isAuthLoading, firestore, toast]);
+  }, [isAdmin, isAuthLoading, firestore]);
   
 
   const form = useForm<SeoManagerFormData>({
@@ -90,26 +90,22 @@ export function SeoManagementDashboard() {
   });
 
   async function onSubmit(values: SeoManagerFormData) {
-    if (!firestore) return;
     setIsCreating(true);
-
-    const newId = uuidv4();
-    const managerData: SEOManager = {
-        id: newId,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        password: values.password,
-    };
-
     try {
-      await setDoc(doc(firestore, 'seoManagers', newId), managerData);
-      toast({
-        title: 'SEO Manager Created',
-        description: 'The new SEO manager account has been created.',
-      });
-      form.reset();
-      setSeoManagers(prev => [...prev, managerData]);
+      // Call the secure Genkit flow instead of writing directly to Firestore
+      const result = await createSeoManager(values);
+
+      if (result.success) {
+        toast({
+          title: 'SEO Manager Created',
+          description: 'The new SEO manager account has been created.',
+        });
+        form.reset();
+        // Optimistically add the new manager to the local state
+        setSeoManagers(prev => [...prev, { id: result.id, ...values }]);
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
