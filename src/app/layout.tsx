@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: 'Hiring Dekho - Rozgaar ka Sahi Rasta',
   description: 'A full-featured job portal for the Indian market.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.png',
   },
 };
 
